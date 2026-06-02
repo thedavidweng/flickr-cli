@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/thedavidweng/flickr-cli/internal/backup"
 	"github.com/thedavidweng/flickr-cli/internal/config"
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/model"
@@ -524,7 +525,12 @@ var photosUploadCmd = &cobra.Command{
 var photosDownloadCmd = &cobra.Command{
 	Use:   "download [photo-id...]",
 	Short: "Download photos",
-	Args:  cobra.MinimumNArgs(1),
+	Long: `Download photos from Flickr. Supports three modes:
+
+1. By photo ID: flickr photos download 12345 67890
+2. By album: flickr photos download --album "Vacation" --dest ./backup
+3. All photos: flickr photos download --all --dest ./backup --layout id-dirs`,
+	Args: cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
 		r := output.Renderer{
@@ -552,164 +558,284 @@ var photosDownloadCmd = &cobra.Command{
 		size, _ := cmd.Flags().GetString("size")
 		metadata, _ := cmd.Flags().GetString("metadata")
 		force, _ := cmd.Flags().GetBool("force")
+		layout, _ := cmd.Flags().GetString("layout")
+		albumTitles, _ := cmd.Flags().GetStringSlice("album")
+		albumIDs, _ := cmd.Flags().GetStringSlice("album-id")
+		allAlbums, _ := cmd.Flags().GetBool("all")
+		resume, _ := cmd.Flags().GetBool("resume")
 
 		if dest == "" {
-			dest = "."
+			dest = "./flickr-backup"
 		}
 
-		if app.DryRun {
-			var planned []map[string]any
-			for _, id := range args {
-				planned = append(planned, map[string]any{"photo_id": id, "dest": dest, "size": size})
-			}
-			r.Human("Would download %d photos to %s\n", len(args), dest)
-			return r.Success(meta, map[string]any{"planned": true, "items": planned}, nil)
+		// Determine mode: backup mode (album/all) vs direct download mode (photo IDs)
+		backupMode := allAlbums || len(albumTitles) > 0 || len(albumIDs) > 0 || layout != ""
+
+		if backupMode {
+			// Backup mode: use backup package
+			return downloadViaBackup(cmd, client, r, meta, app, backup.BackupPlanOptions{
+				Mode:          backupModeToPlanMode(layout, allAlbums, len(albumTitles) > 0 || len(albumIDs) > 0),
+				Dest:          dest,
+				AlbumTitles:   albumTitles,
+				AlbumIDs:      albumIDs,
+				All:           allAlbums,
+				Size:          size,
+				Metadata:      metadata,
+				Force:         force,
+				Resume:        resume,
+			})
 		}
 
-		type downloadResult struct {
-			PhotoID string `json:"photo_id"`
-			Path    string `json:"path,omitempty"`
-			Status  string `json:"status"`
-			Error   string `json:"error,omitempty"`
+		// Direct download mode: download specific photo IDs
+		if len(args) == 0 {
+			return r.Failure(meta, output.Errorf(model.ErrValidationFailed, "specify photo IDs, --album, --album-id, or --all"))
 		}
 
-		results := make([]downloadResult, len(args))
-		summary := map[string]int{"total": len(args), "completed": 0, "skipped": 0, "failed": 0}
+		return downloadByIDs(cmd, client, r, meta, app, args, dest, size, metadata, force)
+	},
+}
 
-		httpClient := &http.Client{}
+// backupModeToPlanMode converts CLI flags to backup plan mode.
+func backupModeToPlanMode(layout string, all bool, hasAlbums bool) backup.PlanMode {
+	switch layout {
+	case "id-dirs":
+		return backup.BackupIDDirs
+	case "album":
+		return backup.BackupAlbums
+	default:
+		if all || hasAlbums {
+			return backup.BackupAlbums
+		}
+		return backup.BackupUser
+	}
+}
 
-		for i, photoID := range args {
-			results[i] = downloadResult{PhotoID: photoID}
+// downloadViaBackup handles backup mode using the backup package.
+func downloadViaBackup(cmd *cobra.Command, client *flickr.Client, r output.Renderer, meta output.RuntimeMetaInput, app *AppContext, opts backup.BackupPlanOptions) error {
+	plan, err := backup.BuildPlan(cmd.Context(), client, opts)
+	if err != nil {
+		return r.Failure(meta, output.Errorf(model.ErrValidationFailed, "%v", err))
+	}
 
-			// Get sizes
-			sizes, err := client.GetSizes(cmd.Context(), photoID)
-			if err != nil {
-				results[i].Status = "failed"
-				results[i].Error = fmt.Sprintf("getting sizes: %v", err)
-				summary["failed"]++
+	if len(plan.Items) == 0 {
+		r.Human("No photos to download\n")
+		return r.Success(meta, map[string]any{"total": 0}, nil)
+	}
+
+	if app.DryRun {
+		r.Human("Would download %d photos to %s\n", len(plan.Items), opts.Dest)
+		return r.Success(meta, map[string]any{"planned": true, "total": len(plan.Items)}, nil)
+	}
+
+	// Build download items from plan
+	items := make([]backup.DownloadItem, len(plan.Items))
+	for i, item := range plan.Items {
+		ext := "jpg" // Default extension
+		var filePath string
+
+		switch opts.Mode {
+		case backup.BackupIDDirs:
+			filePath = backup.IDDirsPath(opts.Dest, item.PhotoID, ext)
+		default:
+			fileName := backup.SafeName(item.Title, item.PhotoID) + "." + ext
+			if item.AlbumID != "" {
+				albumName := backup.SafeName(item.Title, item.AlbumID)
+				filePath = filepath.Join(opts.Dest, albumName, fileName)
+			} else {
+				filePath = filepath.Join(opts.Dest, fileName)
+			}
+		}
+
+		items[i] = backup.DownloadItem{
+			PhotoID:  item.PhotoID,
+			FilePath: filePath,
+			SizeLabel: opts.Size,
+		}
+	}
+
+	// Download
+	downloader := &backup.Downloader{
+		HTTP:        &http.Client{},
+		Client:      client,
+		Concurrency: app.Concurrency,
+		Events:      output.EventWriter{Enabled: app.Events, Err: cmd.ErrOrStderr()},
+	}
+
+	summary, err := downloader.Download(cmd.Context(), items, backup.DownloadOptions{
+		Force:    opts.Force,
+		Size:     opts.Size,
+		Metadata: opts.Metadata,
+	})
+	if err != nil {
+		return r.Failure(meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
+	}
+
+	if app.JSON {
+		return r.Success(meta, map[string]any{
+			"summary": summary,
+			"dest":    opts.Dest,
+		}, nil)
+	}
+
+	r.Human("\nSummary: %d total, %d completed, %d skipped, %d failed\n",
+		summary.Total, summary.Completed, summary.Skipped, summary.Failed)
+	return nil
+}
+
+// downloadByIDs handles direct download of specific photo IDs.
+func downloadByIDs(cmd *cobra.Command, client *flickr.Client, r output.Renderer, meta output.RuntimeMetaInput, app *AppContext, photoIDs []string, dest, size, metadata string, force bool) error {
+	if app.DryRun {
+		var planned []map[string]any
+		for _, id := range photoIDs {
+			planned = append(planned, map[string]any{"photo_id": id, "dest": dest, "size": size})
+		}
+		r.Human("Would download %d photos to %s\n", len(photoIDs), dest)
+		return r.Success(meta, map[string]any{"planned": true, "items": planned}, nil)
+	}
+
+	type downloadResult struct {
+		PhotoID string `json:"photo_id"`
+		Path    string `json:"path,omitempty"`
+		Status  string `json:"status"`
+		Error   string `json:"error,omitempty"`
+	}
+
+	results := make([]downloadResult, len(photoIDs))
+	summary := map[string]int{"total": len(photoIDs), "completed": 0, "skipped": 0, "failed": 0}
+
+	httpClient := &http.Client{}
+
+	for i, photoID := range photoIDs {
+		results[i] = downloadResult{PhotoID: photoID}
+
+		// Get sizes
+		sizes, err := client.GetSizes(cmd.Context(), photoID)
+		if err != nil {
+			results[i].Status = "failed"
+			results[i].Error = fmt.Sprintf("getting sizes: %v", err)
+			summary["failed"]++
+			continue
+		}
+
+		selected, err := flickr.SelectSize(sizes, size)
+		if err != nil {
+			results[i].Status = "failed"
+			results[i].Error = fmt.Sprintf("selecting size: %v", err)
+			summary["failed"]++
+			continue
+		}
+
+		// Determine file extension from URL
+		ext := filepath.Ext(selected.Source)
+		if ext == "" {
+			ext = ".jpg"
+		}
+		filePath := filepath.Join(dest, photoID+ext)
+
+		// Check if file exists
+		if !force {
+			if _, err := os.Stat(filePath); err == nil {
+				results[i].Status = "skipped"
+				results[i].Path = filePath
+				results[i].Error = "file exists"
+				summary["skipped"]++
 				continue
 			}
+		}
 
-			selected, err := flickr.SelectSize(sizes, size)
-			if err != nil {
-				results[i].Status = "failed"
-				results[i].Error = fmt.Sprintf("selecting size: %v", err)
-				summary["failed"]++
-				continue
-			}
+		// Create directory
+		if err := os.MkdirAll(dest, 0o755); err != nil {
+			results[i].Status = "failed"
+			results[i].Error = fmt.Sprintf("creating dir: %v", err)
+			summary["failed"]++
+			continue
+		}
 
-			// Determine file extension from URL
-			ext := filepath.Ext(selected.Source)
-			if ext == "" {
-				ext = ".jpg"
-			}
-			filePath := filepath.Join(dest, photoID+ext)
+		// Download file
+		resp, err := httpClient.Get(selected.Source)
+		if err != nil {
+			results[i].Status = "failed"
+			results[i].Error = fmt.Sprintf("downloading: %v", err)
+			summary["failed"]++
+			continue
+		}
 
-			// Check if file exists
-			if !force {
-				if _, err := os.Stat(filePath); err == nil {
-					results[i].Status = "skipped"
-					results[i].Path = filePath
-					results[i].Error = "file exists"
-					summary["skipped"]++
-					continue
-				}
-			}
+		// Write to temp file then rename (atomic)
+		tmpPath := filePath + ".tmp"
+		f, err := os.Create(tmpPath)
+		if err != nil {
+			resp.Body.Close()
+			results[i].Status = "failed"
+			results[i].Error = fmt.Sprintf("creating file: %v", err)
+			summary["failed"]++
+			continue
+		}
 
-			// Create directory
-			if err := os.MkdirAll(dest, 0o755); err != nil {
-				results[i].Status = "failed"
-				results[i].Error = fmt.Sprintf("creating dir: %v", err)
-				summary["failed"]++
-				continue
-			}
-
-			// Download file
-			resp, err := httpClient.Get(selected.Source)
-			if err != nil {
-				results[i].Status = "failed"
-				results[i].Error = fmt.Sprintf("downloading: %v", err)
-				summary["failed"]++
-				continue
-			}
-
-			// Write to temp file then rename (atomic)
-			tmpPath := filePath + ".tmp"
-			f, err := os.Create(tmpPath)
-			if err != nil {
-				resp.Body.Close()
-				results[i].Status = "failed"
-				results[i].Error = fmt.Sprintf("creating file: %v", err)
-				summary["failed"]++
-				continue
-			}
-
-			if _, err := io.Copy(f, resp.Body); err != nil {
-				f.Close()
-				resp.Body.Close()
-				os.Remove(tmpPath)
-				results[i].Status = "failed"
-				results[i].Error = fmt.Sprintf("writing file: %v", err)
-				summary["failed"]++
-				continue
-			}
+		if _, err := io.Copy(f, resp.Body); err != nil {
 			f.Close()
 			resp.Body.Close()
+			os.Remove(tmpPath)
+			results[i].Status = "failed"
+			results[i].Error = fmt.Sprintf("writing file: %v", err)
+			summary["failed"]++
+			continue
+		}
+		f.Close()
+		resp.Body.Close()
 
-			if err := os.Rename(tmpPath, filePath); err != nil {
-				os.Remove(tmpPath)
-				results[i].Status = "failed"
-				results[i].Error = fmt.Sprintf("renaming: %v", err)
-				summary["failed"]++
-				continue
-			}
+		if err := os.Rename(tmpPath, filePath); err != nil {
+			os.Remove(tmpPath)
+			results[i].Status = "failed"
+			results[i].Error = fmt.Sprintf("renaming: %v", err)
+			summary["failed"]++
+			continue
+		}
 
-			results[i].Status = "completed"
-			results[i].Path = filePath
-			summary["completed"]++
+		results[i].Status = "completed"
+		results[i].Path = filePath
+		summary["completed"]++
 
-			// Write metadata sidecar if requested
-			if metadata == "json" || metadata == "yaml" || metadata == "both" {
-				infoParams := map[string]string{"photo_id": photoID}
-				var infoResult map[string]any
-				if err := client.Call(cmd.Context(), "flickr.photos.getInfo", infoParams, &infoResult); err == nil {
-					if metadata == "json" || metadata == "both" {
-						metaPath := filePath + ".json"
-						if metaBytes, mErr := json.MarshalIndent(infoResult, "", "  "); mErr == nil {
-							os.WriteFile(metaPath, metaBytes, 0o644)
-						}
+		// Write metadata sidecar if requested
+		if metadata == "json" || metadata == "yaml" || metadata == "both" {
+			infoParams := map[string]string{"photo_id": photoID}
+			var infoResult map[string]any
+			if err := client.Call(cmd.Context(), "flickr.photos.getInfo", infoParams, &infoResult); err == nil {
+				if metadata == "json" || metadata == "both" {
+					metaPath := filePath + ".json"
+					if metaBytes, mErr := json.MarshalIndent(infoResult, "", "  "); mErr == nil {
+						os.WriteFile(metaPath, metaBytes, 0o644)
 					}
-					if metadata == "yaml" || metadata == "both" {
-						metaPath := filePath + ".yaml"
-						if metaBytes, mErr := yaml.Marshal(infoResult); mErr == nil {
-							os.WriteFile(metaPath, metaBytes, 0o644)
-						}
+				}
+				if metadata == "yaml" || metadata == "both" {
+					metaPath := filePath + ".yaml"
+					if metaBytes, mErr := yaml.Marshal(infoResult); mErr == nil {
+						os.WriteFile(metaPath, metaBytes, 0o644)
 					}
 				}
 			}
 		}
+	}
 
-		if app.JSON {
-			return r.Success(meta, map[string]any{
-				"results": results,
-				"summary": summary,
-				"dest":    dest,
-				"size":    size,
-			}, nil)
-		}
+	if app.JSON {
+		return r.Success(meta, map[string]any{
+			"results": results,
+			"summary": summary,
+			"dest":    dest,
+			"size":    size,
+		}, nil)
+	}
 
-		tw := output.NewTableWriter(r.Out)
-		tw.Header("Photo ID", "Status", "Path", "Error")
-		for _, res := range results {
-			tw.Row(res.PhotoID, res.Status, res.Path, res.Error)
-		}
-		if err := tw.Flush(); err != nil {
-			return err
-		}
-		r.Human("\nSummary: %d total, %d completed, %d skipped, %d failed\n",
-			summary["total"], summary["completed"], summary["skipped"], summary["failed"])
-		return nil
-	},
+	tw := output.NewTableWriter(r.Out)
+	tw.Header("Photo ID", "Status", "Path", "Error")
+	for _, res := range results {
+		tw.Row(res.PhotoID, res.Status, res.Path, res.Error)
+	}
+	if err := tw.Flush(); err != nil {
+		return err
+	}
+	r.Human("\nSummary: %d total, %d completed, %d skipped, %d failed\n",
+		summary["total"], summary["completed"], summary["skipped"], summary["failed"])
+	return nil
 }
 
 var photosDeleteCmd = &cobra.Command{
@@ -1284,10 +1410,15 @@ func init() {
 	photosUploadCmd.Flags().String("move-after", "", "move files after upload")
 	photosUploadCmd.Flags().StringSlice("accepted-ext", nil, "accepted file extensions")
 
-	photosDownloadCmd.Flags().String("dest", "", "destination directory")
+	photosDownloadCmd.Flags().String("dest", "", "destination directory (default ./flickr-backup)")
 	photosDownloadCmd.Flags().String("size", "original", "size: original|large|medium|small")
 	photosDownloadCmd.Flags().String("metadata", "json", "metadata format: json|yaml|both|none")
 	photosDownloadCmd.Flags().Bool("force", false, "overwrite existing files")
+	photosDownloadCmd.Flags().String("layout", "", "directory layout: flat|album|id-dirs")
+	photosDownloadCmd.Flags().StringSlice("album", nil, "album title to download (repeatable)")
+	photosDownloadCmd.Flags().StringSlice("album-id", nil, "album ID to download (repeatable)")
+	photosDownloadCmd.Flags().Bool("all", false, "download all albums")
+	photosDownloadCmd.Flags().Bool("resume", false, "resume interrupted download")
 
 	photosSetMetaCmd.Flags().String("title", "", "photo title")
 	photosSetMetaCmd.Flags().String("description", "", "photo description")
