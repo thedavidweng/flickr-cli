@@ -25,57 +25,45 @@ func TestPrivacyFromLevel(t *testing.T) {
 	}
 }
 
-func TestLocalPath(t *testing.T) {
-	tests := []struct {
-		root     string
-		piwigo   string
-		expected string
-	}{
-		{"/uploads", "./upload/photos/image.jpg", "/uploads/photos/image.jpg"},
-		{"/uploads", "upload/photos/image.jpg", "/uploads/photos/image.jpg"},
-		{"/uploads", "/upload/photos/image.jpg", "/uploads/photos/image.jpg"},
-		{"/uploads", "photos/image.jpg", "/uploads/photos/image.jpg"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.piwigo, func(t *testing.T) {
-			got := LocalPath(tt.root, tt.piwigo)
-			if got != tt.expected {
-				t.Errorf("LocalPath(%q, %q) = %q, want %q", tt.root, tt.piwigo, got, tt.expected)
-			}
-		})
-	}
-}
-
 func TestTags(t *testing.T) {
-	record := ImageRecord{
-		Tags: []string{"nature", "sunset"},
+	image := &ImageInfo{
+		Tags: []struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		}{
+			{ID: "1", Name: "nature"},
+			{ID: "2", Name: "sunset"},
+		},
 	}
 
-	tags := Tags(record, "md5", "abc123")
-	if len(tags) != 3 {
-		t.Fatalf("expected 3 tags, got %d", len(tags))
+	tags := Tags(image)
+	if len(tags) != 2 {
+		t.Fatalf("expected 2 tags, got %d", len(tags))
 	}
 	if tags[0] != "nature" {
 		t.Errorf("expected nature, got %s", tags[0])
 	}
-	if tags[2] != "checksum:md5=abc123" {
-		t.Errorf("expected checksum tag, got %s", tags[2])
-	}
-
-	// Without hash
-	tags = Tags(record, "", "")
-	if len(tags) != 2 {
-		t.Errorf("expected 2 tags without hash, got %d", len(tags))
+	if tags[1] != "sunset" {
+		t.Errorf("expected sunset, got %s", tags[1])
 	}
 }
 
 func TestAlbums(t *testing.T) {
-	record := ImageRecord{
-		Categories: []string{"Vacation", "2024"},
+	image := &ImageInfo{
+		Categories: []struct {
+			ID string `json:"id"`
+		}{
+			{ID: "1"},
+			{ID: "2"},
+		},
 	}
 
-	albums := Albums(record, "", "Imported")
+	categories := []Category{
+		{ID: "1", Name: "Vacation"},
+		{ID: "2", Name: "2024"},
+	}
+
+	albums := Albums(image, categories, "", "Imported")
 	if len(albums) != 3 {
 		t.Fatalf("expected 3 albums, got %d", len(albums))
 	}
@@ -84,18 +72,11 @@ func TestAlbums(t *testing.T) {
 	}
 
 	// With prefix
-	albums = Albums(record, "Piwigo/", "")
+	albums = Albums(image, categories, "Piwigo/", "")
 	if len(albums) != 2 {
 		t.Fatalf("expected 2 albums, got %d", len(albums))
 	}
 	if albums[0] != "Piwigo/Vacation" {
 		t.Errorf("expected Piwigo/Vacation, got %s", albums[0])
-	}
-
-	// Empty category
-	record.Categories = []string{"", "Valid"}
-	albums = Albums(record, "", "Import")
-	if len(albums) != 2 {
-		t.Errorf("expected 2 albums (skipping empty), got %d", len(albums))
 	}
 }

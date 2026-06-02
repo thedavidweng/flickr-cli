@@ -1,10 +1,5 @@
 package piwigo
 
-import (
-	"path/filepath"
-	"strings"
-)
-
 // PrivacyFromLevel maps Piwigo privacy levels to Flickr privacy strings.
 func PrivacyFromLevel(level int) string {
 	switch {
@@ -17,48 +12,38 @@ func PrivacyFromLevel(level int) string {
 	}
 }
 
-// LocalPath resolves a Piwigo image path to a local file path.
-func LocalPath(uploadsRoot string, piwigoPath string) string {
-	p := piwigoPath
-	for _, prefix := range []string{"./upload/", "upload/", "/upload/"} {
-		if strings.HasPrefix(p, prefix) {
-			p = p[len(prefix):]
-			break
-		}
+// Tags builds the tag list for an image.
+func Tags(image *ImageInfo) []string {
+	tags := make([]string, 0, len(image.Tags))
+	for _, tag := range image.Tags {
+		tags = append(tags, tag.Name)
 	}
-
-	fullPath := filepath.Join(uploadsRoot, p)
-	return filepath.Clean(fullPath)
-}
-
-// Tags builds the tag list for an image record.
-func Tags(record ImageRecord, hashAlg string, hashValue string) []string {
-	tags := make([]string, 0, len(record.Tags)+1)
-	tags = append(tags, record.Tags...)
-
-	if hashAlg != "" && hashValue != "" {
-		tags = append(tags, "checksum:"+hashAlg+"="+hashValue)
-	}
-
 	return tags
 }
 
-// Albums builds the album list for an image record.
-func Albums(record ImageRecord, prefix string, importAlbum string) []string {
+// Albums builds the album list for an image.
+func Albums(image *ImageInfo, categories []Category, prefix string, importAlbum string) []string {
 	var albums []string
 
 	if importAlbum != "" {
 		albums = append(albums, importAlbum)
 	}
 
-	for _, cat := range record.Categories {
-		if cat == "" {
+	// Build category ID to name map
+	catMap := make(map[string]string)
+	for _, cat := range categories {
+		catMap[cat.ID] = cat.Name
+	}
+
+	for _, cat := range image.Categories {
+		name := catMap[cat.ID]
+		if name == "" {
 			continue
 		}
 		if prefix != "" {
-			albums = append(albums, prefix+cat)
+			albums = append(albums, prefix+name)
 		} else {
-			albums = append(albums, cat)
+			albums = append(albums, name)
 		}
 	}
 

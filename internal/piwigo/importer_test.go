@@ -12,7 +12,9 @@ func TestImporterDryRun(t *testing.T) {
 	}
 
 	opts := ImportOptions{
-		DB: DBConfig{DB: "test", User: "root"},
+		URL:      "https://photos.example.com",
+		Username: "admin",
+		Password: "secret",
 	}
 
 	summary, err := imp.Import(nil, opts)
@@ -30,24 +32,13 @@ func TestImporterReadOnly(t *testing.T) {
 	}
 
 	opts := ImportOptions{
-		DB: DBConfig{DB: "test", User: "root"},
+		URL:      "https://photos.example.com",
+		Username: "admin",
+		Password: "secret",
 	}
 
 	_, err := imp.Import(nil, opts)
 	if err == nil {
 		t.Error("expected error for read-only mode")
-	}
-}
-
-func TestImporterInvalidDB(t *testing.T) {
-	imp := &Importer{}
-
-	opts := ImportOptions{
-		DB: DBConfig{DB: "", User: ""},
-	}
-
-	_, err := imp.Import(nil, opts)
-	if err == nil {
-		t.Error("expected error for invalid DB config")
 	}
 }
