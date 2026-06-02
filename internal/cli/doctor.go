@@ -77,7 +77,7 @@ func doctorRun(ctx context.Context, app *AppContext) []doctorCheck {
 		checks = append(checks, doctorCheck{
 			Name:    "config",
 			OK:      false,
-			Message: err.Error(),
+			Message: err.Error() + "; run 'flickr auth login' to create a profile",
 		})
 		return checks
 	}
@@ -92,7 +92,7 @@ func doctorRun(ctx context.Context, app *AppContext) []doctorCheck {
 		checks = append(checks, doctorCheck{
 			Name:    "profile",
 			OK:      false,
-			Message: err.Error(),
+			Message: err.Error() + "; run 'flickr auth login' to create a profile",
 		})
 		return checks
 	}

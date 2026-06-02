@@ -77,6 +77,8 @@ var authLoginCmd = &cobra.Command{
 			} else if !isTerminal() {
 				return r.Failure(meta, output.Errorf(model.ErrConfig, "API key required in non-interactive mode"))
 			} else {
+				fmt.Fprintln(r.Err, "Get your API key and secret at: https://www.flickr.com/services/apps/")
+				fmt.Fprintln(r.Err)
 				fmt.Fprint(r.Err, "API key: ")
 				apiKey = readLine()
 			}
@@ -135,6 +137,13 @@ var authLoginCmd = &cobra.Command{
 		// Get request token
 		reqToken, err := client.RequestToken(cmd.Context(), callbackURL)
 		if err != nil {
+			if strings.Contains(err.Error(), "400") || strings.Contains(err.Error(), "401") {
+				return r.Failure(meta, output.ErrorWithDetails(
+					model.ErrAuthFailed,
+					"Invalid API key or secret. Verify your credentials at https://www.flickr.com/services/apps/",
+					map[string]any{"profile": app.Profile},
+				))
+			}
 			return r.Failure(meta, output.Errorf(model.ErrAuthFailed, "requesting token: %v", err))
 		}
 
@@ -210,12 +219,20 @@ var authStatusCmd = &cobra.Command{
 		}
 		cfg, err := config.Load(cfgPath)
 		if err != nil {
-			return r.Failure(meta, output.Errorf(model.ErrConfig, "loading config: %v", err))
+			return r.Failure(meta, output.ErrorWithDetails(
+				model.ErrAuthRequired,
+				"Not configured. Run 'flickr auth login' to get started.",
+				map[string]any{"profile": app.Profile},
+			))
 		}
 
 		profile, _ := cfg.GetProfile(app.Profile)
 		if profile == nil {
-			return r.Failure(meta, output.Errorf(model.ErrAuthRequired, "no profile %q configured", app.Profile))
+			return r.Failure(meta, output.ErrorWithDetails(
+				model.ErrAuthRequired,
+				fmt.Sprintf("Profile %q not configured. Run 'flickr auth login' to get started.", app.Profile),
+				map[string]any{"profile": app.Profile},
+			))
 		}
 
 		creds := config.CredentialsFromProfileAndEnv(profile)

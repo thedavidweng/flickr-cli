@@ -17,12 +17,12 @@ func getClient(app *AppContext) (*flickr.Client, *config.Config, error) {
 	}
 	cfg, err := config.Load(cfgPath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("loading config: %w", err)
+		return nil, nil, fmt.Errorf("not configured. Run 'flickr auth login' to get started")
 	}
 
 	profile, err := cfg.GetProfile(app.Profile)
 	if err != nil {
-		return nil, cfg, fmt.Errorf("profile %q: %w", app.Profile, err)
+		return nil, cfg, fmt.Errorf("not authenticated. Run 'flickr auth login' to get started")
 	}
 
 	creds := config.CredentialsFromProfileAndEnv(profile)
