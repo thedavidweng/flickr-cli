@@ -123,45 +123,125 @@ flickr photos set-tags 51234567890 --tag landscape --tag hdr
 - `photos upload`, `photos set-meta`, `photos set-tags`, `photos add-tags`, `photos remove-tag`, `photos set-privacy`, `photos set-location`, `photos rotate` — blocked by `--read-only`; support `--dry-run`
 - `photos delete` — requires `--confirm`; blocked by `--read-only`; supports `--dry-run`
 
-## backup
+## favorites
 
-Backup Flickr photos to local storage.
+Manage favorite photos.
 
 | Command | Usage | Description |
 |---------|-------|-------------|
-| `backup albums` | `flickr backup albums` | Backup photos organized by album |
-| `backup user` | `flickr backup user` | Backup photos by user with date/privacy filters |
-| `backup id-dirs` | `flickr backup id-dirs` | Stable full backup with ID-based directory structure |
+| `favorites list` | `flickr favorites list` | List favorite photos |
+| `favorites add` | `flickr favorites add [photo-id]` | Add a photo to favorites |
+| `favorites remove` | `flickr favorites remove [photo-id]` | Remove a photo from favorites |
 
-**Key flags for `backup albums`:**
+**Key flags for `favorites list`:**
 
-- `--dest` — destination directory (default: `./flickr-backup`)
-- `--album` / `--album-id` — select specific albums (repeatable)
-- `--all` — include all albums
-- `--size` — download size: `original`, `large`, `medium`
-- `--metadata` — metadata format: `json`, `yaml`, `both`
-- `--template` — directory template: `archive` or custom
-- `--resume` — resume interrupted backup
-- `--force` — overwrite existing files
-
-**Key flags for `backup user`:**
-
-- `--user-id` — user ID or `me`
-- `--min-upload-date` / `--max-upload-date` — date range
-- `--privacy` — privacy level filter
-- `--album-id` — filter by album ID
-
-**Key flags for `backup id-dirs`:**
-
-- `--include-not-in-album` — include unfiled photos (default: true)
-- `--include-albums` — include album memberships (default: true)
-- `--include-pools` — include pool memberships (default: true)
-- `--include-geo` — include geo data (default: true)
+- `--page` / `--per-page` — pagination
 
 ```bash
-flickr backup albums --all --dest ./my-backup
-flickr backup user --user-id me --min-upload-date 2025-01-01 --json
-flickr backup id-dirs --resume --metadata both
+flickr favorites list --json
+flickr favorites add 51234567890
+flickr favorites remove 51234567890
+```
+
+**Safety gates:**
+
+- `favorites add`, `favorites remove` — blocked by `--read-only`; support `--dry-run`
+
+## galleries
+
+Manage Flickr galleries.
+
+| Command | Usage | Description |
+|---------|-------|-------------|
+| `galleries list` | `flickr galleries list` | List galleries |
+| `galleries photos` | `flickr galleries photos [gallery-id]` | List photos in a gallery |
+
+**Key flags for `galleries list` / `galleries photos`:**
+
+- `--page` / `--per-page` — pagination
+
+```bash
+flickr galleries list --json
+flickr galleries photos 72157712345678901 --per-page 100
+```
+
+## groups
+
+Manage Flickr groups.
+
+| Command | Usage | Description |
+|---------|-------|-------------|
+| `groups list` | `flickr groups list` | List groups you belong to |
+| `groups search` | `flickr groups search [text]` | Search for groups |
+
+**Key flags for `groups list` / `groups search`:**
+
+- `--page` / `--per-page` — pagination
+
+```bash
+flickr groups list --json
+flickr groups search "street photography" --json
+```
+
+## comments
+
+Manage photo comments.
+
+| Command | Usage | Description |
+|---------|-------|-------------|
+| `comments list` | `flickr comments list [photo-id]` | List comments on a photo |
+| `comments add` | `flickr comments add [photo-id] [text]` | Add a comment to a photo |
+| `comments delete` | `flickr comments delete [comment-id]` | Delete a comment |
+
+```bash
+flickr comments list 51234567890 --json
+flickr comments add 51234567890 "Great shot!"
+flickr comments delete 123456789 --confirm
+```
+
+**Safety gates:**
+
+- `comments add` — blocked by `--read-only`; supports `--dry-run`
+- `comments delete` — requires `--confirm`; blocked by `--read-only`; supports `--dry-run`
+
+## contacts
+
+Manage Flickr contacts.
+
+| Command | Usage | Description |
+|---------|-------|-------------|
+| `contacts list` | `flickr contacts list` | List your contacts |
+
+**Key flags:**
+
+- `--page` / `--per-page` — pagination
+
+```bash
+flickr contacts list --json
+```
+
+## stats
+
+View Flickr statistics.
+
+| Command | Usage | Description |
+|---------|-------|-------------|
+| `stats popular` | `flickr stats popular` | Show popular photos |
+
+```bash
+flickr stats popular --json
+```
+
+## urls
+
+URL lookup utilities.
+
+| Command | Usage | Description |
+|---------|-------|-------------|
+| `urls lookup-user` | `flickr urls lookup-user [url]` | Look up a user by profile URL |
+
+```bash
+flickr urls lookup-user "https://www.flickr.com/photos/example/"
 ```
 
 ## cache
@@ -203,22 +283,6 @@ flickr checksums verify --json
 flickr checksums search a1b2c3d4e5f6 --json
 ```
 
-## files
-
-List photo IDs in albums.
-
-| Command | Usage | Description |
-|---------|-------|-------------|
-| `files list` | `flickr files list` | List photo IDs in albums |
-
-**Key flags:**
-
-- `--album` / `--album-id` — filter by album (repeatable)
-
-```bash
-flickr files list --album "Vacation" --json
-```
-
 ## api
 
 Direct Flickr API access.
@@ -250,19 +314,19 @@ Piwigo migration tools.
 
 **Key flags:**
 
-- `--uploads` — Piwigo uploads root directory (required)
-- `--mysql-host` / `--mysql-port` / `--mysql-db` / `--mysql-user` / `--mysql-password` — MySQL connection
-- `--mysql-password-env` — env var name containing MySQL password
-- `--table-prefix` — Piwigo table prefix
+- `--url` — Piwigo instance URL (required)
+- `--user` — Piwigo username (required)
+- `--password` — Piwigo password (required)
 - `--album-prefix` — prefix for created albums
 - `--import-album` — import album name (default: `Imported from Piwigo`)
 - `--dedupe` — deduplication: `checksum`, `none`
+- `--hash` — hash algorithm: `md5`, `sha1`
 - `--resume` — resume interrupted import
 - `--limit` — limit number of imports (0 for all)
 
 ```bash
-flickr piwigo import --uploads /var/piwigo/upload --mysql-db piwigo --mysql-user admin
-flickr piwigo import --uploads /var/piwigo/upload --mysql-db piwigo --mysql-user admin --json
+flickr piwigo import --url https://photos.example.com --user admin --password secret
+flickr piwigo import --url https://photos.example.com --user admin --password secret --json
 ```
 
 **Safety gates:**

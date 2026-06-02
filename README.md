@@ -21,7 +21,7 @@
 ## Highlights
 
 - **Single binary** — no dependencies, no runtime, no containers
-- **33 commands** — photos, albums, backup, upload, checksums, Piwigo import, raw API
+- **47 commands** — photos, albums, favorites, galleries, groups, comments, contacts, stats, urls, checksums, cache, Piwigo import, raw API
 - **JSON-first** — `--json` on every command, consistent envelope, machine-parseable
 - **Safety gates** — `--read-only`, `--dry-run`, `--confirm` for destructive operations
 - **Agent-ready** — exit codes, error categories, NDJSON events stream, secret redaction
@@ -65,7 +65,7 @@ flickr doctor
 # 3. Use it
 flickr albums list
 flickr photos upload ./vacation/ --recursive --album "Summer 2026"
-flickr backup id-dirs --dest ./backup
+flickr photos download --all --dest ./backup --layout id-dirs
 ```
 
 ## Usage
@@ -107,14 +107,14 @@ flickr photos upload ./photos/ --recursive --dry-run
 ### Backup
 
 ```sh
-# full backup by album
-flickr backup albums --all --dest ./backup
+# download all photos organized by album
+flickr photos download --all --dest ./backup --layout album
 
-# backup by date range
-flickr backup user --min-upload-date 2025-01-01 --privacy private
+# download with date filter
+flickr photos download --all --dest ./backup --min-upload-date 2025-01-01 --privacy private
 
 # stable id-dirs layout (idempotent, resumable)
-flickr backup id-dirs --dest ./backup --resume --metadata both
+flickr photos download --all --dest ./backup --layout id-dirs --resume --metadata both
 ```
 
 ### API Access
@@ -162,7 +162,7 @@ Run `flickr --help` or `flickr <command> --help` for full flag details.
 
 | | Document | Description |
 |-|----------|-------------|
-| 📋 | [Command Reference](COMMANDS.md) | All 33 commands with flags and examples |
+| 📋 | [Command Reference](COMMANDS.md) | All 47 commands with flags and examples |
 | 🔧 | [Architecture](docs/ARCHITECTURE.md) | Package layout and design decisions |
 | 🔐 | [Authentication](docs/auth.md) | OAuth setup and profiles |
 | 📤 | [Upload](docs/upload.md) | Upload workflow, flags, deduplication |

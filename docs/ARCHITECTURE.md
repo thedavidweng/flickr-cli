@@ -134,5 +134,4 @@ Every command produces output through the `Renderer`:
 | `github.com/spf13/cobra` | CLI framework |
 | `gopkg.in/yaml.v3` | Config file parsing |
 | `modernc.org/sqlite` | Cache database (pure Go, no CGO) |
-| `github.com/go-sql-driver/mysql` | Piwigo database connection |
 | `github.com/google/uuid` | Request IDs |

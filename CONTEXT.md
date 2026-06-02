@@ -29,7 +29,7 @@
 - `--dry-run` — 操作级，只预览不执行（优先级高于 --confirm）
 - `--confirm` — 操作级，确认高风险操作（删除操作必须）
 
-**缓存** — 自动管理的本地 SQLite 缓存，用于去重和加速查询。用户无需手动管理。
+**缓存** — 本地 SQLite 缓存，用于去重和加速查询。大多数操作自动使用缓存，但也提供显式管理命令：`cache sync`（手动同步元数据）、`cache stats`（查看缓存统计）、`cache cleanup`（清理过期条目）。
 
 **Piwigo 迁移** — 只实现 Piwigo→Flickr 方向。通过 Piwigo REST API（ws.php）读取数据，密码通过 flag 传递（不持久化）。Flickr→Piwigo 方向已有官方 Flickr2Piwigo 插件，不需要实现。
 
