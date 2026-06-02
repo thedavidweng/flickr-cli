@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "data": {
+    "albums": [
+      {
+        "id": "72177720300000000",
+        "title": "Summer Vacation",
+        "description": "Photos from summer 2026",
+        "photo_count": 42,
+        "primary_photo_id": "12345678901",
+        "created_at": "1717200000",
+        "updated_at": "1717300000"
+      }
+    ],
+    "page": 1,
+    "pages": 1,
+    "per_page": 50,
+    "total": 1
+  },
+  "meta": {
+    "command": "albums.list",
+    "profile": "default",
+    "duration_ms": 123,
+    "schema_version": "2026-06-02",
+    "request_id": "test-request-id",
+    "warnings": []
+  }
+}

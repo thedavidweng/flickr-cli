@@ -1,0 +1,45 @@
+version: 2
+
+builds:
+  - main: ./cmd/flickr
+    binary: flickr
+    ldflags:
+      - -s -w
+      - -X github.com/thedavidweng/flickr-cli/internal/cli.Version={{.Version}}
+      - -X github.com/thedavidweng/flickr-cli/internal/cli.Commit={{.ShortCommit}}
+      - -X github.com/thedavidweng/flickr-cli/internal/cli.Date={{.Date}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - formats: [tar.gz]
+    name_template: "flickr_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  github:
+    owner: thedavidweng
+    name: flickr-cli
+
+brews:
+  - name: flickr
+    repository:
+      owner: thedavidweng
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: "https://github.com/thedavidweng/flickr-cli"
+    description: "Agent-friendly CLI for Flickr photo management, backup, upload, and API access"
+    install: |
+      bin.install "flickr"
+    test: |
+      system "#{bin}/flickr", "version"

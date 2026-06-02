@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "data": {
+    "uploaded": [
+      {
+        "local_path": "testdata/test.jpg",
+        "photo_id": "12345678901",
+        "short_url": "https://flic.kr/p/abc123",
+        "albums": [
+          {
+            "id": "72177720300000000",
+            "title": "Summer",
+            "created": false
+          }
+        ],
+        "checksum": {
+          "algorithm": "md5",
+          "value": "d41d8cd98f00b204e9800998ecf8427e"
+        }
+      }
+    ],
+    "skipped": [],
+    "invalid": []
+  },
+  "meta": {
+    "command": "photos.upload",
+    "profile": "default",
+    "duration_ms": 2345,
+    "schema_version": "2026-06-02",
+    "request_id": "test-request-id",
+    "warnings": []
+  }
+}

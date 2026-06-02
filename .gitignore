@@ -1,0 +1,89 @@
+# === Internal documentation ===
+docs/internal/
+
+# === Build output ===
+bin/
+flickr
+flickr-cli
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# === Go ===
+*.test
+*.out
+*.prof
+coverage.out
+coverage.html
+
+# === OS: macOS ===
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+Icon?
+
+# === OS: Windows ===
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# === OS: Linux ===
+*~
+.directory
+.nfs*
+
+# === Editors / IDEs ===
+*.swp
+*.swo
+*.swn
+*~
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+.classpath
+*.code-workspace
+tags
+TAGS
+.tags
+.cproject
+
+# === Config / secrets (never commit) ===
+config.yaml
+*.key
+*.pem
+*.crt
+.env
+.env.*
+
+# === Project-specific ===
+*.sqlite
+flickr-backup/
+testdata/tmp/
+*.log

@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "data": {
+    "downloaded": 150,
+    "skipped": 5,
+    "failed": 0,
+    "dest": "./flickr-backup",
+    "metadata_format": "both"
+  },
+  "meta": {
+    "command": "backup.id-dirs",
+    "profile": "default",
+    "duration_ms": 123456,
+    "schema_version": "2026-06-02",
+    "request_id": "test-request-id",
+    "warnings": []
+  }
+}

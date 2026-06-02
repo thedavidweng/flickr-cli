@@ -1,0 +1,20 @@
+{
+  "ok": false,
+  "error": {
+    "code": "AUTH_REQUIRED",
+    "message": "Authentication required. Run 'flickr auth login' to authenticate.",
+    "category": "auth",
+    "retryable": false,
+    "details": {
+      "profile": "default"
+    }
+  },
+  "meta": {
+    "command": "albums.list",
+    "profile": "default",
+    "duration_ms": 0,
+    "schema_version": "2026-06-02",
+    "request_id": "test-request-id",
+    "warnings": []
+  }
+}

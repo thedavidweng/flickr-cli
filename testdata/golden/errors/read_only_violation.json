@@ -1,0 +1,21 @@
+{
+  "ok": false,
+  "error": {
+    "code": "READ_ONLY_VIOLATION",
+    "message": "Operation blocked by --read-only flag",
+    "category": "safety",
+    "retryable": false,
+    "details": {
+      "command": "photos.delete",
+      "flag": "--read-only"
+    }
+  },
+  "meta": {
+    "command": "photos.delete",
+    "profile": "default",
+    "duration_ms": 0,
+    "schema_version": "2026-06-02",
+    "request_id": "test-request-id",
+    "warnings": []
+  }
+}

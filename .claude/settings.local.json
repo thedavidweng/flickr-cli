@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(command -v nvm)",
+      "Read(//home/david/.nvm/versions/**)",
+      "Bash(npm --version)",
+      "Read(//home/david/**)",
+      "Bash(command -v curl wget)",
+      "Bash(curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh)",
+      "Bash(bash)"
+    ]
+  }
+}

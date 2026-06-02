@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "data": {
+    "version": "dev",
+    "commit": "unknown",
+    "date": "unknown",
+    "go_version": "go1.26.3",
+    "schema_version": "2026-06-02"
+  },
+  "meta": {
+    "command": "version",
+    "profile": "default",
+    "duration_ms": 0,
+    "schema_version": "2026-06-02",
+    "request_id": "test-request-id",
+    "warnings": null
+  }
+}

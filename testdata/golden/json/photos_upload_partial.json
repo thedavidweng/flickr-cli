@@ -1,0 +1,36 @@
+{
+  "ok": false,
+  "data": {
+    "uploaded": [
+      {
+        "local_path": "testdata/test1.jpg",
+        "photo_id": "12345678901",
+        "short_url": "https://flic.kr/p/abc123"
+      }
+    ],
+    "skipped": [],
+    "invalid": [
+      {
+        "local_path": "testdata/test2.jpg",
+        "error": {
+          "code": "UPLOAD_FAILED",
+          "message": "File format not supported"
+        }
+      }
+    ]
+  },
+  "error": {
+    "code": "PARTIAL_SUCCESS",
+    "message": "1 of 2 uploads failed",
+    "category": "upload",
+    "retryable": false
+  },
+  "meta": {
+    "command": "photos.upload",
+    "profile": "default",
+    "duration_ms": 3456,
+    "schema_version": "2026-06-02",
+    "request_id": "test-request-id",
+    "warnings": ["1 files could not be uploaded"]
+  }
+}
