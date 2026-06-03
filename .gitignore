@@ -3,8 +3,8 @@ docs/internal/
 
 # === Build output ===
 bin/
-flickr
-flickr-cli
+/flickr
+/flickr-cli
 *.exe
 *.exe~
 *.dll
