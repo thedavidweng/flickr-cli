@@ -18,12 +18,7 @@ var groupsListCmd = &cobra.Command{
 	Short: "List groups you belong to",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "groups.list",
 			Profile:   app.Profile,
@@ -89,12 +84,7 @@ var groupsSearchCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "groups.search",
 			Profile:   app.Profile,

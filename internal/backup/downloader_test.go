@@ -6,7 +6,10 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/output"
@@ -15,7 +18,7 @@ import (
 func TestDownloaderCreation(t *testing.T) {
 	downloader := &Downloader{
 		Concurrency: 4,
-		Events:      output.EventWriter{},
+		Events:      &output.EventWriter{},
 	}
 
 	if downloader.Concurrency != 4 {
@@ -93,7 +96,7 @@ func TestDownload(t *testing.T) {
 		HTTP:        photoServer.Client(),
 		Client:      client,
 		Concurrency: 1,
-		Events:      output.EventWriter{},
+		Events:      &output.EventWriter{},
 	}
 
 	items := []DownloadItem{
@@ -123,7 +126,7 @@ func TestDownloadSkipExisting(t *testing.T) {
 		HTTP:        http.DefaultClient,
 		Client:      &flickr.Client{},
 		Concurrency: 1,
-		Events:      output.EventWriter{},
+		Events:      &output.EventWriter{},
 	}
 
 	items := []DownloadItem{
@@ -134,7 +137,79 @@ func TestDownloadSkipExisting(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if summary.Completed != 1 {
-		t.Errorf("expected 1 completed (skipped), got %d", summary.Completed)
+	if summary.Skipped != 1 {
+		t.Errorf("expected 1 skipped, got %d", summary.Skipped)
+	}
+	if summary.Completed != 0 {
+		t.Errorf("expected 0 completed, got %d", summary.Completed)
+	}
+}
+
+func TestDownloadConcurrency(t *testing.T) {
+	// Track max concurrent downloads
+	var concurrent int32
+	var maxConcurrent int32
+
+	photoServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cur := atomic.AddInt32(&concurrent, 1)
+		// Update max
+		for {
+			old := atomic.LoadInt32(&maxConcurrent)
+			if cur <= old || atomic.CompareAndSwapInt32(&maxConcurrent, old, cur) {
+				break
+			}
+		}
+		time.Sleep(50 * time.Millisecond)
+		atomic.AddInt32(&concurrent, -1)
+		w.Write([]byte("fake-photo-data"))
+	}))
+	defer photoServer.Close()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"stat":"ok","sizes":{"size":[{"label":"Original","width":100,"height":100,"source":"` + photoServer.URL + `/photo.jpg","url":"` + photoServer.URL + `/photo.jpg","media":"photo"}]}}`))
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	client := &flickr.Client{
+		APIKey:    "test-key",
+		HTTP:      server.Client(),
+		Endpoints: flickr.Endpoints{REST: server.URL + "/"},
+	}
+
+	// Download 4 photos with concurrency 4
+	var mu sync.Mutex
+	var paths []string
+	for i := 0; i < 4; i++ {
+		p := filepath.Join(tmpDir, "photo"+string(rune('A'+i))+".jpg")
+		mu.Lock()
+		paths = append(paths, p)
+		mu.Unlock()
+	}
+
+	items := make([]DownloadItem, 4)
+	for i, p := range paths {
+		items[i] = DownloadItem{PhotoID: "photo-" + string(rune('A'+i)), FilePath: p, SizeLabel: "original"}
+	}
+
+	downloader := &Downloader{
+		HTTP:        photoServer.Client(),
+		Client:      client,
+		Concurrency: 4,
+		Events:      &output.EventWriter{},
+	}
+
+	summary, err := downloader.Download(context.Background(), items, DownloadOptions{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if summary.Completed != 4 {
+		t.Errorf("expected 4 completed, got %d", summary.Completed)
+	}
+
+	peak := atomic.LoadInt32(&maxConcurrent)
+	if peak < 2 {
+		t.Errorf("expected concurrent downloads (peak=%d), but downloads ran sequentially", peak)
 	}
 }

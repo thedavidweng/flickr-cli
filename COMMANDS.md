@@ -47,6 +47,8 @@ Manage Flickr albums (photosets).
 | `albums create` | `flickr albums create` | Create a new album |
 | `albums update` | `flickr albums update [album-id]` | Update album metadata |
 | `albums delete` | `flickr albums delete [album-id]` | Delete an album |
+| `albums add-photos` | `flickr albums add-photos [album-id] --photo-id [id]` | Add photos to an album |
+| `albums remove-photos` | `flickr albums remove-photos [album-id] --photo-id [id]` | Remove photos from an album |
 
 **Key flags for `albums list`:**
 
@@ -57,7 +59,7 @@ Manage Flickr albums (photosets).
 
 - `--title` — album title (required)
 - `--description` — album description
-- `--primary-photo-id` — primary photo ID (required by Flickr)
+- `--primary-photo-id` — primary photo ID (required)
 
 ```bash
 flickr albums list --sort count --json
@@ -66,10 +68,21 @@ flickr albums create --title "Vacation" --primary-photo-id 12345
 flickr albums delete 72157712345678901 --confirm
 ```
 
+**Key flags for `albums update`:**
+
+- `--title` — album title
+- `--description` — album description
+- `--primary-photo-id` — primary photo ID
+
+**Key flags for `albums add-photos` / `albums remove-photos`:**
+
+- `--photo-id` — photo ID to add/remove (repeatable)
+
 **Safety gates:**
 
 - `albums create`, `albums update` — blocked by `--read-only`; support `--dry-run`
 - `albums delete` — requires `--confirm`; blocked by `--read-only`; supports `--dry-run`
+- `albums add-photos`, `albums remove-photos` — blocked by `--read-only`; support `--dry-run`
 
 ## photos
 
@@ -91,6 +104,10 @@ Manage Flickr photos.
 | `photos set-location` | `flickr photos set-location [photo-id]` | Set photo location |
 | `photos rotate` | `flickr photos rotate [photo-id]` | Rotate photo |
 
+**Key flags for `photos remove-tag`:**
+
+- `--tag-id` — tag ID to remove (required)
+
 **Key flags for `photos search`:**
 
 - `--text` — search text
@@ -99,6 +116,9 @@ Manage Flickr photos.
 - `--min-taken-date` / `--max-taken-date` — taken-date range filters
 - `--privacy` — privacy level filter
 - `--user-id` — user ID or `me`
+
+> **Note:** Flickr API does not support combining search filters with album scoping.
+> Use `albums photos [album-id]` to list photos in a specific album.
 
 **Key flags for `photos upload`:**
 
@@ -254,6 +274,10 @@ Manage local metadata cache.
 | `cache stats` | `flickr cache stats` | Show cache statistics |
 | `cache cleanup` | `flickr cache cleanup` | Remove expired cache entries |
 
+**Key flags for `cache cleanup`:**
+
+- `--older-than` — remove entries older than duration (default: 720h)
+
 ```bash
 flickr cache sync
 flickr cache stats --json
@@ -319,9 +343,7 @@ Piwigo migration tools.
 - `--password` — Piwigo password (required)
 - `--album-prefix` — prefix for created albums
 - `--import-album` — import album name (default: `Imported from Piwigo`)
-- `--dedupe` — deduplication: `checksum`, `none`
-- `--hash` — hash algorithm: `md5`, `sha1`
-- `--resume` — resume interrupted import
+- `--dedupe` — deduplication: `checksum`, `none` (uses MD5 via Piwigo API)
 - `--limit` — limit number of imports (0 for all)
 
 ```bash
@@ -331,7 +353,7 @@ flickr piwigo import --url https://photos.example.com --user admin --password se
 
 **Safety gates:**
 
-- `piwigo import` — blocked by `--read-only`; supports `--dry-run`
+- `piwigo import` — requires `--confirm`; blocked by `--read-only`; supports `--dry-run`
 
 ## Global Flags
 
@@ -355,6 +377,7 @@ These flags are available on every command:
 | `--no-color` | `false` | Disable ANSI color |
 | `--verbose` | `false` | Diagnostics to stderr |
 | `--debug` | `false` | Debug diagnostics with secrets redacted |
+| `--quiet` | `false` | Suppress progress output |
 
 ## Environment Variables
 

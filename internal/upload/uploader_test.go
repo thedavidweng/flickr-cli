@@ -17,7 +17,7 @@ func TestExecutorCreation(t *testing.T) {
 	executor := &Executor{
 		Concurrency: 4,
 		Gate:        safety.GateInput{},
-		Events:      output.EventWriter{},
+		Events:      &output.EventWriter{},
 	}
 
 	if executor.Concurrency != 4 {
@@ -56,7 +56,7 @@ func TestUploadResult(t *testing.T) {
 func TestExecutorExecuteDryRun(t *testing.T) {
 	executor := &Executor{
 		Gate:   safety.GateInput{DryRun: true},
-		Events: output.EventWriter{},
+		Events: &output.EventWriter{},
 	}
 
 	plan := Plan{
@@ -80,7 +80,7 @@ func TestExecutorExecuteDryRun(t *testing.T) {
 func TestExecutorExecuteReadOnly(t *testing.T) {
 	executor := &Executor{
 		Gate:   safety.GateInput{ReadOnly: true},
-		Events: output.EventWriter{},
+		Events: &output.EventWriter{},
 	}
 
 	plan := Plan{
@@ -116,7 +116,7 @@ func TestExecutorExecuteUploadSuccess(t *testing.T) {
 	executor := &Executor{
 		Client:  client,
 		Gate:    safety.GateInput{},
-		Events:  output.EventWriter{},
+		Events:  &output.EventWriter{},
 		Profile: "default",
 	}
 

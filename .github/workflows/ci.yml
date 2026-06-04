@@ -10,7 +10,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
@@ -19,6 +19,11 @@ jobs:
         with:
           go-version-file: 'go.mod'
           cache: true
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
 
       - run: go vet ./...
       - run: go test ./... -race

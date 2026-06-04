@@ -110,12 +110,24 @@ func (s OAuthSigner) OAuthParams() map[string]string {
 }
 
 // Sign signs a request and returns the OAuth parameters including signature.
+// The returned map includes all OAuth protocol parameters (consumer_key, nonce,
+// timestamp, signature, etc.) plus any params that start with "oauth_" from the
+// input params (e.g. oauth_callback, oauth_verifier).
 func (s OAuthSigner) Sign(method, baseURL string, params map[string][]string) (map[string]string, error) {
 	oauthParams := s.OAuthParams()
 
 	// Add token if present
 	if s.Creds.Token != "" {
 		oauthParams["oauth_token"] = s.Creds.Token
+	}
+
+	// Promote oauth_* params from the input into both the signature base
+	// string and the returned OAuth params (they belong in the Authorization
+	// header, not the request body).
+	for k, vs := range params {
+		if len(vs) > 0 && len(k) > 6 && k[:6] == "oauth_" {
+			oauthParams[k] = vs[0]
+		}
 	}
 
 	// Merge OAuth params into signature params

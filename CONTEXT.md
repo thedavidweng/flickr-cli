@@ -21,7 +21,7 @@
 - `--all` — 下载所有照片
 - `--dest` — 目标目录
 - `--layout` — 目录布局（flat、album、id-dirs）
-- `--resume` — 断点续传
+- existing files are skipped by default (use `--force` to re-download)
 - `--metadata` — 元数据格式（json、csv、both）
 
 **安全门控** — 三级安全机制：
@@ -63,3 +63,47 @@
 - `api` — 原始 API 调用
 - `doctor` — 诊断
 - `version` — 版本
+
+## Flickr API 客户端
+
+**flickr.Client** — 内置的 Flickr API HTTP 客户端。处理 OAuth 1.0a 签名、REST 调用、multipart 上传、分页和重试。
+
+**REST 调用** — 签名 POST 到 `api.flickr.com/services/rest`，带 `method` 参数（如 `flickr.photos.getInfo`）。返回 JSON 包装的 `stat`/`code`/`message` 信封。
+
+**上传** — multipart POST 到 `up.flickr.com/services/upload`。返回 XML 包装的 JSON 类信封。需要 `title` 参数。
+
+**OAuth 1.0a** — 认证协议。三步流程：request token → 用户授权 → access token。支持 OOB（headless 环境）。
+
+**分页** — Flickr 端点返回 `page`/`pages`/`perpage`/`total` 字段。`FetchAll` 自动遍历所有页。
+
+**Endpoint** — Flickr API 操作的 URL（REST、Upload、RequestToken、Authorize、AccessToken）。每个 profile 可覆盖，用于测试。
+
+## 操作
+
+**下载** — 从 Flickr 获取照片到本地磁盘。两种模式：按指定 photo ID（photos 命令内联）或通过备份计划（委托给 backup 包）。
+
+**备份计划** — `backup.BuildPlan()` 枚举要下载的照片（按相册、用户或 ID 目录布局）。`backup.Downloader` 执行下载。
+
+**扫描** — 按扩展名查找本地文件用于上传。
+
+**去重** — 上传前检查照片是否已存在于 Flickr（通过 machine tag 校验和或 Flickr 搜索）。
+
+**相册解析** — 按标题查找现有相册或创建新相册。
+
+**Sidecar** — 与下载照片一起写入的元数据文件（JSON 或 YAML），包含 API 返回的完整照片信息。
+
+## 安全
+
+**Gate** — 安全检查，根据 read-only、dry-run 和 confirm 标志评估是否允许变更操作。
+
+**Risk** — 变更危险等级分类（read、low-write、medium-write、high-write、destructive）。
+
+**Audit** — JSONL 格式的变更操作日志，带时间戳和参数。
+
+## 输出
+
+**Envelope** — 标准 JSON 响应格式：`{ok, data, error, meta}`。
+
+**Renderer** — 向 stdout 输出人类可读文本或 JSON 信封。
+
+**Event** — 向 stderr 输出 NDJSON 进度事件（如 `download_complete`、`upload_started`）。

@@ -20,10 +20,15 @@ type RuntimeMetaInput struct {
 
 // Renderer handles all output: human-readable and JSON envelope.
 type Renderer struct {
-	Out    io.Writer
-	Err    io.Writer
-	JSON   bool
-	Pretty bool
+	Out     io.Writer
+	Err     io.Writer
+	JSON    bool
+	Pretty  bool
+	Compact bool
+	Full    bool
+	Quiet   bool
+	NoColor bool
+	Verbose bool
 }
 
 // Success writes a successful envelope or human-readable output.
@@ -47,8 +52,19 @@ func (r *Renderer) Failure(metaInput RuntimeMetaInput, errBody model.ErrorBody) 
 }
 
 // Human writes human-readable output to stdout.
+// When Quiet is true, output is suppressed.
 func (r *Renderer) Human(format string, args ...any) {
+	if r.Quiet {
+		return
+	}
 	fmt.Fprintf(r.Out, format, args...)
+}
+
+// Diagnostics writes verbose diagnostic information to stderr.
+func (r *Renderer) Diagnostics(format string, args ...any) {
+	if r.Verbose {
+		fmt.Fprintf(r.Err, "[debug] "+format+"\n", args...)
+	}
 }
 
 func (r *Renderer) writeJSON(metaInput RuntimeMetaInput, data any, warnings []string, errBody *model.ErrorBody) error {
@@ -72,6 +88,8 @@ func (r *Renderer) writeJSON(metaInput RuntimeMetaInput, data any, warnings []st
 	)
 	if r.Pretty {
 		b, err = json.MarshalIndent(env, "", "  ")
+	} else if r.Compact && !r.Full {
+		b, err = marshalCompact(env)
 	} else {
 		b, err = json.Marshal(env)
 	}
@@ -80,4 +98,41 @@ func (r *Renderer) writeJSON(metaInput RuntimeMetaInput, data any, warnings []st
 	}
 	_, err = r.Out.Write(append(b, '\n'))
 	return err
+}
+
+// marshalCompact marshals JSON removing empty/null fields recursively.
+func marshalCompact(v any) ([]byte, error) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return b, nil
+	}
+	cleanMap(raw)
+	return json.Marshal(raw)
+}
+
+// cleanMap removes empty string, null, and empty slice/map entries.
+func cleanMap(m map[string]any) {
+	for k, val := range m {
+		switch v := val.(type) {
+		case nil:
+			delete(m, k)
+		case string:
+			if v == "" {
+				delete(m, k)
+			}
+		case []any:
+			if len(v) == 0 {
+				delete(m, k)
+			}
+		case map[string]any:
+			cleanMap(v)
+			if len(v) == 0 {
+				delete(m, k)
+			}
+		}
+	}
 }

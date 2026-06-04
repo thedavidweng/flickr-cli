@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/thedavidweng/flickr-cli/internal/model"
@@ -13,10 +14,12 @@ import (
 type EventWriter struct {
 	Enabled bool
 	Err     io.Writer
+	mu      sync.Mutex
 }
 
 // Emit writes a single NDJSON event line to stderr.
-func (w EventWriter) Emit(event model.Event) {
+// Safe for concurrent use.
+func (w *EventWriter) Emit(event model.Event) {
 	if !w.Enabled || w.Err == nil {
 		return
 	}
@@ -25,8 +28,9 @@ func (w EventWriter) Emit(event model.Event) {
 	}
 	b, err := json.Marshal(event)
 	if err != nil {
-		fmt.Fprintf(w.Err, `{"type":"error","message":"failed to marshal event: %s"}`+"\n", err)
 		return
 	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	fmt.Fprintf(w.Err, "%s\n", b)
 }

@@ -1,6 +1,7 @@
 package piwigo
 
 // PrivacyFromLevel maps Piwigo privacy levels to Flickr privacy strings.
+// Currently only used in tests; kept as a utility for future use.
 func PrivacyFromLevel(level int) string {
 	switch {
 	case level == 0:

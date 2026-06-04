@@ -38,6 +38,7 @@ func newRootCmd() *cobra.Command {
 			app.Pretty, _ = cmd.Flags().GetBool("pretty")
 			app.Compact, _ = cmd.Flags().GetBool("compact")
 			app.Full, _ = cmd.Flags().GetBool("full")
+			app.Quiet, _ = cmd.Flags().GetBool("quiet")
 			app.Events, _ = cmd.Flags().GetBool("events")
 			app.ReadOnly, _ = cmd.Flags().GetBool("read-only")
 			app.DryRun, _ = cmd.Flags().GetBool("dry-run")
@@ -45,6 +46,7 @@ func newRootCmd() *cobra.Command {
 			app.Timeout, _ = cmd.Flags().GetDuration("timeout")
 			app.Retries, _ = cmd.Flags().GetInt("retries")
 			app.Concurrency, _ = cmd.Flags().GetInt("concurrency")
+			app.RequestInterval, _ = cmd.Flags().GetDuration("request-interval")
 			app.NoColor, _ = cmd.Flags().GetBool("no-color")
 			app.Verbose, _ = cmd.Flags().GetBool("verbose")
 			app.Debug, _ = cmd.Flags().GetBool("debug")
@@ -88,6 +90,13 @@ func newRootCmd() *cobra.Command {
 					}
 				}
 			}
+			if app.RequestInterval == 0 {
+				if env := os.Getenv("FLICKR_REQUEST_INTERVAL"); env != "" {
+					if d, err := time.ParseDuration(env); err == nil {
+						app.RequestInterval = d
+					}
+				}
+			}
 			if !app.Debug {
 				if env := os.Getenv("FLICKR_DEBUG"); env != "" {
 					if env == "true" || env == "1" || env == "yes" {
@@ -125,6 +134,7 @@ func newRootCmd() *cobra.Command {
 	root.PersistentFlags().Bool("pretty", false, "pretty-print JSON")
 	root.PersistentFlags().Bool("compact", false, "compact output fields")
 	root.PersistentFlags().Bool("full", false, "full normalized fields")
+	root.PersistentFlags().Bool("quiet", false, "suppress progress output")
 	root.PersistentFlags().Bool("events", false, "emit NDJSON progress events to stderr")
 	root.PersistentFlags().Bool("read-only", false, "block remote mutations")
 	root.PersistentFlags().Bool("dry-run", false, "plan mutations without execution")
@@ -132,6 +142,7 @@ func newRootCmd() *cobra.Command {
 	root.PersistentFlags().Duration("timeout", 30*time.Second, "command/API timeout")
 	root.PersistentFlags().Int("retries", 3, "retry count for retryable failures")
 	root.PersistentFlags().Int("concurrency", 4, "concurrent upload/download workers")
+	root.PersistentFlags().Duration("request-interval", 0, "minimum interval between API calls (e.g. 1s, 500ms)")
 	root.PersistentFlags().Bool("no-color", false, "disable ANSI color")
 	root.PersistentFlags().Bool("verbose", false, "diagnostics to stderr")
 	root.PersistentFlags().Bool("debug", false, "debug diagnostics to stderr with secrets redacted")

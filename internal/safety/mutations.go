@@ -4,9 +4,8 @@ package safety
 var HighRiskCommands = []string{
 	"photos.delete",
 	"albums.delete",
-	"albums.delete-photos",
-	"photos.set-meta", // when batch overwriting
-	"piwigo.import",   // destructive cleanup mode
+	"comments.delete",
+	"piwigo.import",
 }
 
 // RemoteMutations lists commands that perform remote mutations.
@@ -14,6 +13,8 @@ var RemoteMutations = []string{
 	"albums.create",
 	"albums.update",
 	"albums.delete",
+	"albums.add-photos",
+	"albums.remove-photos",
 	"photos.upload",
 	"photos.delete",
 	"photos.set-meta",
@@ -23,6 +24,10 @@ var RemoteMutations = []string{
 	"photos.set-privacy",
 	"photos.set-location",
 	"photos.rotate",
+	"favorites.add",
+	"favorites.remove",
+	"comments.add",
+	"comments.delete",
 	"piwigo.import",
 }
 

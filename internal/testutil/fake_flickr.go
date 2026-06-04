@@ -42,21 +42,23 @@ type FakeFailure struct {
 
 // FakeFlickr is a test double for the Flickr API.
 type FakeFlickr struct {
-	Server   *httptest.Server
-	mu       sync.Mutex
-	Calls    []Call
-	Photos   map[string]FakePhoto
-	Albums   map[string]FakeAlbum
-	Failures map[string]FakeFailure
+	Server      *httptest.Server
+	mu          sync.Mutex
+	Calls       []Call
+	Photos      map[string]FakePhoto
+	Albums      map[string]FakeAlbum
+	AlbumPhotos map[string][]string // album ID -> ordered photo IDs
+	Failures    map[string]FakeFailure
 }
 
 // NewFakeFlickr creates and starts a fake Flickr server.
 func NewFakeFlickr(t *testing.T) *FakeFlickr {
 	t.Helper()
 	f := &FakeFlickr{
-		Photos:   make(map[string]FakePhoto),
-		Albums:   make(map[string]FakeAlbum),
-		Failures: make(map[string]FakeFailure),
+		Photos:      make(map[string]FakePhoto),
+		Albums:      make(map[string]FakeAlbum),
+		AlbumPhotos: make(map[string][]string),
+		Failures:    make(map[string]FakeFailure),
 	}
 
 	mux := http.NewServeMux()
@@ -165,8 +167,30 @@ func (f *FakeFlickr) handleREST(w http.ResponseWriter, r *http.Request) {
 		f.handleGetPhotoInfo(w, r)
 	case "flickr.photos.getSizes":
 		f.handleGetPhotoSizes(w, r)
+	case "flickr.photos.getExif":
+		f.handleGetExif(w, r)
+	case "flickr.video.getStreamInfo":
+		f.handleGetVideoStreams(w, r)
 	case "flickr.photos.getAllContexts":
 		writeJSON(w, map[string]any{"stat": "ok", "set": []any{}, "pool": []any{}})
+	case "flickr.favorites.getList":
+		f.handleGetFavorites(w, r)
+	case "flickr.galleries.getList":
+		f.handleGetGalleries(w, r)
+	case "flickr.galleries.getPhotos":
+		f.handleGetGalleryPhotos(w, r)
+	case "flickr.groups.getList":
+		f.handleGetGroups(w, r)
+	case "flickr.groups.search":
+		f.handleSearchGroups(w, r)
+	case "flickr.contacts.getList":
+		f.handleGetContacts(w, r)
+	case "flickr.stats.getPopularPhotos":
+		f.handleGetPopularPhotos(w, r)
+	case "flickr.urls.lookupUser":
+		f.handleLookupUser(w, r)
+	case "flickr.photos.comments.getList":
+		f.handleGetComments(w, r)
 	default:
 		writeJSON(w, map[string]any{"stat": "ok"})
 	}
@@ -255,14 +279,39 @@ func (f *FakeFlickr) handleGetAlbumInfo(w http.ResponseWriter, r *http.Request) 
 }
 
 func (f *FakeFlickr) handleGetAlbumPhotos(w http.ResponseWriter, r *http.Request) {
+	photosetID := r.FormValue("photoset_id")
+	if photosetID == "" {
+		photosetID = r.URL.Query().Get("photoset_id")
+	}
+
+	f.mu.Lock()
+	photoIDs := f.AlbumPhotos[photosetID]
+	photos := make([]map[string]any, 0, len(photoIDs))
+	for _, pid := range photoIDs {
+		if p, ok := f.Photos[pid]; ok {
+			photos = append(photos, map[string]any{
+				"id":    p.ID,
+				"title": p.Title,
+				"owner": p.Owner,
+			})
+		} else {
+			photos = append(photos, map[string]any{
+				"id":    pid,
+				"title": "",
+			})
+		}
+	}
+	f.mu.Unlock()
+
 	writeJSON(w, map[string]any{
 		"stat": "ok",
 		"photoset": map[string]any{
-			"photo":   []any{},
+			"id":      photosetID,
+			"photo":   photos,
 			"page":    1,
 			"pages":   1,
 			"perpage": 100,
-			"total":   0,
+			"total":   len(photos),
 		},
 	})
 }
@@ -329,6 +378,156 @@ func (f *FakeFlickr) handleGetPhotoSizes(w http.ResponseWriter, r *http.Request)
 			"size": []map[string]any{
 				{"label": "Original", "width": 4000, "height": 3000, "source": "https://example.com/photo.jpg", "url": "https://example.com/photo.jpg", "media": "photo"},
 				{"label": "Large", "width": 1024, "height": 768, "source": "https://example.com/photo_l.jpg", "url": "https://example.com/photo_l.jpg", "media": "photo"},
+			},
+		},
+	})
+}
+
+func (f *FakeFlickr) handleGetExif(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, map[string]any{
+		"stat": "ok",
+		"photo": map[string]any{
+			"id": r.FormValue("photo_id"),
+			"tag": []map[string]any{
+				{"tagspace": "EXIF", "tagspaceid": 0, "tag": "Make", "label": "Make", "raw": "Canon", "_content": "Canon"},
+				{"tagspace": "EXIF", "tagspaceid": 0, "tag": "Model", "label": "Model", "raw": "EOS R5", "_content": "EOS R5"},
+			},
+		},
+	})
+}
+
+func (f *FakeFlickr) handleGetVideoStreams(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, map[string]any{
+		"stat": "ok",
+		"streams": map[string]any{
+			"stream": []map[string]any{
+				{"type": "1080p", "width": 1920, "height": 1080, "source": "https://example.com/video_1080.mp4"},
+				{"type": "720p", "width": 1280, "height": 720, "source": "https://example.com/video_720.mp4"},
+			},
+		},
+	})
+}
+
+func (f *FakeFlickr) handleGetFavorites(w http.ResponseWriter, r *http.Request) {
+	f.mu.Lock()
+	photos := make([]map[string]any, 0, len(f.Photos))
+	for _, p := range f.Photos {
+		photos = append(photos, map[string]any{
+			"id":    p.ID,
+			"title": p.Title,
+		})
+	}
+	f.mu.Unlock()
+
+	writeJSON(w, map[string]any{
+		"stat": "ok",
+		"photos": map[string]any{
+			"photo":   photos,
+			"page":    1,
+			"pages":   1,
+			"perpage": 100,
+			"total":   len(photos),
+		},
+	})
+}
+
+func (f *FakeFlickr) handleGetGalleries(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, map[string]any{
+		"stat": "ok",
+		"galleries": map[string]any{
+			"gallery": []map[string]any{
+				{"id": "gallery-1", "title": "Test Gallery", "description": "A gallery", "count_photos": 5},
+			},
+			"page":   1,
+			"pages":  1,
+			"perpage": 100,
+			"total":  1,
+		},
+	})
+}
+
+func (f *FakeFlickr) handleGetGalleryPhotos(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, map[string]any{
+		"stat": "ok",
+		"gallery": map[string]any{
+			"id":    "gallery-1",
+			"title": "Test Gallery",
+		},
+		"photos": map[string]any{
+			"photo":   []any{},
+			"page":    1,
+			"pages":   1,
+			"perpage": 100,
+			"total":   0,
+		},
+	})
+}
+
+func (f *FakeFlickr) handleGetGroups(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, map[string]any{
+		"stat": "ok",
+		"groups": map[string]any{
+			"group": []map[string]any{
+				{"nsid": "group-1", "name": "Test Group", "members": 100},
+			},
+			"page":   1,
+			"pages":  1,
+			"perpage": 100,
+			"total":  1,
+		},
+	})
+}
+
+func (f *FakeFlickr) handleSearchGroups(w http.ResponseWriter, r *http.Request) {
+	f.handleGetGroups(w, r)
+}
+
+func (f *FakeFlickr) handleGetContacts(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, map[string]any{
+		"stat": "ok",
+		"contacts": map[string]any{
+			"contact": []map[string]any{
+				{"nsid": "user-1", "username": "testuser", "realname": "Test User"},
+			},
+			"page":   1,
+			"pages":  1,
+			"perpage": 100,
+			"total":  1,
+		},
+	})
+}
+
+func (f *FakeFlickr) handleGetPopularPhotos(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, map[string]any{
+		"stat": "ok",
+		"photos": map[string]any{
+			"photo": []map[string]any{
+				{"id": "p1", "title": "Popular Photo", "stats": map[string]any{"views": 1000}},
+			},
+			"page":   1,
+			"pages":  1,
+			"perpage": 100,
+			"total":  1,
+		},
+	})
+}
+
+func (f *FakeFlickr) handleLookupUser(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, map[string]any{
+		"stat": "ok",
+		"user": map[string]any{
+			"id":       "user-123",
+			"username": "testuser",
+		},
+	})
+}
+
+func (f *FakeFlickr) handleGetComments(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, map[string]any{
+		"stat": "ok",
+		"comments": map[string]any{
+			"comment": []map[string]any{
+				{"id": "comment-1", "authorname": "testuser", "_content": "Great photo!", "datecreate": "2024-01-01"},
 			},
 		},
 	})

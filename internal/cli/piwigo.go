@@ -18,12 +18,7 @@ var piwigoImportCmd = &cobra.Command{
 	Short: "Import photos from Piwigo to Flickr",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "piwigo.import",
 			Profile:   app.Profile,
@@ -38,9 +33,7 @@ var piwigoImportCmd = &cobra.Command{
 		albumPrefix, _ := cmd.Flags().GetString("album-prefix")
 		importAlbum, _ := cmd.Flags().GetString("import-album")
 		dedupe, _ := cmd.Flags().GetString("dedupe")
-		hash, _ := cmd.Flags().GetString("hash")
 		limit, _ := cmd.Flags().GetInt("limit")
-		resume, _ := cmd.Flags().GetBool("resume")
 
 		// Validate required flags
 		if piwigoURL == "" {
@@ -53,13 +46,22 @@ var piwigoImportCmd = &cobra.Command{
 			return r.Failure(meta, output.Errorf(model.ErrValidationFailed, "--password is required"))
 		}
 
-		// Read-only check
-		if app.ReadOnly {
-			return r.Failure(meta, output.ErrorWithDetails(
-				model.ErrReadOnlyViolation,
-				"Operation blocked by --read-only flag",
-				map[string]any{"command": "piwigo.import", "flag": "--read-only"},
-			))
+		// Safety gate (consistent with all other mutation commands)
+		gate := safety.Check(safety.GateInput{
+			ReadOnly: app.ReadOnly,
+			DryRun:   app.DryRun,
+			Confirm:  app.Confirm,
+		}, safety.Mutation{
+			Command: "piwigo.import",
+			Method:  "flickr.upload",
+			Risk:    safety.ClassifyRisk("piwigo.import"),
+		})
+		if gate.Error != nil {
+			return r.Failure(meta, *gate.Error)
+		}
+		if gate.Planned {
+			r.Human("Dry run: piwigo import would connect to %s\n", piwigoURL)
+			return r.Success(meta, map[string]any{"planned": true}, nil)
 		}
 
 		// Get Flickr client
@@ -79,21 +81,14 @@ var piwigoImportCmd = &cobra.Command{
 			AlbumPrefix: albumPrefix,
 			ImportAlbum: importAlbum,
 			Dedupe:      dedupe,
-			Hash:        hash,
 			Limit:       limit,
-			Resume:      resume,
 		}
 
 		// Create importer
 		imp := &piwigo.Importer{
-			Events: output.EventWriter{
+			Events: &output.EventWriter{
 				Enabled: app.Events,
 				Err:     cmd.ErrOrStderr(),
-			},
-			Gate: safety.GateInput{
-				ReadOnly: app.ReadOnly,
-				DryRun:   app.DryRun,
-				Confirm:  app.Confirm,
 			},
 			Profile:   app.Profile,
 			RequestID: app.RequestID,
@@ -104,11 +99,6 @@ var piwigoImportCmd = &cobra.Command{
 		summary, err := imp.Import(cmd.Context(), opts)
 		if err != nil {
 			return r.Failure(meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
-		}
-
-		if app.DryRun {
-			r.Human("Dry run: %d planned imports\n", summary.Planned)
-			return r.Success(meta, summary, nil)
 		}
 
 		r.Human("Import complete: %d succeeded, %d skipped, %d failed\n", summary.Succeeded, summary.Skipped, summary.Failed)
@@ -123,9 +113,7 @@ func init() {
 	piwigoImportCmd.Flags().String("album-prefix", "", "prefix for created albums")
 	piwigoImportCmd.Flags().String("import-album", "Imported from Piwigo", "import album name")
 	piwigoImportCmd.Flags().String("dedupe", "checksum", "deduplication: checksum|none")
-	piwigoImportCmd.Flags().String("hash", "md5", "hash algorithm: md5|sha1")
 	piwigoImportCmd.Flags().Int("limit", 0, "limit number of imports (0 for all)")
-	piwigoImportCmd.Flags().Bool("resume", false, "resume interrupted import")
 
 	piwigoCmd.AddCommand(piwigoImportCmd)
 }

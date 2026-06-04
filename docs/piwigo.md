@@ -1,58 +1,36 @@
 # Piwigo Import
 
-Import photos from a self-hosted Piwigo instance into Flickr.
+Import photos from a self-hosted Piwigo instance into Flickr via the Piwigo
+REST API.
 
 ## Basic Usage
 
 ```bash
 flickr piwigo import \
-  --uploads /var/piwigo/upload \
-  --mysql-db piwigo \
-  --mysql-user root \
-  --mysql-password secret
+  --url https://photos.example.com \
+  --user admin \
+  --password secret
 ```
 
-## MySQL Connection Flags
+## Connection Flags
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--mysql-host` | `localhost` | MySQL host |
-| `--mysql-port` | `3306` | MySQL port |
-| `--mysql-db` | | MySQL database name (required) |
-| `--mysql-user` | | MySQL user (required) |
-| `--mysql-password` | | MySQL password |
-| `--mysql-password-env` | | Env var name containing MySQL password |
-| `--table-prefix` | | Piwigo table prefix (if configured in Piwigo) |
+| `--url` | | Piwigo instance URL (required) |
+| `--user` | | Piwigo username (required) |
+| `--password` | | Piwigo password (required) |
 
-For security, prefer `--mysql-password-env` over `--mysql-password` to avoid
-credentials in shell history:
-
-```bash
-export PIWIGO_DB_PASS=secret
-flickr piwigo import --mysql-password-env PIWIGO_DB_PASS --mysql-db piwigo
-```
-
-## Uploads Directory
-
-The `--uploads` flag points to the Piwigo `upload/` directory on disk. This is
-the directory where Piwigo stores original photo files (typically
-`/var/www/piwigo/upload/` or the configured `upload_dir`).
-
-```bash
-flickr piwigo import --uploads /var/www/piwigo/upload --mysql-db piwigo
-```
+The importer connects to the Piwigo REST API (`ws.php`). No direct database
+access is required.
 
 ## Import Flags
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--uploads` | | Piwigo uploads root directory (required) |
 | `--album-prefix` | | Prefix added to all created album names |
-| `--import-album` | `Imported from Piwigo` | Catch-all album name for unfiled photos |
+| `--import-album` | `Imported from Piwigo` | Catch-all album name added to every imported photo |
 | `--dedupe` | `checksum` | Deduplication mode: `checksum`, `none` |
-| `--hash` | `md5` | Hash algorithm: `md5`, `sha1` |
 | `--limit` | `0` | Limit number of imports (0 = all) |
-| `--resume` | `false` | Resume interrupted import |
 
 ## Album Mapping
 
@@ -61,36 +39,33 @@ Piwigo categories are mapped to Flickr albums:
 - Each Piwigo category becomes a Flickr album.
 - If `--album-prefix` is set, the prefix is prepended to each album name.
   For example, `--album-prefix "Piwigo: "` creates albums like `Piwigo: Landscapes`.
-- Photos not assigned to any Piwigo category go into the `--import-album` album.
+- The `--import-album` album is added to **every** imported photo (not just
+  unfiled ones). This acts as a blanket tag for all photos coming from this
+  import run.
 
 ```bash
-flickr piwigo import --uploads /data/upload \
+flickr piwigo import --url https://photos.example.com \
+  --user admin --password secret \
   --album-prefix "PW/" \
-  --import-album "Piwigo Unsorted" \
-  --mysql-db piwigo --mysql-user admin
+  --import-album "Piwigo Unsorted"
 ```
 
 ## Deduplication
 
-The importer computes a checksum for each file before uploading and checks
-Flickr for a matching machine tag. If the photo already exists, it is skipped.
+The importer computes an MD5 checksum for each image and checks Piwigo's
+`pwg.images.exist` API to see if the image already exists on the Piwigo side.
+If a match is found, the photo is skipped.
 
 ```bash
 # Default: checksum-based dedup
-flickr piwigo import --dedupe checksum --hash md5 ...
+flickr piwigo import --dedupe checksum ...
 
 # Disable deduplication
 flickr piwigo import --dedupe none ...
 ```
 
-## Resume
-
-Use `--resume` to continue an interrupted import. The importer tracks progress
-and skips photos that were already uploaded.
-
-```bash
-flickr piwigo import --uploads /data/upload --mysql-db piwigo --resume
-```
+Note: The `--hash` flag shown in earlier versions is not implemented. The hash
+algorithm is hardcoded to MD5.
 
 ## Limit
 
@@ -98,26 +73,27 @@ Limit the number of photos imported in a single run. Useful for testing or
 batched imports:
 
 ```bash
-flickr piwigo import --limit 100 --uploads /data/upload --mysql-db piwigo
+flickr piwigo import --limit 100 \
+  --url https://photos.example.com --user admin --password secret
 ```
 
 ## Safety Gates
 
-`piwigo import` is a **medium-risk mutation**. It creates photos and albums
-on Flickr, but does not require `--confirm`.
+`piwigo import` is a **high-risk mutation**. It creates photos and albums
+on Flickr and requires `--confirm`.
 
 - `--read-only` blocks the import entirely (exit code 6).
-- `--dry-run` shows planned imports (photos, albums, tags) without executing
-  any remote mutations.
+- `--dry-run` is accepted but returns 0 planned items (full scan is not yet
+  implemented).
 
 ```bash
-# Preview what would be imported
-flickr piwigo import --dry-run --json \
-  --uploads /data/upload --mysql-db piwigo
+# Requires --confirm
+flickr piwigo import --confirm \
+  --url https://photos.example.com --user admin --password secret
 
 # Block in read-only mode
 flickr piwigo import --read-only \
-  --uploads /data/upload --mysql-db piwigo
+  --url https://photos.example.com --user admin --password secret
 # Error: read-only mode blocks mutation
 ```
 
@@ -126,7 +102,7 @@ See [Safety](safety.md) for the full risk classification of all commands.
 ## JSON Output
 
 ```bash
-flickr piwigo import --json ...
+flickr piwigo import --json --confirm ...
 ```
 
 Returns counts of imported, skipped, and failed photos with details.

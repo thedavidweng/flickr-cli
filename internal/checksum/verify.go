@@ -28,6 +28,7 @@ type PhotoVerifyResult struct {
 }
 
 // ContainsChecksum checks if a list of tags contains a checksum for the given algorithm.
+// Currently only used in tests; kept as a utility for future use.
 func ContainsChecksum(tags []string, algorithm string) (hex string, ok bool) {
 	prefix := MachineTagPrefix + algorithm + "="
 	for _, tag := range tags {

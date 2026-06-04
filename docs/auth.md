@@ -47,26 +47,28 @@ $XDG_CONFIG_HOME/flickr-cli/config.yaml
 ```
 
 ```yaml
-schema_version: "2026-06-02"
-default_profile: default
+current_profile: default
 profiles:
   default:
     api_key: "REDACTED"
     api_secret: "REDACTED"
     oauth_token: "REDACTED"
     oauth_token_secret: "REDACTED"
-    user_id: "123@N00"
-    username: "username"
     permissions: "write"
+    user:
+      nsid: "123@N00"
+      username: "username"
+      fullname: "Full Name"
+    created_at: "2026-06-02T12:00:00Z"
+    updated_at: "2026-06-02T12:00:00Z"
     cache_path: "~/.cache/flickr-cli/default.sqlite"
     audit_log_path: "~/.local/state/flickr-cli/audit-default.jsonl"
     backup:
       dest: "./flickr-backup"
       metadata: "json"
-      resume: true
+      resume: false
     upload:
       dedupe: "checksum"
-      hash: "md5"
 ```
 
 Environment variables override config values at runtime:

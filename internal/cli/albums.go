@@ -6,6 +6,7 @@ import (
 
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
+	"github.com/thedavidweng/flickr-cli/internal/safety"
 	"github.com/spf13/cobra"
 )
 
@@ -19,12 +20,7 @@ var albumsListCmd = &cobra.Command{
 	Short: "List albums",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "albums.list",
 			Profile:   app.Profile,
@@ -128,12 +124,7 @@ var albumsShowCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "albums.show",
 			Profile:   app.Profile,
@@ -204,12 +195,7 @@ var albumsPhotosCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "albums.photos",
 			Profile:   app.Profile,
@@ -286,12 +272,7 @@ var albumsCreateCmd = &cobra.Command{
 	Short: "Create a new album",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "albums.create",
 			Profile:   app.Profile,
@@ -353,12 +334,7 @@ var albumsUpdateCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "albums.update",
 			Profile:   app.Profile,
@@ -377,6 +353,7 @@ var albumsUpdateCmd = &cobra.Command{
 		albumID := args[0]
 		title, _ := cmd.Flags().GetString("title")
 		description, _ := cmd.Flags().GetString("description")
+		primaryPhotoID, _ := cmd.Flags().GetString("primary-photo-id")
 
 		if app.DryRun {
 			r.Human("Would update album %s\n", albumID)
@@ -391,6 +368,9 @@ var albumsUpdateCmd = &cobra.Command{
 		}
 		if description != "" {
 			params["description"] = description
+		}
+		if primaryPhotoID != "" {
+			params["primary_photo_id"] = primaryPhotoID
 		}
 
 		if err := client.Call(cmd.Context(), "flickr.photosets.editMeta", params, nil); err != nil {
@@ -408,12 +388,7 @@ var albumsDeleteCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "albums.delete",
 			Profile:   app.Profile,
@@ -465,6 +440,116 @@ var albumsDeleteCmd = &cobra.Command{
 	},
 }
 
+var albumsAddPhotosCmd = &cobra.Command{
+	Use:   "add-photos [album-id]",
+	Short: "Add photos to an album",
+	Args:  cobra.ExactArgs(1),
+	RunE: withAuth("albums.add-photos", func(ctx *CmdContext) error {
+		albumID := ctx.Args[0]
+		photoIDs, _ := ctx.Cmd.Flags().GetStringSlice("photo-id")
+		if len(photoIDs) == 0 {
+			return ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrValidationFailed, "--photo-id is required"))
+		}
+
+		// Safety gate (medium risk)
+		gate := safety.Check(safety.GateInput{
+			ReadOnly: ctx.App.ReadOnly,
+			DryRun:   ctx.App.DryRun,
+			Confirm:  ctx.App.Confirm,
+		}, safety.Mutation{
+			Command: "albums.add-photos",
+			Method:  "flickr.photosets.addPhoto",
+			Risk:    safety.ClassifyRisk("albums.add-photos"),
+		})
+		if gate.Error != nil {
+			return ctx.R.Failure(ctx.Meta, *gate.Error)
+		}
+		if gate.Planned {
+			ctx.R.Human("Would add %d photos to album %s\n", len(photoIDs), albumID)
+			return ctx.R.Success(ctx.Meta, map[string]any{"planned": true, "album_id": albumID, "photo_ids": photoIDs}, nil)
+		}
+
+		var added []string
+		var errs []map[string]any
+		for _, photoID := range photoIDs {
+			if err := ctx.Client.AddToAlbum(ctx.Cmd.Context(), albumID, photoID); err != nil {
+				errs = append(errs, map[string]any{"photo_id": photoID, "error": err.Error()})
+			} else {
+				added = append(added, photoID)
+			}
+		}
+
+		if len(errs) > 0 {
+			ctx.R.Human("Added %d/%d photos to album %s\n", len(added), len(photoIDs), albumID)
+			return ctx.R.Failure(ctx.Meta, output.ErrorWithDetails(
+				model.ErrFlickrAPI,
+				fmt.Sprintf("failed to add %d photos", len(errs)),
+				map[string]any{"added": added, "errors": errs},
+			))
+		}
+
+		ctx.R.Human("Added %d photos to album %s\n", len(added), albumID)
+		return ctx.R.Success(ctx.Meta, map[string]any{"album_id": albumID, "added": added}, nil)
+	}),
+}
+
+var albumsRemovePhotosCmd = &cobra.Command{
+	Use:   "remove-photos [album-id]",
+	Short: "Remove photos from an album",
+	Args:  cobra.ExactArgs(1),
+	RunE: withAuth("albums.remove-photos", func(ctx *CmdContext) error {
+		albumID := ctx.Args[0]
+		photoIDs, _ := ctx.Cmd.Flags().GetStringSlice("photo-id")
+		if len(photoIDs) == 0 {
+			return ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrValidationFailed, "--photo-id is required"))
+		}
+
+		// Safety gate (medium risk)
+		gate := safety.Check(safety.GateInput{
+			ReadOnly: ctx.App.ReadOnly,
+			DryRun:   ctx.App.DryRun,
+			Confirm:  ctx.App.Confirm,
+		}, safety.Mutation{
+			Command: "albums.remove-photos",
+			Method:  "flickr.photosets.removePhoto",
+			Risk:    safety.ClassifyRisk("albums.remove-photos"),
+		})
+		if gate.Error != nil {
+			return ctx.R.Failure(ctx.Meta, *gate.Error)
+		}
+		if gate.Planned {
+			ctx.R.Human("Would remove %d photos from album %s\n", len(photoIDs), albumID)
+			return ctx.R.Success(ctx.Meta, map[string]any{"planned": true, "album_id": albumID, "photo_ids": photoIDs}, nil)
+		}
+
+		var removed []string
+		var errs []map[string]any
+		for _, photoID := range photoIDs {
+			params := map[string]string{
+				"photoset_id": albumID,
+				"photo_id":    photoID,
+			}
+			if err := ctx.Client.Call(ctx.Cmd.Context(), "flickr.photosets.removePhoto", params, nil); err != nil {
+				errs = append(errs, map[string]any{"photo_id": photoID, "error": err.Error()})
+			} else {
+				removed = append(removed, photoID)
+			}
+		}
+
+		if len(errs) > 0 {
+			ctx.R.Human("Removed %d/%d photos from album %s\n", len(removed), len(photoIDs), albumID)
+			return ctx.R.Failure(ctx.Meta, output.ErrorWithDetails(
+				model.ErrFlickrAPI,
+				fmt.Sprintf("failed to remove %d photos", len(errs)),
+				map[string]any{"removed": removed, "errors": errs},
+			))
+		}
+
+		ctx.R.Human("Removed %d photos from album %s\n", len(removed), albumID)
+		return ctx.R.Success(ctx.Meta, map[string]any{"album_id": albumID, "removed": removed}, nil)
+	}),
+}
+
 func init() {
 	albumsListCmd.Flags().Int("page", 1, "page number")
 	albumsListCmd.Flags().Int("per-page", 50, "items per page")
@@ -483,10 +568,15 @@ func init() {
 	albumsPhotosCmd.Flags().String("privacy", "", "privacy level filter")
 	albumsPhotosCmd.Flags().String("extras", "", "extra fields CSV")
 
+	albumsAddPhotosCmd.Flags().StringSlice("photo-id", nil, "photo ID to add (repeatable, required)")
+	albumsRemovePhotosCmd.Flags().StringSlice("photo-id", nil, "photo ID to remove (repeatable, required)")
+
 	albumsCmd.AddCommand(albumsListCmd)
 	albumsCmd.AddCommand(albumsShowCmd)
 	albumsCmd.AddCommand(albumsCreateCmd)
 	albumsCmd.AddCommand(albumsUpdateCmd)
 	albumsCmd.AddCommand(albumsDeleteCmd)
 	albumsCmd.AddCommand(albumsPhotosCmd)
+	albumsCmd.AddCommand(albumsAddPhotosCmd)
+	albumsCmd.AddCommand(albumsRemovePhotosCmd)
 }

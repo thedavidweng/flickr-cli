@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -50,6 +51,11 @@ func (c *Client) CallRaw(ctx context.Context, method string, params map[string]s
 // callRawOnce performs a single REST API call attempt.
 // It returns (raw, nil, false) on success, or (nil, err, true) if the error is retryable.
 func (c *Client) callRawOnce(ctx context.Context, method string, params map[string]string) (json.RawMessage, error, bool) {
+	// Enforce proactive rate limiting
+	if err := c.waitForRateLimit(ctx); err != nil {
+		return nil, err, false
+	}
+
 	// Build form values
 	form := url.Values{}
 	form.Set("method", method)
@@ -97,11 +103,11 @@ func (c *Client) callRawOnce(ctx context.Context, method string, params map[stri
 
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("API call %s: %w", method, err), false
+		return nil, fmt.Errorf("API call %s: %w", method, err), true
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024))
 	if err != nil {
 		return nil, fmt.Errorf("reading response: %w", err), false
 	}
@@ -113,7 +119,23 @@ func (c *Client) callRawOnce(ctx context.Context, method string, params map[stri
 			Msg:    fmt.Sprintf("HTTP %d: %s", resp.StatusCode, string(body)),
 			Stat:   "http_error",
 		}
-		retryable := resp.StatusCode >= 500
+		retryable := resp.StatusCode == 429 || resp.StatusCode >= 500
+		if resp.StatusCode == 429 {
+			if ra := resp.Header.Get("Retry-After"); ra != "" {
+				if secs, err := strconv.Atoi(ra); err == nil {
+					wait := time.Duration(secs) * time.Second
+					if wait > 60*time.Second {
+						wait = 60 * time.Second
+					}
+					flickrErr.RetryAfter = wait
+					select {
+					case <-ctx.Done():
+						return nil, ctx.Err(), false
+					case <-time.After(wait):
+					}
+				}
+			}
+		}
 		return nil, flickrErr, retryable
 	}
 

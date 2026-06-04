@@ -673,6 +673,311 @@ func TestPhotosUploadDryRun(t *testing.T) {
 	}
 }
 
+// --- Favorites integration tests ---
+
+func TestFavoritesListJSON(t *testing.T) {
+	fake, cfg := setupFakeCLI(t)
+	fake.Photos["p1"] = testutil.FakePhoto{ID: "p1", Title: "Fav Photo"}
+
+	cmd, buf := cmdContext(t, cfg, true)
+	err := favoritesListCmd.RunE(cmd, nil)
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true, got error: %v", env.Error)
+	}
+	if env.Meta.Command != "favorites.list" {
+		t.Errorf("expected command=favorites.list, got %s", env.Meta.Command)
+	}
+}
+
+func TestFavoritesAddDryRun(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	err := favoritesAddCmd.RunE(cmd, []string{"p1"})
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true for dry-run, got error: %v", env.Error)
+	}
+	data := env.Data.(map[string]any)
+	if data["planned"] != true {
+		t.Errorf("expected planned=true, got %v", data["planned"])
+	}
+}
+
+func TestFavoritesRemoveDryRun(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	err := favoritesRemoveCmd.RunE(cmd, []string{"p1"})
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true for dry-run, got error: %v", env.Error)
+	}
+}
+
+func TestFavoritesReadOnly(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true, &AppContext{ReadOnly: true})
+	err := favoritesAddCmd.RunE(cmd, []string{"p1"})
+	if err == nil {
+		t.Fatal("expected error with --read-only")
+	}
+
+	env := parseEnvelope(t, buf)
+	if env.OK {
+		t.Fatal("expected ok=false")
+	}
+	if env.Error.Code != model.ErrReadOnlyViolation {
+		t.Errorf("expected READ_ONLY_VIOLATION, got %s", env.Error.Code)
+	}
+}
+
+// --- Galleries integration tests ---
+
+func TestGalleriesListJSON(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true)
+	err := galleriesListCmd.RunE(cmd, nil)
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true, got error: %v", env.Error)
+	}
+	if env.Meta.Command != "galleries.list" {
+		t.Errorf("expected command=galleries.list, got %s", env.Meta.Command)
+	}
+}
+
+func TestGalleriesPhotosJSON(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true)
+	err := galleriesPhotosCmd.RunE(cmd, []string{"gallery-1"})
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true, got error: %v", env.Error)
+	}
+	if env.Meta.Command != "galleries.photos" {
+		t.Errorf("expected command=galleries.photos, got %s", env.Meta.Command)
+	}
+}
+
+// --- Groups integration tests ---
+
+func TestGroupsListJSON(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true)
+	err := groupsListCmd.RunE(cmd, nil)
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true, got error: %v", env.Error)
+	}
+	if env.Meta.Command != "groups.list" {
+		t.Errorf("expected command=groups.list, got %s", env.Meta.Command)
+	}
+}
+
+func TestGroupsSearchJSON(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true)
+	err := groupsSearchCmd.RunE(cmd, []string{"photography"})
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true, got error: %v", env.Error)
+	}
+	if env.Meta.Command != "groups.search" {
+		t.Errorf("expected command=groups.search, got %s", env.Meta.Command)
+	}
+}
+
+// --- Comments integration tests ---
+
+func TestCommentsListJSON(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true)
+	err := commentsListCmd.RunE(cmd, []string{"p1"})
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true, got error: %v", env.Error)
+	}
+	if env.Meta.Command != "comments.list" {
+		t.Errorf("expected command=comments.list, got %s", env.Meta.Command)
+	}
+}
+
+func TestCommentsAddDryRun(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	err := commentsAddCmd.RunE(cmd, []string{"p1", "Nice photo!"})
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true for dry-run, got error: %v", env.Error)
+	}
+	data := env.Data.(map[string]any)
+	if data["planned"] != true {
+		t.Errorf("expected planned=true, got %v", data["planned"])
+	}
+}
+
+func TestCommentsDeleteRequiresConfirm(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true)
+	err := commentsDeleteCmd.RunE(cmd, []string{"comment-1"})
+	if err == nil {
+		t.Fatal("expected error without --confirm")
+	}
+
+	env := parseEnvelope(t, buf)
+	if env.OK {
+		t.Fatal("expected ok=false")
+	}
+	if env.Error.Code != model.ErrConfirmationRequired {
+		t.Errorf("expected CONFIRMATION_REQUIRED, got %s", env.Error.Code)
+	}
+}
+
+func TestCommentsDeleteReadOnly(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true, &AppContext{ReadOnly: true, Confirm: true})
+	err := commentsDeleteCmd.RunE(cmd, []string{"comment-1"})
+	if err == nil {
+		t.Fatal("expected error with --read-only")
+	}
+
+	env := parseEnvelope(t, buf)
+	if env.OK {
+		t.Fatal("expected ok=false")
+	}
+	if env.Error.Code != model.ErrReadOnlyViolation {
+		t.Errorf("expected READ_ONLY_VIOLATION, got %s", env.Error.Code)
+	}
+}
+
+// --- Contacts integration tests ---
+
+func TestContactsListJSON(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true)
+	err := contactsListCmd.RunE(cmd, nil)
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true, got error: %v", env.Error)
+	}
+	if env.Meta.Command != "contacts.list" {
+		t.Errorf("expected command=contacts.list, got %s", env.Meta.Command)
+	}
+}
+
+// --- Stats integration tests ---
+
+func TestStatsPopularJSON(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true)
+	err := statsPopularCmd.RunE(cmd, nil)
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true, got error: %v", env.Error)
+	}
+	if env.Meta.Command != "stats.popular" {
+		t.Errorf("expected command=stats.popular, got %s", env.Meta.Command)
+	}
+}
+
+// --- URLs integration tests ---
+
+func TestURLsLookupUserJSON(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true)
+	err := urlsLookupUserCmd.RunE(cmd, []string{"https://flickr.com/testuser"})
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true, got error: %v", env.Error)
+	}
+	if env.Meta.Command != "urls.lookupUser" {
+		t.Errorf("expected command=urls.lookupUser, got %s", env.Meta.Command)
+	}
+}
+
+// --- Photos download dry-run test ---
+
+func TestPhotosDownloadDryRun(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	err := photosDownloadCmd.RunE(cmd, []string{"p1"})
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true for dry-run, got error: %v", env.Error)
+	}
+	data := env.Data.(map[string]any)
+	if data["planned"] != true {
+		t.Errorf("expected planned=true, got %v", data["planned"])
+	}
+}
+
 // --- RequireAuth strengthens: check error code, not just buf.Len ---
 
 func TestRequireAuthWritesErrorCode(t *testing.T) {

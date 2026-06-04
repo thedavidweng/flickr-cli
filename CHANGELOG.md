@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0] - 2026-06-03
+
+### Fixed
+- Implemented `albums add-photos` / `albums remove-photos` (documented but missing)
+- Implemented `--quiet` global flag (documented but missing)
+- Backup album mode: now correctly enumerates photos within each album instead of using album ID as photo ID
+- Backup album mode: directory names now use album title instead of photo title
+- Download skip counter now correctly reports skipped files (was counted as completed)
+- `--quiet` flag now actually suppresses human-readable output
+- `--no-color` flag now propagated to Renderer
+- EventWriter race condition: concurrent NDJSON event writes now serialized via mutex
+- HTTP client timeout for Piwigo and download clients (prevents indefinite hangs)
+- 429 (Too Many Requests) automatic retry with `Retry-After` header support
+- Response body size limit (10 MB) on all API reads to prevent memory exhaustion
+- `ErrorBody.Category` now correctly set for all error codes (was only set for safety errors)
+- `ErrorBody.Retryable` now correctly set for transient errors (429, 5xx, network failures)
+- `albums update` now correctly passes `--primary-photo-id` to Flickr API
+- `photos rotate` now validates degrees client-side (must be 90, 180, or 270)
+- Documentation inconsistencies across README, COMMANDS, ARCHITECTURE, and safety docs
+- `go.mod`: `modernc.org/sqlite` correctly classified as direct dependency
+
+### Removed
+- Unused `low-write` safety risk level (dead code)
+- Misleading `--resume` flag (existing files are already skipped by default; use `--force` to overwrite)
+- Unused model types (`Photo`, `User`, `Tag`, `Visibility`, `Dates`, `Location`, `PhotoURLs`)
+- Unused backup templates and template functions
+- Unused `BackupPlanOptions` fields, `withClient` wrapper, dead `fmt.Sprintf` statements
+
 ## [1.0.0] - 2026-06-02
 
 Initial release.

@@ -13,24 +13,26 @@ const appContextKey contextKey = "appContext"
 
 // AppContext holds runtime state populated from flags and environment.
 type AppContext struct {
-	ConfigFile  string
-	Profile     string
-	JSON        bool
-	Pretty      bool
-	Compact     bool
-	Full        bool
-	Events      bool
-	ReadOnly    bool
-	DryRun      bool
-	Confirm     bool
-	Timeout     time.Duration
-	Retries     int
-	Concurrency int
-	NoColor     bool
-	Verbose     bool
-	Debug       bool
-	RequestID   string
-	StartedAt   time.Time
+	ConfigFile      string
+	Profile         string
+	JSON            bool
+	Pretty          bool
+	Compact         bool
+	Full            bool
+	Quiet           bool
+	Events          bool
+	ReadOnly        bool
+	DryRun          bool
+	Confirm         bool
+	Timeout         time.Duration
+	Retries         int
+	Concurrency     int
+	NoColor         bool
+	Verbose         bool
+	Debug           bool
+	RequestID       string
+	StartedAt       time.Time
+	RequestInterval time.Duration
 }
 
 // WithAppContext stores AppContext in the context.

@@ -18,12 +18,7 @@ var galleriesListCmd = &cobra.Command{
 	Short: "List galleries",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "galleries.list",
 			Profile:   app.Profile,
@@ -89,12 +84,7 @@ var galleriesPhotosCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "galleries.photos",
 			Profile:   app.Profile,

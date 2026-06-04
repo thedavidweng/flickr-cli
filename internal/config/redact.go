@@ -10,8 +10,6 @@ var SensitiveFields = []string{
 	"request_secret",
 	"consumer_secret",
 	"password",
-	"mysql_password",
-	"dsn",
 }
 
 // Redactor redacts sensitive values from strings.
@@ -21,6 +19,7 @@ type Redactor struct {
 
 // NewRedactor creates a Redactor that will redact the given secret values.
 // Empty values are ignored.
+// Currently only used in tests; kept as a utility for future use.
 func NewRedactor(values ...string) Redactor {
 	var secrets []string
 	for _, v := range values {
@@ -56,6 +55,7 @@ func (r Redactor) String(s string) string {
 
 // RedactMap returns a copy of m with sensitive field values redacted.
 // Keys containing "secret", "password", "token_secret", "api_secret", or "dsn" are sensitive.
+// Currently only used in tests; kept as a utility for future use.
 func RedactMap(m map[string]any) map[string]any {
 	result := make(map[string]any, len(m))
 	for k, v := range m {

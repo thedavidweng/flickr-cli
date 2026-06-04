@@ -37,3 +37,23 @@ func TestPhotosSearchHelp(t *testing.T) {
 		t.Error("expected help output")
 	}
 }
+
+func TestPhotosListHasPageFlags(t *testing.T) {
+	flags := photosListCmd.Flags()
+
+	pageFlag := flags.Lookup("page")
+	if pageFlag == nil {
+		t.Fatal("expected --page flag to be registered on photosListCmd")
+	}
+	if pageFlag.DefValue != "1" {
+		t.Errorf("expected --page default=1, got %s", pageFlag.DefValue)
+	}
+
+	perPageFlag := flags.Lookup("per-page")
+	if perPageFlag == nil {
+		t.Fatal("expected --per-page flag to be registered on photosListCmd")
+	}
+	if perPageFlag.DefValue != "50" {
+		t.Errorf("expected --per-page default=50, got %s", perPageFlag.DefValue)
+	}
+}

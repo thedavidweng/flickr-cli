@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -43,19 +42,6 @@ func SafeName(input string, fallback string) string {
 	return result.String()
 }
 
-// UniqueName generates a unique filename to avoid conflicts.
-func UniqueName(dir string, base string, photoID string) string {
-	ext := filepath.Ext(base)
-	name := strings.TrimSuffix(base, ext)
-
-	fullPath := filepath.Join(dir, base)
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-		return base
-	}
-
-	return fmt.Sprintf("%s-%s%s", name, photoID, ext)
-}
-
 // IDDirsPath generates the path for an id-dirs backup.
 func IDDirsPath(dest string, photoID string, ext string) string {
 	h := md5.New()
@@ -63,36 +49,4 @@ func IDDirsPath(dest string, photoID string, ext string) string {
 	hash := fmt.Sprintf("%x", h.Sum(nil))
 
 	return filepath.Join(dest, hash[0:2], hash[2:4], photoID, photoID+"."+ext)
-}
-
-// AtomicWriteFile writes data to a temp file and then atomically renames it.
-func AtomicWriteFile(path string, r io.Reader, mode os.FileMode) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("creating dir: %w", err)
-	}
-
-	tmp := path + ".tmp"
-	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
-	if err != nil {
-		return fmt.Errorf("creating temp file: %w", err)
-	}
-
-	if _, err := io.Copy(f, r); err != nil {
-		f.Close()
-		os.Remove(tmp)
-		return fmt.Errorf("writing file: %w", err)
-	}
-
-	if err := f.Close(); err != nil {
-		os.Remove(tmp)
-		return err
-	}
-
-	if err := os.Rename(tmp, path); err != nil {
-		os.Remove(tmp)
-		return err
-	}
-
-	return nil
 }

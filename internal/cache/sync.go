@@ -22,7 +22,7 @@ type SyncResult struct {
 }
 
 // Sync synchronizes the cache with Flickr.
-func Sync(ctx context.Context, db *DB, client *flickr.Client, opts SyncOptions) (*SyncResult, error) {
+func Sync(ctx context.Context, db *DB, client flickr.FlickrAPI, opts SyncOptions) (*SyncResult, error) {
 	result := &SyncResult{}
 
 	if opts.Albums {
@@ -44,22 +44,13 @@ func Sync(ctx context.Context, db *DB, client *flickr.Client, opts SyncOptions) 
 	return result, nil
 }
 
-func syncAlbums(ctx context.Context, db *DB, client *flickr.Client) (int, error) {
+func syncAlbums(ctx context.Context, db *DB, client flickr.FlickrAPI) (int, error) {
 	params := map[string]string{
 		"user_id":  "me",
 		"per_page": "500",
 	}
 
-	var result struct {
-		Photosets struct {
-			Photoset []struct {
-				ID    string `json:"id"`
-				Title struct {
-					Content string `json:"_content"`
-				} `json:"title"`
-			} `json:"photoset"`
-		} `json:"photosets"`
-	}
+	var result flickr.PhotosetListResponse
 
 	if err := client.Call(ctx, "flickr.photosets.getList", params, &result); err != nil {
 		return 0, err
@@ -77,41 +68,44 @@ func syncAlbums(ctx context.Context, db *DB, client *flickr.Client) (int, error)
 	return count, nil
 }
 
-func syncPhotos(ctx context.Context, db *DB, client *flickr.Client, limit int) (int, error) {
+func syncPhotos(ctx context.Context, db *DB, client flickr.FlickrAPI, limit int) (int, error) {
 	perPage := 500
 	if limit > 0 && limit < perPage {
 		perPage = limit
 	}
 
-	params := map[string]string{
-		"user_id":  "me",
-		"per_page": fmt.Sprintf("%d", perPage),
-		"page":     "1",
-	}
-
-	var result struct {
-		Photos struct {
-			Photo []struct {
-				ID string `json:"id"`
-			} `json:"photo"`
-			Pages int `json:"pages"`
-		} `json:"photos"`
-	}
-
-	if err := client.Call(ctx, "flickr.people.getPhotos", params, &result); err != nil {
-		return 0, err
-	}
-
 	count := 0
-	for _, p := range result.Photos.Photo {
-		payload, _ := json.Marshal(p)
-		if err := db.UpsertPhoto(p.ID, string(payload)); err != nil {
+	page := 1
+
+	for {
+		params := map[string]string{
+			"user_id":  "me",
+			"per_page": fmt.Sprintf("%d", perPage),
+			"page":     fmt.Sprintf("%d", page),
+			"extras":   flickr.DefaultExtras,
+		}
+
+		var result flickr.PhotoListResponse
+
+		if err := client.Call(ctx, "flickr.people.getPhotos", params, &result); err != nil {
 			return count, err
 		}
-		count++
-		if limit > 0 && count >= limit {
+
+		for _, p := range result.Photos.Photo {
+			payload, _ := json.Marshal(p)
+			if err := db.UpsertPhoto(p.ID, string(payload)); err != nil {
+				return count, err
+			}
+			count++
+			if limit > 0 && count >= limit {
+				return count, nil
+			}
+		}
+
+		if result.Photos.Pages == 0 || page >= result.Photos.Pages {
 			break
 		}
+		page++
 	}
 
 	return count, nil

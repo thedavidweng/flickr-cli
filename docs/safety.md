@@ -26,6 +26,8 @@ Required for high-risk operations:
 
 - `photos delete`
 - `albums delete`
+- `comments delete`
+- `piwigo import`
 
 ```bash
 flickr photos delete 123456 --confirm
@@ -43,6 +45,8 @@ These operations are destructive and irreversible. They are blocked unless
 |---------|-------------|
 | `photos delete` | Permanently delete a photo |
 | `albums delete` | Permanently delete an album |
+| `comments delete` | Permanently delete a comment |
+| `piwigo import` | Import photos from Piwigo |
 
 ```bash
 # Blocked without --confirm
@@ -62,7 +66,7 @@ actions without executing. `--confirm` is **not** required.
 | Command | Description |
 |---------|-------------|
 | `photos upload` | Upload local photos to Flickr |
-| `photos set-meta` | Set title and description |
+| `photos set-meta` | Set photo title/description |
 | `photos set-tags` | Replace all tags |
 | `photos add-tags` | Add tags to a photo |
 | `photos remove-tag` | Remove a single tag |
@@ -71,7 +75,9 @@ actions without executing. `--confirm` is **not** required.
 | `photos rotate` | Rotate a photo |
 | `albums create` | Create a new album |
 | `albums update` | Rename or retitle an album |
-| `piwigo import` | Import photos from Piwigo |
+| `favorites add` | Add a photo to favorites |
+| `favorites remove` | Remove a photo from favorites |
+| `comments add` | Add a comment to a photo |
 
 ```bash
 # Blocked by --read-only
@@ -119,5 +125,3 @@ The following fields are automatically redacted in output:
 - `access_secret`
 - `consumer_secret`
 - `password`
-- `mysql_password`
-- Passwords in DSN strings

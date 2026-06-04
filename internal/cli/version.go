@@ -29,12 +29,7 @@ var versionCmd = &cobra.Command{
 	Short: "Show version information",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 
 		data := VersionData{
 			Version:       Version,

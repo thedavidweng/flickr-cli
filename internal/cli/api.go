@@ -2,7 +2,6 @@ package cli
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
@@ -20,12 +19,7 @@ var apiCallCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "api.call",
 			Profile:   app.Profile,
@@ -76,12 +70,7 @@ var apiMethodsCmd = &cobra.Command{
 	Short: "List available API methods",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "api.methods",
 			Profile:   app.Profile,
@@ -111,12 +100,7 @@ var apiMethodInfoCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "api.method-info",
 			Profile:   app.Profile,
@@ -148,6 +132,4 @@ func init() {
 	apiCmd.AddCommand(apiCallCmd)
 	apiCmd.AddCommand(apiMethodsCmd)
 	apiCmd.AddCommand(apiMethodInfoCmd)
-
-	_ = fmt.Sprintf("api commands registered")
 }

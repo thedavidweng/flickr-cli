@@ -163,3 +163,21 @@ func TestSuccessNotJSON(t *testing.T) {
 		t.Error("expected no output for non-JSON success")
 	}
 }
+
+func TestHumanQuiet(t *testing.T) {
+	out := new(bytes.Buffer)
+	r := Renderer{Out: out, Quiet: true}
+	r.Human("hello %s\n", "world")
+	if out.Len() != 0 {
+		t.Errorf("expected no output when Quiet=true, got %q", out.String())
+	}
+}
+
+func TestHumanNotQuiet(t *testing.T) {
+	out := new(bytes.Buffer)
+	r := Renderer{Out: out, Quiet: false}
+	r.Human("hello %s\n", "world")
+	if out.String() != "hello world\n" {
+		t.Errorf("expected 'hello world\\n', got %q", out.String())
+	}
+}

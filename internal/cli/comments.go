@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
+	"github.com/thedavidweng/flickr-cli/internal/safety"
 	"github.com/spf13/cobra"
 )
 
@@ -17,12 +18,7 @@ var commentsListCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "comments.list",
 			Profile:   app.Profile,
@@ -76,12 +72,7 @@ var commentsAddCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "comments.add",
 			Profile:   app.Profile,
@@ -95,6 +86,24 @@ var commentsAddCmd = &cobra.Command{
 		}
 		if err := requireAuth(&r, meta, client); err != nil {
 			return err
+		}
+
+		// Safety gate
+		gate := safety.Check(safety.GateInput{
+			ReadOnly: app.ReadOnly,
+			DryRun:   app.DryRun,
+			Confirm:  app.Confirm,
+		}, safety.Mutation{
+			Command: "comments.add",
+			Method:  "flickr.photos.comments.addComment",
+			Risk:    safety.ClassifyRisk("comments.add"),
+		})
+		if gate.Error != nil {
+			return r.Failure(meta, *gate.Error)
+		}
+		if gate.Planned {
+			r.Human("Would add comment to photo %s\n", args[0])
+			return r.Success(meta, map[string]any{"planned": true}, nil)
 		}
 
 		params := map[string]string{
@@ -123,12 +132,7 @@ var commentsDeleteCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "comments.delete",
 			Profile:   app.Profile,
@@ -144,12 +148,22 @@ var commentsDeleteCmd = &cobra.Command{
 			return err
 		}
 
-		if !app.Confirm {
-			return r.Failure(meta, output.ErrorWithDetails(
-				model.ErrConfirmationRequired,
-				"Use --confirm to delete this comment",
-				map[string]any{"comment_id": args[0]},
-			))
+		// Safety gate
+		gate := safety.Check(safety.GateInput{
+			ReadOnly: app.ReadOnly,
+			DryRun:   app.DryRun,
+			Confirm:  app.Confirm,
+		}, safety.Mutation{
+			Command: "comments.delete",
+			Method:  "flickr.photos.comments.deleteComment",
+			Risk:    safety.ClassifyRisk("comments.delete"),
+		})
+		if gate.Error != nil {
+			return r.Failure(meta, *gate.Error)
+		}
+		if gate.Planned {
+			r.Human("Would delete comment %s\n", args[0])
+			return r.Success(meta, map[string]any{"planned": true}, nil)
 		}
 
 		params := map[string]string{

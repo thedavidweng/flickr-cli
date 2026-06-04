@@ -86,7 +86,7 @@ func TestMediumWriteAllowed(t *testing.T) {
 
 func TestLowWriteAllowed(t *testing.T) {
 	input := GateInput{}
-	mutation := Mutation{Command: "albums.create", Risk: RiskLowWrite}
+	mutation := Mutation{Command: "albums.create", Risk: RiskMediumWrite}
 
 	result := Check(input, mutation)
 	if !result.Allowed {
@@ -95,13 +95,33 @@ func TestLowWriteAllowed(t *testing.T) {
 }
 
 func TestClassifyRisk(t *testing.T) {
-	if ClassifyRisk("photos.delete") != RiskHighWrite {
-		t.Error("photos.delete should be high write")
+	// High-risk commands
+	highRisk := []string{"photos.delete", "albums.delete", "comments.delete", "piwigo.import"}
+	for _, cmd := range highRisk {
+		if ClassifyRisk(cmd) != RiskHighWrite {
+			t.Errorf("%s should be high write", cmd)
+		}
 	}
-	if ClassifyRisk("photos.upload") != RiskMediumWrite {
-		t.Error("photos.upload should be medium write")
+
+	// Medium-risk commands
+	mediumRisk := []string{
+		"albums.create", "albums.update",
+		"photos.upload", "photos.set-meta", "photos.set-tags", "photos.add-tags",
+		"photos.remove-tag", "photos.set-privacy", "photos.set-location", "photos.rotate",
+		"favorites.add", "favorites.remove",
+		"comments.add",
 	}
-	if ClassifyRisk("photos.list") != RiskRead {
-		t.Error("photos.list should be read")
+	for _, cmd := range mediumRisk {
+		if ClassifyRisk(cmd) != RiskMediumWrite {
+			t.Errorf("%s should be medium write", cmd)
+		}
+	}
+
+	// Read commands
+	readCmds := []string{"photos.list", "photos.search", "photos.show", "albums.list", "albums.show", "favorites.list", "galleries.list", "groups.list", "contacts.list", "stats.popular", "api.call", "version"}
+	for _, cmd := range readCmds {
+		if ClassifyRisk(cmd) != RiskRead {
+			t.Errorf("%s should be read", cmd)
+		}
 	}
 }

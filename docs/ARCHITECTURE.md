@@ -17,7 +17,7 @@ internal/
   cache/              SQLite cache for album/photo metadata
   checksum/           Machine tag parsing, hash computation, verification
   safety/             Safety gates, risk classification, audit logging
-  piwigo/             Piwigo database reading and import logic
+  piwigo/             Piwigo REST API client and import logic
   testutil/           Fake Flickr server and test helpers
 ```
 
@@ -65,6 +65,10 @@ The client is built in-house (see [ADR-0001](adr/0001-own-flickr-client.md)).
 | `pagination.go` | `FetchAll()` generic pagination helper |
 | `reflection.go` | `GetMethods()` and `GetMethodInfo()` wrappers |
 | `endpoints.go` | Default and custom endpoint URLs |
+| `api.go` | `FlickrAPI` interface for testability |
+| `types.go` | API response types and request/response structs |
+| `urls.go` | URL lookup helpers |
+| `errors.go` | `FlickrError` type and error formatting |
 
 Key design decisions:
 - All API calls go through `Call()` (typed) or `CallRaw()` (raw JSON)
@@ -88,8 +92,24 @@ profiles:
     user:
       nsid: "12345@N01"
       username: "example"
+      fullname: "Example User"
     created_at: "2026-06-02T12:00:00Z"
     updated_at: "2026-06-02T12:00:00Z"
+    cache_path: "~/.cache/flickr-cli/default.sqlite"
+    audit_log_path: "~/.local/state/flickr-cli/audit-default.jsonl"
+    backup:
+      dest: "./flickr-backup"
+      metadata: "json"
+      resume: false
+    upload:
+      dedupe: "checksum"
+      hash: "md5"
+    endpoints:
+      rest: "https://api.flickr.com/services/rest/"
+      upload: "https://api.flickr.com/services/upload/"
+      request_token: "https://www.flickr.com/services/oauth/request_token"
+      authorize: "https://www.flickr.com/services/oauth/authorize"
+      access_token: "https://www.flickr.com/services/oauth/access_token"
 ```
 
 Credential resolution priority:
@@ -104,7 +124,6 @@ Every mutation command passes through a safety gate before execution.
 
 Risk levels:
 - **read** — no mutation, always allowed
-- **low-write** — blocked by `--read-only`, supports `--dry-run`
 - **medium-write** — blocked by `--read-only`, supports `--dry-run`
 - **high-write** — blocked by `--read-only`, requires `--confirm`
 
@@ -133,5 +152,8 @@ Every command produces output through the `Renderer`:
 |-----------|---------|
 | `github.com/spf13/cobra` | CLI framework |
 | `gopkg.in/yaml.v3` | Config file parsing |
-| `modernc.org/sqlite` | Cache database (pure Go, no CGO) |
 | `github.com/google/uuid` | Request IDs |
+| `modernc.org/sqlite` | Cache database (pure Go, no CGO) |
+
+Indirect dependencies (transitive): `go-humanize`, `go-isatty`, `go-strftime`,
+`bigfft`, `pflag`, `mousetrap`, and `modernc.org/{libc,mathutil,memory}`.

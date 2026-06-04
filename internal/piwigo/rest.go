@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 // Client is a Piwigo REST API client.
@@ -23,7 +24,7 @@ type Client struct {
 func NewClient(baseURL, username, password string) *Client {
 	return &Client{
 		BaseURL:  strings.TrimRight(baseURL, "/"),
-		HTTP:     &http.Client{},
+		HTTP:     &http.Client{Timeout: 30 * time.Second},
 		Username: username,
 		Password: password,
 	}
@@ -221,7 +222,7 @@ func (c *Client) call(ctx context.Context, method string, params map[string]stri
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024))
 	if err != nil {
 		return fmt.Errorf("reading response: %w", err)
 	}

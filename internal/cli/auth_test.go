@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/testutil"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
@@ -94,11 +93,6 @@ func TestReadFrom(t *testing.T) {
 }
 
 func TestLocalhostCallback(t *testing.T) {
-	client := &flickr.Client{
-		APIKey:    "test-key",
-		APISecret: "test-secret",
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -106,19 +100,18 @@ func TestLocalhostCallback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to find free port: %v", err)
 	}
-	port := ln.Addr().(*net.TCPAddr).Port
-	ln.Close()
 
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		url := fmt.Sprintf("http://localhost:%d/?oauth_verifier=test-verifier", port)
+		addr := ln.Addr().(*net.TCPAddr)
+		url := fmt.Sprintf("http://localhost:%d/?oauth_verifier=test-verifier", addr.Port)
 		resp, err := http.Get(url)
 		if err == nil {
 			resp.Body.Close()
 		}
 	}()
 
-	verifier, err := localhostCallback(ctx, client, "test-token", "read", port)
+	verifier, err := waitForCallback(ctx, ln)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -129,11 +122,6 @@ func TestLocalhostCallback(t *testing.T) {
 }
 
 func TestLocalhostCallbackMissingVerifier(t *testing.T) {
-	client := &flickr.Client{
-		APIKey:    "test-key",
-		APISecret: "test-secret",
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -141,19 +129,18 @@ func TestLocalhostCallbackMissingVerifier(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to find free port: %v", err)
 	}
-	port := ln.Addr().(*net.TCPAddr).Port
-	ln.Close()
 
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		url := fmt.Sprintf("http://localhost:%d/", port)
+		addr := ln.Addr().(*net.TCPAddr)
+		url := fmt.Sprintf("http://localhost:%d/", addr.Port)
 		resp, err := http.Get(url)
 		if err == nil {
 			resp.Body.Close()
 		}
 	}()
 
-	_, err = localhostCallback(ctx, client, "test-token", "read", port)
+	_, err = waitForCallback(ctx, ln)
 	if err == nil {
 		t.Error("expected error for missing verifier")
 	}
@@ -226,7 +213,7 @@ profiles:
 	if env.Error == nil {
 		t.Fatal("expected error body")
 	}
-	if !strings.Contains(env.Error.Message, "verifier required in non-interactive mode") {
+	if !strings.Contains(env.Error.Message, "verifier code required in non-interactive mode") {
 		t.Errorf("expected 'verifier required in non-interactive mode', got: %s", env.Error.Message)
 	}
 }
@@ -289,11 +276,6 @@ func TestAuthLogoutDryRun(t *testing.T) {
 }
 
 func TestLocalhostCallbackContextCanceled(t *testing.T) {
-	client := &flickr.Client{
-		APIKey:    "test-key",
-		APISecret: "test-secret",
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -301,10 +283,8 @@ func TestLocalhostCallbackContextCanceled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to find free port: %v", err)
 	}
-	port := ln.Addr().(*net.TCPAddr).Port
-	ln.Close()
 
-	_, err = localhostCallback(ctx, client, "test-token", "read", port)
+	_, err = waitForCallback(ctx, ln)
 	if err == nil {
 		t.Error("expected error for canceled context")
 	}

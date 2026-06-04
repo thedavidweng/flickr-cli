@@ -80,14 +80,6 @@ func ExitCode(code string) int {
 	}
 }
 
-// RuntimeMetaInput provides the data needed to populate envelope Meta.
-type RuntimeMetaInput struct {
-	Command   string
-	Profile   string
-	RequestID string
-	StartedAt interface{ UnixMilli() int64 }
-}
-
 // CommandError is returned from RunE to propagate the error code to main's
 // exit-code logic.  Cobra sees a non-nil error and prints it to stderr;
 // main extracts the numeric exit code via ExitCode(err.Code).

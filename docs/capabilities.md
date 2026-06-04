@@ -47,12 +47,10 @@ This document describes the high-level capabilities of flickr-cli.
 
 ## Piwigo Import
 
-- MySQL database reading
-- File migration from Piwigo uploads directory
+- Piwigo REST API connection (no database access required)
+- Category-to-album mapping with configurable prefix
 - Tag and category mapping
-- Privacy level mapping
-- Geo data import
-- Checksum deduplication
+- MD5 checksum deduplication via Piwigo API
 - Resume interrupted imports
 
 ## API Access

@@ -8,9 +8,7 @@ type ImportOptions struct {
 	AlbumPrefix string
 	ImportAlbum string
 	Dedupe      string
-	Hash        string
 	Limit       int
-	Resume      bool
 }
 
 // ImportSummary is the result of a Piwigo import.

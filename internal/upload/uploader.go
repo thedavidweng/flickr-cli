@@ -3,6 +3,9 @@ package upload
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"sync"
 
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/model"
@@ -29,16 +32,17 @@ type UploadSummary struct {
 
 // Executor runs the upload plan.
 type Executor struct {
-	Client      *flickr.Client
+	Client      flickr.FlickrAPI
 	AuditPath   string
-	Events      output.EventWriter
+	Events      *output.EventWriter
 	Gate        safety.GateInput
 	Profile     string
 	RequestID   string
 	Concurrency int
+	MoveAfter   string
 }
 
-// Execute runs the upload plan and returns results.
+// Execute runs the upload plan concurrently and returns results.
 func (e *Executor) Execute(ctx context.Context, plan Plan, opts PlanOptions) (*UploadSummary, error) {
 	summary := &UploadSummary{
 		Planned: len(plan.Planned),
@@ -66,24 +70,51 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts PlanOptions) (*U
 		return summary, nil
 	}
 
-	// Process each file
-	for i, pu := range plan.Planned {
-		result, err := e.uploadSingle(ctx, pu, opts)
-		summary.Results[i] = result
-		if err != nil {
-			return summary, err
-		}
-
-		switch result.Status {
-		case "uploaded":
-			summary.Succeeded++
-		case "skipped":
-			summary.Skipped++
-		case "failed":
-			summary.Failed++
-		}
+	workers := e.Concurrency
+	if workers < 1 {
+		workers = 1
 	}
 
+	type indexedItem struct {
+		index int
+		plan  PlannedUpload
+	}
+
+	ch := make(chan indexedItem, len(plan.Planned))
+	for i, pu := range plan.Planned {
+		ch <- indexedItem{index: i, plan: pu}
+	}
+	close(ch)
+
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for item := range ch {
+				result, err := e.uploadSingle(ctx, item.plan, opts)
+				summary.Results[item.index] = result
+				if err != nil {
+					return
+				}
+
+				mu.Lock()
+				switch result.Status {
+				case "uploaded":
+					summary.Succeeded++
+				case "skipped":
+					summary.Skipped++
+				case "failed":
+					summary.Failed++
+				}
+				mu.Unlock()
+			}
+		}()
+	}
+
+	wg.Wait()
 	return summary, nil
 }
 
@@ -184,6 +215,26 @@ func (e *Executor) uploadSingle(ctx context.Context, pu PlannedUpload, opts Plan
 
 	result.Status = "uploaded"
 	result.PhotoID = uploadResult.PhotoID
+
+	// Move file after successful upload
+	if e.MoveAfter != "" {
+		if err := os.MkdirAll(e.MoveAfter, 0o755); err != nil {
+			e.Events.Emit(model.Event{
+				Type:    "warning",
+				Command: "photos.upload",
+				Message: fmt.Sprintf("failed to create move-after dir %s: %v", e.MoveAfter, err),
+			})
+		} else {
+			dest := filepath.Join(e.MoveAfter, filepath.Base(pu.LocalPath))
+			if err := os.Rename(pu.LocalPath, dest); err != nil {
+				e.Events.Emit(model.Event{
+					Type:    "warning",
+					Command: "photos.upload",
+					Message: fmt.Sprintf("failed to move %s to %s: %v", pu.LocalPath, dest, err),
+				})
+			}
+		}
+	}
 
 	// Audit the success
 	if e.AuditPath != "" {

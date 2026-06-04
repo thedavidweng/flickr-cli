@@ -21,7 +21,6 @@ type Risk string
 
 const (
 	RiskRead        Risk = "read"
-	RiskLowWrite    Risk = "low_write"
 	RiskMediumWrite Risk = "medium_write"
 	RiskHighWrite   Risk = "high_write"
 )

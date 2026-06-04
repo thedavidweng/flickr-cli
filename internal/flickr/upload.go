@@ -129,7 +129,7 @@ func (c *Client) Upload(ctx context.Context, filePath string, opts UploadOptions
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024))
 	if err != nil {
 		return nil, fmt.Errorf("reading response: %w", err)
 	}

@@ -11,34 +11,18 @@ import (
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
-	"github.com/thedavidweng/flickr-cli/internal/safety"
 )
 
 // Importer runs the Piwigo import.
 type Importer struct {
-	Events    output.EventWriter
-	Gate      safety.GateInput
+	Events    *output.EventWriter
 	Profile   string
 	RequestID string
-	Flickr    *flickr.Client
+	Flickr    flickr.FlickrAPI
 }
 
 // Import runs the Piwigo import.
 func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSummary, error) {
-	gateResult := safety.Check(i.Gate, safety.Mutation{
-		Command: "piwigo.import",
-		Method:  "flickr.upload",
-		Risk:    safety.RiskMediumWrite,
-	})
-
-	if gateResult.Error != nil {
-		return nil, fmt.Errorf("%s", gateResult.Error.Message)
-	}
-
-	if gateResult.Planned {
-		return &ImportSummary{Planned: 0}, nil
-	}
-
 	// Create Piwigo client
 	piwigo := NewClient(opts.URL, opts.Username, opts.Password)
 
@@ -84,7 +68,7 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 					if err == nil && exists[img.MD5Sum] {
 						summary.Skipped++
 						i.Events.Emit(model.Event{
-							Type:    "import_skipped",
+							Type:    string(StateSkippedExist),
 							PhotoID: img.ID,
 							Message: "already exists (checksum match)",
 						})
@@ -98,7 +82,7 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 				if err != nil {
 					summary.Failed++
 					i.Events.Emit(model.Event{
-						Type:    "import_failed",
+						Type:    string(StateFailed),
 						PhotoID: img.ID,
 						Message: fmt.Sprintf("download failed: %v", err),
 					})
@@ -123,7 +107,7 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 				if err != nil {
 					summary.Failed++
 					i.Events.Emit(model.Event{
-						Type:    "import_failed",
+						Type:    string(StateFailed),
 						PhotoID: img.ID,
 						Message: fmt.Sprintf("upload failed: %v", err),
 					})
@@ -141,9 +125,25 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 					}
 				}
 
+				// Transfer geo-location if available
+				if img.Latitude != 0 || img.Longitude != 0 {
+					geoParams := map[string]string{
+						"photo_id": result.PhotoID,
+						"lat":      fmt.Sprintf("%f", img.Latitude),
+						"lon":      fmt.Sprintf("%f", img.Longitude),
+					}
+					if err := i.Flickr.Call(ctx, "flickr.photos.geo.setLocation", geoParams, nil); err != nil {
+						i.Events.Emit(model.Event{
+							Type:    string(StateGeoDone),
+							PhotoID: img.ID,
+							Message: fmt.Sprintf("geo-location transfer failed: %v", err),
+						})
+					}
+				}
+
 				summary.Succeeded++
 				i.Events.Emit(model.Event{
-					Type:    "import_success",
+					Type:    string(StateDone),
 					PhotoID: img.ID,
 					Message: fmt.Sprintf("uploaded as %s", result.PhotoID),
 				})

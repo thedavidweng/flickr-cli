@@ -11,13 +11,13 @@ import (
 
 // AlbumResolver handles album lookup and creation during uploads.
 type AlbumResolver struct {
-	Client *flickr.Client
+	Client flickr.FlickrAPI
 	cache  map[string]string // lowercase title -> id
 	mu     sync.Mutex
 }
 
 // NewAlbumResolver creates a new AlbumResolver.
-func NewAlbumResolver(client *flickr.Client) *AlbumResolver {
+func NewAlbumResolver(client flickr.FlickrAPI) *AlbumResolver {
 	return &AlbumResolver{
 		Client: client,
 		cache:  make(map[string]string),
@@ -34,16 +34,7 @@ func (r *AlbumResolver) Load(ctx context.Context) error {
 		"per_page": "500",
 	}
 
-	var result struct {
-		Photosets struct {
-			Photoset []struct {
-				ID    string `json:"id"`
-				Title struct {
-					Content string `json:"_content"`
-				} `json:"title"`
-			} `json:"photoset"`
-		} `json:"photosets"`
-	}
+	var result flickr.PhotosetListResponse
 
 	if err := r.Client.Call(ctx, "flickr.photosets.getList", params, &result); err != nil {
 		return fmt.Errorf("loading albums: %w", err)

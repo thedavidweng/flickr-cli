@@ -5,6 +5,7 @@ import (
 
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
+	"github.com/thedavidweng/flickr-cli/internal/safety"
 	"github.com/spf13/cobra"
 )
 
@@ -18,12 +19,7 @@ var favoritesListCmd = &cobra.Command{
 	Short: "List favorite photos",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "favorites.list",
 			Profile:   app.Profile,
@@ -92,12 +88,7 @@ var favoritesAddCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "favorites.add",
 			Profile:   app.Profile,
@@ -111,6 +102,24 @@ var favoritesAddCmd = &cobra.Command{
 		}
 		if err := requireAuth(&r, meta, client); err != nil {
 			return err
+		}
+
+		// Safety gate
+		gate := safety.Check(safety.GateInput{
+			ReadOnly: app.ReadOnly,
+			DryRun:   app.DryRun,
+			Confirm:  app.Confirm,
+		}, safety.Mutation{
+			Command: "favorites.add",
+			Method:  "flickr.favorites.add",
+			Risk:    safety.ClassifyRisk("favorites.add"),
+		})
+		if gate.Error != nil {
+			return r.Failure(meta, *gate.Error)
+		}
+		if gate.Planned {
+			r.Human("Would add %s to favorites\n", args[0])
+			return r.Success(meta, map[string]any{"planned": true}, nil)
 		}
 
 		params := map[string]string{
@@ -132,12 +141,7 @@ var favoritesRemoveCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetAppContext(cmd.Context())
-		r := output.Renderer{
-			Out:    cmd.OutOrStdout(),
-			Err:    cmd.ErrOrStderr(),
-			JSON:   app.JSON,
-			Pretty: app.Pretty,
-		}
+		r := newRenderer(app, cmd)
 		meta := output.RuntimeMetaInput{
 			Command:   "favorites.remove",
 			Profile:   app.Profile,
@@ -151,6 +155,24 @@ var favoritesRemoveCmd = &cobra.Command{
 		}
 		if err := requireAuth(&r, meta, client); err != nil {
 			return err
+		}
+
+		// Safety gate
+		gate := safety.Check(safety.GateInput{
+			ReadOnly: app.ReadOnly,
+			DryRun:   app.DryRun,
+			Confirm:  app.Confirm,
+		}, safety.Mutation{
+			Command: "favorites.remove",
+			Method:  "flickr.favorites.remove",
+			Risk:    safety.ClassifyRisk("favorites.remove"),
+		})
+		if gate.Error != nil {
+			return r.Failure(meta, *gate.Error)
+		}
+		if gate.Planned {
+			r.Human("Would remove %s from favorites\n", args[0])
+			return r.Success(meta, map[string]any{"planned": true}, nil)
 		}
 
 		params := map[string]string{

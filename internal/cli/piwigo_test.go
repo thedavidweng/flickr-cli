@@ -23,22 +23,15 @@ func TestPiwigoImportMissingFlags(t *testing.T) {
 
 	cmd, buf := cmdContext(t, cfg, true)
 	// Register piwigo flags so RunE can read them with their zero values
-	cmd.Flags().String("uploads", "", "")
-	cmd.Flags().String("mysql-db", "", "")
-	cmd.Flags().String("mysql-host", "localhost", "")
-	cmd.Flags().Int("mysql-port", 3306, "")
-	cmd.Flags().String("mysql-user", "", "")
-	cmd.Flags().String("mysql-password", "", "")
-	cmd.Flags().String("mysql-password-env", "", "")
-	cmd.Flags().String("table-prefix", "", "")
+	cmd.Flags().String("url", "", "")
+	cmd.Flags().String("user", "", "")
+	cmd.Flags().String("password", "", "")
 	cmd.Flags().String("album-prefix", "", "")
 	cmd.Flags().String("import-album", "", "")
 	cmd.Flags().String("dedupe", "", "")
-	cmd.Flags().String("hash", "", "")
 	cmd.Flags().Int("limit", 0, "")
-	cmd.Flags().Bool("resume", false, "")
 
-	// Call without setting --uploads or --mysql-db
+	// Call without setting --url, --user, or --password
 	err := piwigoImportCmd.RunE(cmd, nil)
 	if err == nil {
 		t.Fatal("expected error for missing required flags")
