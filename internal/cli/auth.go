@@ -431,7 +431,6 @@ func oobAuthorize(ctx context.Context, r *output.Renderer, client *flickr.Client
 // for an OAuth callback containing the verifier.
 func waitForCallback(ctx context.Context, ln net.Listener) (string, error) {
 	verifierCh := make(chan string, 1)
-	errCh := make(chan error, 1)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
@@ -455,9 +454,6 @@ func waitForCallback(ctx context.Context, ln net.Listener) (string, error) {
 	case verifier := <-verifierCh:
 		_ = srv.Shutdown(ctx)
 		return verifier, nil
-	case err := <-errCh:
-		_ = srv.Shutdown(ctx)
-		return "", err
 	case <-ctx.Done():
 		_ = srv.Shutdown(ctx)
 		return "", ctx.Err()

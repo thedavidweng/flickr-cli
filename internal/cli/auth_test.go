@@ -123,8 +123,7 @@ func TestLocalhostCallback(t *testing.T) {
 }
 
 func TestLocalhostCallbackMissingVerifier(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -139,6 +138,8 @@ func TestLocalhostCallbackMissingVerifier(t *testing.T) {
 		if err == nil {
 			_ = resp.Body.Close()
 		}
+		// Cancel context after the no-verifier request returns 200
+		cancel()
 	}()
 
 	_, err = waitForCallback(ctx, ln)
