@@ -216,7 +216,7 @@ func selectByCode(sizes []Size, code string, info struct {
 		var best Size
 		found := false
 		for _, s := range sizes {
-			if s.Width <= info.maxDim || s.Height <= info.maxDim {
+			if s.Width <= info.maxDim && s.Height <= info.maxDim {
 				if !found || s.Width > best.Width {
 					best = s
 					found = true
@@ -259,7 +259,7 @@ func SelectSizeByMaxDimension(sizes []Size, maxPixels int) (Size, error) {
 	var best Size
 	found := false
 	for _, s := range sizes {
-		if s.Width <= maxPixels || s.Height <= maxPixels {
+		if s.Width <= maxPixels && s.Height <= maxPixels {
 			if !found || s.Width > best.Width {
 				best = s
 				found = true

@@ -360,14 +360,19 @@ func readFrom(r io.Reader) string {
 // to 0.0.0.0 so that browsers on other machines (reached via the server's
 // IP) can also complete the authorization.
 func localhostFlow(ctx context.Context, r *output.Renderer, client *flickr.Client, perms string, port int) (*flickr.RequestTokenResponse, string, error) {
-	ln, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
+	serverIP := detectOutboundIP()
+	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", serverIP, port))
 	if err != nil {
-		return nil, "", fmt.Errorf("listening on port %d: %w", port, err)
+		// Fallback to localhost if specific IP fails
+		serverIP = "127.0.0.1"
+		ln, err = net.Listen("tcp", fmt.Sprintf("%s:%d", serverIP, port))
+		if err != nil {
+			return nil, "", fmt.Errorf("listening on port %d: %w", port, err)
+		}
 	}
 	defer ln.Close()
 
 	addr := ln.Addr().(*net.TCPAddr)
-	serverIP := detectOutboundIP()
 	callbackURL := fmt.Sprintf("http://%s:%d", serverIP, addr.Port)
 
 	reqToken, err := client.RequestToken(ctx, callbackURL)

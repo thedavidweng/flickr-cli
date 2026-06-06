@@ -55,7 +55,6 @@ changelog:
       order: 999
   filters:
     exclude:
-      - "^docs:"
       - "^test:"
       - "^chore: release"
       - "^ci:"
@@ -129,8 +128,6 @@ brews:
       fish_completion.install "completions/flickr.fish"
     test: |
       system "#{bin}/flickr", "version"
-    extra_install: |
-      generate_completions_from_executable(bin/"flickr", "completion")
 
 scoops:
   - name: flickr
