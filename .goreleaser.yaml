@@ -95,6 +95,7 @@ release:
   extra_files:
     - glob: checksums.txt
     - glob: checksums.txt.sig
+    - glob: checksums.txt.cert
     - glob: flickr.sbom.json
 
 signs:
@@ -104,6 +105,7 @@ signs:
       - sign-blob
       - "--yes"
       - "--output-signature=${signature}"
+      - "--output-certificate=${certificate}"
       - "${artifact}"
 
 sboms:
