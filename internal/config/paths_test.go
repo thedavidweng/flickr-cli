@@ -12,12 +12,12 @@ func TestDefaultPathsXDG(t *testing.T) {
 	cacheDir := t.TempDir()
 	stateDir := t.TempDir()
 
-	os.Setenv("XDG_CONFIG_HOME", configDir)
-	os.Setenv("XDG_CACHE_HOME", cacheDir)
-	os.Setenv("XDG_STATE_HOME", stateDir)
-	defer os.Unsetenv("XDG_CONFIG_HOME")
-	defer os.Unsetenv("XDG_CACHE_HOME")
-	defer os.Unsetenv("XDG_STATE_HOME")
+	_ = os.Setenv("XDG_CONFIG_HOME", configDir)
+	_ = os.Setenv("XDG_CACHE_HOME", cacheDir)
+	_ = os.Setenv("XDG_STATE_HOME", stateDir)
+	defer func() { _ = os.Unsetenv("XDG_CONFIG_HOME") }()
+	defer func() { _ = os.Unsetenv("XDG_CACHE_HOME") }()
+	defer func() { _ = os.Unsetenv("XDG_STATE_HOME") }()
 
 	configPath := DefaultConfigPath()
 	expectedConfig := filepath.Join(configDir, "flickr-cli", "config.yaml")
@@ -40,9 +40,9 @@ func TestDefaultPathsXDG(t *testing.T) {
 
 func TestDefaultPathsFallback(t *testing.T) {
 	// Clear XDG vars
-	os.Unsetenv("XDG_CONFIG_HOME")
-	os.Unsetenv("XDG_CACHE_HOME")
-	os.Unsetenv("XDG_STATE_HOME")
+	_ = os.Unsetenv("XDG_CONFIG_HOME")
+	_ = os.Unsetenv("XDG_CACHE_HOME")
+	_ = os.Unsetenv("XDG_STATE_HOME")
 
 	configPath := DefaultConfigPath()
 	if configPath == "" {
