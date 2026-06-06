@@ -1,7 +1,7 @@
-run:
-  timeout: 5m
+version: "2"
 
 linters:
+  default: none
   enable:
     - errcheck
     - govet
@@ -16,27 +16,30 @@ linters:
     - unconvert
     - prealloc
 
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - performance
-      - style
-  misspell:
-    locale: US
-  goimports:
-    local-prefixes: github.com/thedavidweng/flickr-cli
+  settings:
+    errcheck:
+      check-type-assertions: true
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+        - style
+    misspell:
+      locale: US
+    goimports:
+      local-prefixes:
+        - github.com/thedavidweng/flickr-cli
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
 issues:
   exclude-rules:
-    # Allow unused parameters in test files
     - path: _test\.go
       linters:
         - unused
-        - unparam
-    # Allow duplicate code in test helpers
     - path: internal/testutil/
       linters:
         - dupl
