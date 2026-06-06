@@ -32,5 +32,5 @@ func (w *EventWriter) Emit(event model.Event) {
 	}
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	fmt.Fprintf(w.Err, "%s\n", b)
+	_, _ = fmt.Fprintf(w.Err, "%s\n", b)
 }

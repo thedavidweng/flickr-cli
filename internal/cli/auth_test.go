@@ -12,9 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thedavidweng/flickr-cli/internal/testutil"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
+
+	"github.com/thedavidweng/flickr-cli/internal/testutil"
 )
 
 func TestAuthHelp(t *testing.T) {
@@ -74,8 +75,8 @@ func TestReadLine(t *testing.T) {
 	os.Stdin = r
 
 	go func() {
-		fmt.Fprintln(w, "test input")
-		w.Close()
+		_, _ = fmt.Fprintln(w, "test input")
+		_ = w.Close()
 	}()
 
 	result := readLine()
@@ -103,11 +104,11 @@ func TestLocalhostCallback(t *testing.T) {
 
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		addr := ln.Addr().(*net.TCPAddr)
+		addr, _ := ln.Addr().(*net.TCPAddr)
 		url := fmt.Sprintf("http://localhost:%d/?oauth_verifier=test-verifier", addr.Port)
 		resp, err := http.Get(url)
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 	}()
 
@@ -132,11 +133,11 @@ func TestLocalhostCallbackMissingVerifier(t *testing.T) {
 
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		addr := ln.Addr().(*net.TCPAddr)
+		addr, _ := ln.Addr().(*net.TCPAddr)
 		url := fmt.Sprintf("http://localhost:%d/", addr.Port)
 		resp, err := http.Get(url)
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 	}()
 
@@ -173,7 +174,7 @@ profiles:
 	defer func() { os.Stdin = oldStdin }()
 	r, w, _ := os.Pipe()
 	os.Stdin = r
-	w.Close() // close write end so readLine() gets EOF immediately
+	_ = w.Close() // close write end so readLine() gets EOF immediately
 
 	buf := new(bytes.Buffer)
 	cmd := &cobra.Command{}
@@ -270,7 +271,7 @@ func TestAuthLogoutDryRun(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading config after dry-run: %v", err)
 	}
-	if string(origContent) != string(afterContent) {
+	if !bytes.Equal(origContent, afterContent) {
 		t.Error("config file should not be modified during dry-run")
 	}
 }

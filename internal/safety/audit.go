@@ -39,7 +39,7 @@ func Append(path string, ev AuditEvent) error {
 	if err != nil {
 		return fmt.Errorf("opening audit log: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	b, err := json.Marshal(ev)
 	if err != nil {

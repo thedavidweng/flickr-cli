@@ -11,10 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thedavidweng/flickr-cli/internal/model"
-	"github.com/thedavidweng/flickr-cli/internal/testutil"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
+
+	"github.com/thedavidweng/flickr-cli/internal/model"
+	"github.com/thedavidweng/flickr-cli/internal/testutil"
 )
 
 // setupFakeCLI creates a fake Flickr server and writes a config pointing at it.

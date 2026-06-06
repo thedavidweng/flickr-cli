@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thedavidweng/flickr-cli/internal/testutil"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
+
+	"github.com/thedavidweng/flickr-cli/internal/testutil"
 )
 
 func TestCacheHelp(t *testing.T) {

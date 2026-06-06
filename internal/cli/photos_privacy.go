@@ -1,10 +1,11 @@
 package cli
 
 import (
+	"github.com/spf13/cobra"
+
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
 	"github.com/thedavidweng/flickr-cli/internal/safety"
-	"github.com/spf13/cobra"
 )
 
 var photosSetPrivacyCmd = &cobra.Command{
@@ -53,9 +54,10 @@ var photosSetPrivacyCmd = &cobra.Command{
 			params["is_friend"] = "1"
 			params["is_family"] = "1"
 		}
-		if hidden == "hidden" {
+		switch hidden {
+		case "hidden":
 			params["hidden"] = "2"
-		} else if hidden == "public" {
+		case "public":
 			params["hidden"] = "1"
 		}
 

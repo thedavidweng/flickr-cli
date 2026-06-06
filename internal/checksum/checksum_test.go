@@ -9,7 +9,7 @@ import (
 func TestFileHashMD5(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.txt")
-	os.WriteFile(path, []byte("hello world"), 0o644)
+	_ = os.WriteFile(path, []byte("hello world"), 0o644)
 
 	hash, err := FileHash(path, "md5")
 	if err != nil {
@@ -27,7 +27,7 @@ func TestFileHashMD5(t *testing.T) {
 func TestFileHashSHA1(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.txt")
-	os.WriteFile(path, []byte("hello world"), 0o644)
+	_ = os.WriteFile(path, []byte("hello world"), 0o644)
 
 	hash, err := FileHash(path, "sha1")
 	if err != nil {
@@ -41,7 +41,7 @@ func TestFileHashSHA1(t *testing.T) {
 func TestFileHashInvalidAlgorithm(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.txt")
-	os.WriteFile(path, []byte("test"), 0o644)
+	_ = os.WriteFile(path, []byte("test"), 0o644)
 
 	_, err := FileHash(path, "sha256")
 	if err == nil {

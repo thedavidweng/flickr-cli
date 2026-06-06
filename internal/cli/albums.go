@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/spf13/cobra"
+
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
 	"github.com/thedavidweng/flickr-cli/internal/safety"
-	"github.com/spf13/cobra"
 )
 
 var albumsCmd = &cobra.Command{

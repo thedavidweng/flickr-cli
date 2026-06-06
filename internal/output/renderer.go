@@ -46,7 +46,7 @@ func (r *Renderer) Failure(metaInput RuntimeMetaInput, errBody model.ErrorBody) 
 		_ = r.writeJSON(metaInput, nil, nil, &errBody)
 	} else {
 		// Human-readable error to stderr
-		fmt.Fprintf(r.Err, "error: %s\n", errBody.Message)
+		_, _ = fmt.Fprintf(r.Err, "error: %s\n", errBody.Message)
 	}
 	return &model.CommandError{Code: errBody.Code, Message: errBody.Message}
 }
@@ -57,13 +57,13 @@ func (r *Renderer) Human(format string, args ...any) {
 	if r.Quiet {
 		return
 	}
-	fmt.Fprintf(r.Out, format, args...)
+	_, _ = fmt.Fprintf(r.Out, format, args...)
 }
 
 // Diagnostics writes verbose diagnostic information to stderr.
 func (r *Renderer) Diagnostics(format string, args ...any) {
 	if r.Verbose {
-		fmt.Fprintf(r.Err, "[debug] "+format+"\n", args...)
+		_, _ = fmt.Fprintf(r.Err, "[debug] "+format+"\n", args...)
 	}
 }
 

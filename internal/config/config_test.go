@@ -104,7 +104,7 @@ func TestLoadNonExistent(t *testing.T) {
 func TestLoadInvalidYAML(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
-	os.WriteFile(path, []byte("invalid: yaml: content: {"), 0o644)
+	_ = os.WriteFile(path, []byte("invalid: yaml: content: {"), 0o644)
 
 	_, err := Load(path)
 	if err == nil {

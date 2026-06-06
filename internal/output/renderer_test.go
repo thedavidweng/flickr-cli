@@ -60,7 +60,7 @@ func TestSuccessEnvelopeWithWarnings(t *testing.T) {
 	}
 
 	var env model.Envelope
-	json.Unmarshal(out.Bytes(), &env)
+	_ = json.Unmarshal(out.Bytes(), &env)
 	if len(env.Meta.Warnings) != 1 || env.Meta.Warnings[0] != "something went wrong" {
 		t.Errorf("expected warnings, got %v", env.Meta.Warnings)
 	}

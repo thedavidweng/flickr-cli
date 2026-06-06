@@ -45,7 +45,7 @@ func SafeName(input string, fallback string) string {
 // IDDirsPath generates the path for an id-dirs backup.
 func IDDirsPath(dest string, photoID string, ext string) string {
 	h := md5.New()
-	io.WriteString(h, photoID)
+	_, _ = io.WriteString(h, photoID)
 	hash := fmt.Sprintf("%x", h.Sum(nil))
 
 	return filepath.Join(dest, hash[0:2], hash[2:4], photoID, photoID+"."+ext)

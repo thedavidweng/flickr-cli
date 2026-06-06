@@ -16,7 +16,7 @@ func FileHash(path string, algorithm string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("opening file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	if err := ValidateAlgorithm(algorithm); err != nil {
 		return "", err

@@ -63,15 +63,15 @@ func FetchAll[T any](ctx context.Context, perPage int, fetch PageFetcher[T], onP
 //	}
 //	if err := w.Err(); err != nil { ... }
 type Walker[T any] struct {
-	ctx      context.Context
-	fetch    PageFetcher[T]
-	perPage  int
-	page     int
-	pages    int
-	buf      []T
-	bufIdx   int
-	err      error
-	done     bool
+	ctx     context.Context
+	fetch   PageFetcher[T]
+	perPage int
+	page    int
+	pages   int
+	buf     []T
+	bufIdx  int
+	err     error
+	done    bool
 }
 
 // NewWalker creates a Walker that lazily paginates through results.

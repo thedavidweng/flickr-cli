@@ -3,8 +3,9 @@ package cli
 import (
 	"runtime"
 
-	"github.com/thedavidweng/flickr-cli/internal/output"
 	"github.com/spf13/cobra"
+
+	"github.com/thedavidweng/flickr-cli/internal/output"
 )
 
 // These are set at build time via ldflags.

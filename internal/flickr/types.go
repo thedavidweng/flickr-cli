@@ -54,13 +54,13 @@ type FlickrText struct {
 
 // PhotosetListItem is a single photoset entry from flickr.photosets.getList.
 type PhotosetListItem struct {
-	ID            string     `json:"id"`
-	Title         FlickrText `json:"title"`
-	Description   FlickrText `json:"description"`
-	Photos        int        `json:"photos"`
-	PrimaryPhotoID string   `json:"primary_photo_id"`
-	DateCreate    string     `json:"date_create"`
-	DateUpdate    string     `json:"date_update"`
+	ID             string     `json:"id"`
+	Title          FlickrText `json:"title"`
+	Description    FlickrText `json:"description"`
+	Photos         int        `json:"photos"`
+	PrimaryPhotoID string     `json:"primary_photo_id"`
+	DateCreate     string     `json:"date_create"`
+	DateUpdate     string     `json:"date_update"`
 }
 
 // PhotosetListResponse is the response for flickr.photosets.getList.

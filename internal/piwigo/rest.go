@@ -13,11 +13,11 @@ import (
 
 // Client is a Piwigo REST API client.
 type Client struct {
-	BaseURL    string
-	HTTP       *http.Client
-	Username   string
-	Password   string
-	Token      string
+	BaseURL  string
+	HTTP     *http.Client
+	Username string
+	Password string
+	Token    string
 }
 
 // NewClient creates a new Piwigo REST API client.
@@ -38,8 +38,8 @@ func (c *Client) Login(ctx context.Context) error {
 	}
 
 	var result struct {
-		Stat    string `json:"stat"`
-		Result  struct {
+		Stat   string `json:"stat"`
+		Result struct {
 			Token string `json:"token"`
 		} `json:"result"`
 		Message string `json:"message"`
@@ -68,13 +68,13 @@ type Category struct {
 // GetCategories returns all categories.
 func (c *Client) GetCategories(ctx context.Context) ([]Category, error) {
 	params := map[string]string{
-		"recursive":    "true",
-		"tree_output":  "false",
-		"fullname":     "true",
+		"recursive":   "true",
+		"tree_output": "false",
+		"fullname":    "true",
 	}
 
 	var result struct {
-		Stat     string     `json:"stat"`
+		Stat       string     `json:"stat"`
 		Categories []Category `json:"result"`
 	}
 
@@ -87,21 +87,21 @@ func (c *Client) GetCategories(ctx context.Context) ([]Category, error) {
 
 // ImageInfo represents detailed image information from Piwigo.
 type ImageInfo struct {
-	ID          string   `json:"id"`
-	File        string   `json:"file"`
-	Name        string   `json:"name"`
-	Comment     string   `json:"comment"`
-	Author      string   `json:"author"`
-	DateCreation string  `json:"date_creation"`
-	DateAvailable string `json:"date_available"`
-	Width       int      `json:"width"`
-	Height      int      `json:"height"`
-	FileSize    int64    `json:"filesize"`
-	Views       int      `json:"hit"`
-	Rating      float64  `json:"rating_score"`
-	MD5Sum      string   `json:"md5sum"`
-	Level       int      `json:"level"`
-	Categories  []struct {
+	ID            string  `json:"id"`
+	File          string  `json:"file"`
+	Name          string  `json:"name"`
+	Comment       string  `json:"comment"`
+	Author        string  `json:"author"`
+	DateCreation  string  `json:"date_creation"`
+	DateAvailable string  `json:"date_available"`
+	Width         int     `json:"width"`
+	Height        int     `json:"height"`
+	FileSize      int64   `json:"filesize"`
+	Views         int     `json:"hit"`
+	Rating        float64 `json:"rating_score"`
+	MD5Sum        string  `json:"md5sum"`
+	Level         int     `json:"level"`
+	Categories    []struct {
 		ID string `json:"id"`
 	} `json:"categories"`
 	Tags []struct {
@@ -121,7 +121,7 @@ func (c *Client) GetCategoryImages(ctx context.Context, categoryID string, page,
 	}
 
 	var result struct {
-		Stat   string `json:"stat"`
+		Stat   string      `json:"stat"`
 		Images []ImageInfo `json:"result"`
 		Paging struct {
 			TotalPages int `json:"total_pages"`
@@ -185,7 +185,7 @@ func (c *Client) ImageExists(ctx context.Context, md5sums []string) (map[string]
 	}
 
 	var result struct {
-		Stat    string         `json:"stat"`
+		Stat    string          `json:"stat"`
 		Results map[string]bool `json:"result"`
 	}
 
@@ -220,7 +220,7 @@ func (c *Client) call(ctx context.Context, method string, params map[string]stri
 	if err != nil {
 		return fmt.Errorf("executing request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024))
 	if err != nil {

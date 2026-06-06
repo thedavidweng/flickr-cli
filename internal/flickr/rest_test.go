@@ -118,7 +118,7 @@ func TestRESTAddsDefaultParams(t *testing.T) {
 		Endpoints: Endpoints{REST: server.URL + "/"},
 	}
 
-	client.CallRaw(context.Background(), "flickr.test.echo", nil)
+	_, _ = client.CallRaw(context.Background(), "flickr.test.echo", nil)
 }
 
 func TestTestLogin(t *testing.T) {

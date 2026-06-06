@@ -69,7 +69,7 @@ func TestEventWriterWithTimestamp(t *testing.T) {
 	})
 
 	var event model.Event
-	json.Unmarshal(bytes.TrimSpace(out.Bytes()), &event)
+	_ = json.Unmarshal(bytes.TrimSpace(out.Bytes()), &event)
 	if event.TS != "2024-01-01T00:00:00Z" {
 		t.Errorf("expected custom timestamp, got %s", event.TS)
 	}

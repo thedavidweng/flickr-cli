@@ -15,7 +15,7 @@ func TestOpenAndClose(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("database file not created: %v", err)
@@ -27,7 +27,7 @@ func TestUpsertAlbum(t *testing.T) {
 	path := filepath.Join(dir, "test.sqlite")
 
 	db, _ := Open(path, "default")
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if err := db.UpsertAlbum("123", "My Album", `{"id":"123"}`); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -47,7 +47,7 @@ func TestUpsertPhoto(t *testing.T) {
 	path := filepath.Join(dir, "test.sqlite")
 
 	db, _ := Open(path, "default")
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if err := db.UpsertPhoto("456", `{"id":"456"}`); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -64,7 +64,7 @@ func TestUpsertChecksum(t *testing.T) {
 	path := filepath.Join(dir, "test.sqlite")
 
 	db, _ := Open(path, "default")
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if err := db.UpsertChecksum("456", "md5", "abc123"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -81,7 +81,7 @@ func TestCleanup(t *testing.T) {
 	path := filepath.Join(dir, "test.sqlite")
 
 	db, _ := Open(path, "default")
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	count, err := db.Cleanup(24 * time.Hour)
 	if err != nil {
@@ -95,7 +95,7 @@ func TestCleanup(t *testing.T) {
 func TestStatFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.txt")
-	os.WriteFile(path, []byte("hello"), 0o644)
+	_ = os.WriteFile(path, []byte("hello"), 0o644)
 
 	size, err := StatFile(path)
 	if err != nil {
@@ -135,7 +135,7 @@ func TestOpenCreatesDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if _, err := os.Stat(path); err != nil {
 		t.Error("database file should exist")
@@ -157,7 +157,7 @@ func TestDBStats(t *testing.T) {
 	path := filepath.Join(dir, "test.sqlite")
 
 	db, _ := Open(path, "default")
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	stats, err := db.Stats()
 	if err != nil {

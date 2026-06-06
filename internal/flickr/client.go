@@ -89,7 +89,7 @@ func (c *Client) RequestToken(ctx context.Context, callback string) (*RequestTok
 		return nil, fmt.Errorf("signing request token: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", c.Endpoints.RequestToken, nil)
+	req, err := http.NewRequestWithContext(ctx, "POST", c.Endpoints.RequestToken, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}

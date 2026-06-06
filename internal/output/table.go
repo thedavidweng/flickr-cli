@@ -21,12 +21,12 @@ func NewTableWriter(out io.Writer) *TableWriter {
 
 // Header writes the header row.
 func (t *TableWriter) Header(cols ...string) {
-	fmt.Fprintln(t.w, strings.Join(cols, "\t"))
+	_, _ = fmt.Fprintln(t.w, strings.Join(cols, "\t"))
 }
 
 // Row writes a data row.
 func (t *TableWriter) Row(cols ...string) {
-	fmt.Fprintln(t.w, strings.Join(cols, "\t"))
+	_, _ = fmt.Fprintln(t.w, strings.Join(cols, "\t"))
 }
 
 // Flush flushes the tabwriter.

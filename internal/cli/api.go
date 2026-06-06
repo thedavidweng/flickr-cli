@@ -3,9 +3,10 @@ package cli
 import (
 	"encoding/json"
 
+	"github.com/spf13/cobra"
+
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
-	"github.com/spf13/cobra"
 )
 
 var apiCmd = &cobra.Command{
@@ -55,12 +56,12 @@ var apiCallCmd = &cobra.Command{
 
 		if raw {
 			var rawJSON any
-			json.Unmarshal(result, &rawJSON)
+			_ = json.Unmarshal(result, &rawJSON)
 			return r.Success(meta, map[string]any{"raw": rawJSON}, nil)
 		}
 
 		var resp any
-		json.Unmarshal(result, &resp)
+		_ = json.Unmarshal(result, &resp)
 		return r.Success(meta, map[string]any{"response": resp}, nil)
 	},
 }
@@ -89,7 +90,7 @@ var apiMethodsCmd = &cobra.Command{
 		}
 
 		var resp any
-		json.Unmarshal(result, &resp)
+		_ = json.Unmarshal(result, &resp)
 		return r.Success(meta, resp, nil)
 	},
 }
@@ -119,7 +120,7 @@ var apiMethodInfoCmd = &cobra.Command{
 		}
 
 		var resp any
-		json.Unmarshal(result, &resp)
+		_ = json.Unmarshal(result, &resp)
 		return r.Success(meta, resp, nil)
 	},
 }

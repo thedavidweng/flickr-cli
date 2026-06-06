@@ -3,11 +3,12 @@ package cli
 import (
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"github.com/thedavidweng/flickr-cli/internal/cache"
 	"github.com/thedavidweng/flickr-cli/internal/config"
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
-	"github.com/spf13/cobra"
 )
 
 var cacheCmd = &cobra.Command{

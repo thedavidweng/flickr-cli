@@ -88,7 +88,7 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 					})
 					continue
 				}
-				defer os.Remove(tmpFile)
+				defer func() { _ = os.Remove(tmpFile) }()
 
 				// Build tags
 				tags := Tags(&img)
@@ -161,7 +161,7 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 
 // downloadToTemp downloads a URL to a temporary file.
 func downloadToTemp(ctx context.Context, url string) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return "", err
 	}
@@ -170,7 +170,7 @@ func downloadToTemp(ctx context.Context, url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("HTTP %d", resp.StatusCode)
@@ -185,10 +185,10 @@ func downloadToTemp(ctx context.Context, url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer tmpFile.Close()
+	defer func() { _ = tmpFile.Close() }()
 
 	if _, err := io.Copy(tmpFile, reader); err != nil {
-		os.Remove(tmpFile.Name())
+		_ = os.Remove(tmpFile.Name())
 		return "", err
 	}
 

@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -34,7 +35,7 @@ func CompareJSON(t *testing.T, expected, actual []byte) {
 	expNorm, _ := json.MarshalIndent(expObj, "", "  ")
 	actNorm, _ := json.MarshalIndent(actObj, "", "  ")
 
-	if string(expNorm) != string(actNorm) {
+	if !bytes.Equal(expNorm, actNorm) {
 		t.Errorf("JSON mismatch:\nExpected:\n%s\nActual:\n%s", expNorm, actNorm)
 	}
 }

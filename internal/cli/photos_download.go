@@ -5,11 +5,12 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"github.com/thedavidweng/flickr-cli/internal/backup"
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
-	"github.com/spf13/cobra"
 )
 
 var photosDownloadCmd = &cobra.Command{
@@ -136,10 +137,10 @@ func downloadViaBackup(cmd *cobra.Command, client *flickr.Client, r output.Rende
 	}
 
 	summary, err := downloader.Download(cmd.Context(), items, backup.DownloadOptions{
-		Force:    opts.Force,
-		Size:     opts.Size,
-		SizeMax:  opts.SizeMax,
-		Exif:     opts.Exif,
+		Force:   opts.Force,
+		Size:    opts.Size,
+		SizeMax: opts.SizeMax,
+		Exif:    opts.Exif,
 	})
 	if err != nil {
 		return r.Failure(meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
@@ -160,7 +161,7 @@ func downloadViaBackup(cmd *cobra.Command, client *flickr.Client, r output.Rende
 // downloadByIDs handles direct download of specific photo IDs using backup.Downloader.
 func downloadByIDs(cmd *cobra.Command, client *flickr.Client, r output.Renderer, meta output.RuntimeMetaInput, app *AppContext, photoIDs []string, dest, size string, sizeMax int, metadata string, force, exif bool) error {
 	if app.DryRun {
-		var planned []map[string]any
+		planned := make([]map[string]any, 0, len(photoIDs))
 		for _, id := range photoIDs {
 			planned = append(planned, map[string]any{"photo_id": id, "dest": dest, "size": size})
 		}

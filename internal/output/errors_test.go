@@ -65,7 +65,7 @@ func TestCategoryForCode(t *testing.T) {
 // fakeRetryable is a minimal retryableError for testing.
 type fakeRetryable struct{ msg string }
 
-func (f *fakeRetryable) Error() string    { return f.msg }
+func (f *fakeRetryable) Error() string     { return f.msg }
 func (f *fakeRetryable) IsRetryable() bool { return true }
 
 func TestErrorfRetryableFromArg(t *testing.T) {

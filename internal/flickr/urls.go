@@ -21,7 +21,7 @@ type Size struct {
 
 // VideoStream represents a single video stream from flickr.video.getStreamInfo.
 type VideoStream struct {
-	Type   string `json:"type"`   // e.g. "1080p", "720p", "orig"
+	Type   string `json:"type"` // e.g. "1080p", "720p", "orig"
 	Width  int    `json:"width"`
 	Height int    `json:"height"`
 	Source string `json:"source"`

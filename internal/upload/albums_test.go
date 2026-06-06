@@ -12,7 +12,7 @@ import (
 func TestAlbumResolverCreation(t *testing.T) {
 	resolver := NewAlbumResolver(&flickr.Client{})
 	if resolver == nil {
-		t.Error("expected non-nil resolver")
+		t.Fatal("expected non-nil resolver")
 	}
 	if resolver.cache == nil {
 		t.Error("expected non-nil cache")
@@ -76,4 +76,3 @@ func TestAlbumResolverResolveOrCreateEmptyTitle(t *testing.T) {
 		t.Error("expected error for empty title")
 	}
 }
-

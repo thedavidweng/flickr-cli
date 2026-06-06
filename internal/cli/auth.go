@@ -10,11 +10,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	"github.com/thedavidweng/flickr-cli/internal/config"
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
-	"github.com/spf13/cobra"
 )
 
 var authCmd = &cobra.Command{
@@ -177,10 +178,10 @@ func resolveCredentials(cmd *cobra.Command, r *output.Renderer, meta output.Runt
 		} else if !isTerminal() {
 			return "", "", r.Failure(meta, output.Errorf(model.ErrConfig, "API key required. Get one at https://www.flickr.com/services/apps/"))
 		} else {
-			fmt.Fprintln(r.Err, "A Flickr API key and secret are required.")
-			fmt.Fprintln(r.Err, "Get yours at: https://www.flickr.com/services/apps/")
-			fmt.Fprintln(r.Err)
-			fmt.Fprint(r.Err, "API key: ")
+			_, _ = fmt.Fprintln(r.Err, "A Flickr API key and secret are required.")
+			_, _ = fmt.Fprintln(r.Err, "Get yours at: https://www.flickr.com/services/apps/")
+			_, _ = fmt.Fprintln(r.Err)
+			_, _ = fmt.Fprint(r.Err, "API key: ")
 			apiKey = readLine()
 		}
 	}
@@ -195,7 +196,7 @@ func resolveCredentials(cmd *cobra.Command, r *output.Renderer, meta output.Runt
 		} else if !isTerminal() {
 			return "", "", r.Failure(meta, output.Errorf(model.ErrConfig, "API secret required. Get one at https://www.flickr.com/services/apps/"))
 		} else {
-			fmt.Fprint(r.Err, "API secret: ")
+			_, _ = fmt.Fprint(r.Err, "API secret: ")
 			apiSecret = readLine()
 		}
 	}
@@ -370,9 +371,12 @@ func localhostFlow(ctx context.Context, r *output.Renderer, client *flickr.Clien
 			return nil, "", fmt.Errorf("listening on port %d: %w", port, err)
 		}
 	}
-	defer ln.Close()
+	defer func() { _ = ln.Close() }()
 
-	addr := ln.Addr().(*net.TCPAddr)
+	addr, ok := ln.Addr().(*net.TCPAddr)
+	if !ok {
+		return nil, "", fmt.Errorf("unexpected listener address type")
+	}
 	callbackURL := fmt.Sprintf("http://%s:%d", serverIP, addr.Port)
 
 	reqToken, err := client.RequestToken(ctx, callbackURL)
@@ -381,10 +385,10 @@ func localhostFlow(ctx context.Context, r *output.Renderer, client *flickr.Clien
 	}
 
 	authURL := client.AuthorizationURL(reqToken.Token, perms)
-	fmt.Fprintln(os.Stderr)
-	fmt.Fprintf(os.Stderr, "Open this URL to authorize:\n\n  %s\n\n", authURL)
+	_, _ = fmt.Fprintln(os.Stderr)
+	_, _ = fmt.Fprintf(os.Stderr, "Open this URL to authorize:\n\n  %s\n\n", authURL)
 	if serverIP != "localhost" && serverIP != "127.0.0.1" {
-		fmt.Fprintf(os.Stderr, "Callback will be received on %s\n", callbackURL)
+		_, _ = fmt.Fprintf(os.Stderr, "Callback will be received on %s\n", callbackURL)
 	}
 
 	verifier, err := waitForCallback(ctx, ln)
@@ -400,20 +404,20 @@ func localhostFlow(ctx context.Context, r *output.Renderer, client *flickr.Clien
 func oobAuthorize(ctx context.Context, r *output.Renderer, client *flickr.Client, token, perms string) (string, error) {
 	authURL := client.AuthorizationURL(token, perms)
 
-	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, "Open this URL to authorize:")
-	fmt.Fprintln(os.Stderr)
-	fmt.Fprintf(os.Stderr, "  %s\n", authURL)
-	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, "After authorizing, Flickr will show a verification code.")
-	fmt.Fprintln(os.Stderr, "Paste it here to complete authentication.")
-	fmt.Fprintln(os.Stderr)
+	_, _ = fmt.Fprintln(os.Stderr)
+	_, _ = fmt.Fprintln(os.Stderr, "Open this URL to authorize:")
+	_, _ = fmt.Fprintln(os.Stderr)
+	_, _ = fmt.Fprintf(os.Stderr, "  %s\n", authURL)
+	_, _ = fmt.Fprintln(os.Stderr)
+	_, _ = fmt.Fprintln(os.Stderr, "After authorizing, Flickr will show a verification code.")
+	_, _ = fmt.Fprintln(os.Stderr, "Paste it here to complete authentication.")
+	_, _ = fmt.Fprintln(os.Stderr)
 
 	if !isTerminal() {
 		return "", fmt.Errorf("verifier code required in non-interactive mode; use --callback localhost or pipe the code to stdin")
 	}
 
-	fmt.Fprint(os.Stderr, "Verification code: ")
+	_, _ = fmt.Fprint(os.Stderr, "Verification code: ")
 	verifier := readLine()
 	if verifier == "" {
 		return "", fmt.Errorf("no verification code entered")
@@ -436,26 +440,24 @@ func waitForCallback(ctx context.Context, ln net.Listener) (string, error) {
 			errCh <- fmt.Errorf("missing verifier in callback")
 			return
 		}
-		fmt.Fprintf(w, "Authorization successful! You can close this window.")
+		_, _ = fmt.Fprintf(w, "Authorization successful! You can close this window.")
 		verifierCh <- v
 	})
 
 	srv := &http.Server{Handler: mux}
 	go func() {
-		if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
-			// Server closed is expected
-		}
+		_ = srv.Serve(ln) // http.ErrServerClosed is expected
 	}()
 
 	select {
 	case verifier := <-verifierCh:
-		srv.Shutdown(ctx)
+		_ = srv.Shutdown(ctx)
 		return verifier, nil
 	case err := <-errCh:
-		srv.Shutdown(ctx)
+		_ = srv.Shutdown(ctx)
 		return "", err
 	case <-ctx.Done():
-		srv.Shutdown(ctx)
+		_ = srv.Shutdown(ctx)
 		return "", ctx.Err()
 	}
 }
@@ -466,6 +468,10 @@ func detectOutboundIP() string {
 	if err != nil {
 		return "localhost"
 	}
-	defer conn.Close()
-	return conn.LocalAddr().(*net.UDPAddr).IP.String()
+	defer func() { _ = conn.Close() }()
+	udpAddr, ok := conn.LocalAddr().(*net.UDPAddr)
+	if !ok {
+		return "localhost"
+	}
+	return udpAddr.IP.String()
 }
