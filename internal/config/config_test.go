@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -18,12 +19,12 @@ func TestLoadOrCreate(t *testing.T) {
 		t.Errorf("expected current_profile=default, got %s", cfg.CurrentProfile)
 	}
 
-	// Verify file was created with secure permissions
+	// Verify file was created with secure permissions (skip on Windows)
 	info, err := os.Stat(path)
 	if err != nil {
 		t.Fatalf("config file not created: %v", err)
 	}
-	if info.Mode().Perm() != 0o600 {
+	if runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
 		t.Errorf("expected permissions 0600, got %o", info.Mode().Perm())
 	}
 
@@ -59,7 +60,7 @@ func TestSavePermissions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("config file not created: %v", err)
 	}
-	if info.Mode().Perm() != 0o600 {
+	if runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
 		t.Errorf("expected permissions 0600, got %o", info.Mode().Perm())
 	}
 }

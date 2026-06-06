@@ -2,31 +2,39 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 )
 
 func TestDefaultPathsXDG(t *testing.T) {
-	// Test with XDG set
-	os.Setenv("XDG_CONFIG_HOME", "/tmp/test-config")
-	os.Setenv("XDG_CACHE_HOME", "/tmp/test-cache")
-	os.Setenv("XDG_STATE_HOME", "/tmp/test-state")
+	// Test with XDG set (use t.TempDir for cross-platform compatibility)
+	configDir := t.TempDir()
+	cacheDir := t.TempDir()
+	stateDir := t.TempDir()
+
+	os.Setenv("XDG_CONFIG_HOME", configDir)
+	os.Setenv("XDG_CACHE_HOME", cacheDir)
+	os.Setenv("XDG_STATE_HOME", stateDir)
 	defer os.Unsetenv("XDG_CONFIG_HOME")
 	defer os.Unsetenv("XDG_CACHE_HOME")
 	defer os.Unsetenv("XDG_STATE_HOME")
 
 	configPath := DefaultConfigPath()
-	if configPath != "/tmp/test-config/flickr-cli/config.yaml" {
-		t.Errorf("unexpected config path: %s", configPath)
+	expectedConfig := filepath.Join(configDir, "flickr-cli", "config.yaml")
+	if configPath != expectedConfig {
+		t.Errorf("unexpected config path: %s, expected %s", configPath, expectedConfig)
 	}
 
 	cachePath := DefaultCachePath("default")
-	if cachePath != "/tmp/test-cache/flickr-cli/default.sqlite" {
-		t.Errorf("unexpected cache path: %s", cachePath)
+	expectedCache := filepath.Join(cacheDir, "flickr-cli", "default.sqlite")
+	if cachePath != expectedCache {
+		t.Errorf("unexpected cache path: %s, expected %s", cachePath, expectedCache)
 	}
 
 	auditPath := DefaultAuditLogPath("default")
-	if auditPath != "/tmp/test-state/flickr-cli/audit-default.jsonl" {
-		t.Errorf("unexpected audit path: %s", auditPath)
+	expectedAudit := filepath.Join(stateDir, "flickr-cli", "audit-default.jsonl")
+	if auditPath != expectedAudit {
+		t.Errorf("unexpected audit path: %s, expected %s", auditPath, expectedAudit)
 	}
 }
 
