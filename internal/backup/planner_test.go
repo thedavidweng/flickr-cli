@@ -81,9 +81,9 @@ func TestBuildPlanAlbums(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.FormValue("method") {
 		case "flickr.photosets.getList":
-			w.Write([]byte(`{"stat":"ok","photosets":{"photoset":[{"id":"album-1","title":{"_content":"Vacation"},"photos":2}]}}`))
+			_, _ = w.Write([]byte(`{"stat":"ok","photosets":{"photoset":[{"id":"album-1","title":{"_content":"Vacation"},"photos":2}]}}`))
 		case "flickr.photosets.getPhotos":
-			w.Write([]byte(`{"stat":"ok","photoset":{"id":"album-1","photo":[{"id":"photo-1","title":"Sunset"},{"id":"photo-2","title":"Beach"}],"page":1,"pages":1,"perpage":100,"total":2}}`))
+			_, _ = w.Write([]byte(`{"stat":"ok","photoset":{"id":"album-1","photo":[{"id":"photo-1","title":"Sunset"},{"id":"photo-2","title":"Beach"}],"page":1,"pages":1,"perpage":100,"total":2}}`))
 		default:
 			w.Write([]byte(`{"stat":"ok"}`))
 		}
@@ -130,9 +130,9 @@ func TestBuildPlanAlbumsAll(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.FormValue("method") {
 		case "flickr.photosets.getList":
-			w.Write([]byte(`{"stat":"ok","photosets":{"photoset":[{"id":"album-1","title":{"_content":"Vacation"},"photos":2}]}}`))
+			_, _ = w.Write([]byte(`{"stat":"ok","photosets":{"photoset":[{"id":"album-1","title":{"_content":"Vacation"},"photos":2}]}}`))
 		case "flickr.photosets.getPhotos":
-			w.Write([]byte(`{"stat":"ok","photoset":{"id":"album-1","photo":[{"id":"photo-1","title":"Sunset"},{"id":"photo-2","title":"Beach"}],"page":1,"pages":1,"perpage":100,"total":2}}`))
+			_, _ = w.Write([]byte(`{"stat":"ok","photoset":{"id":"album-1","photo":[{"id":"photo-1","title":"Sunset"},{"id":"photo-2","title":"Beach"}],"page":1,"pages":1,"perpage":100,"total":2}}`))
 		default:
 			w.Write([]byte(`{"stat":"ok"}`))
 		}

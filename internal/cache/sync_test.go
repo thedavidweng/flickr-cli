@@ -53,7 +53,7 @@ func TestSyncAlbums(t *testing.T) {
 	path := filepath.Join(dir, "test.sqlite")
 
 	db, _ := Open(path, "default")
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	client := &flickr.Client{
 		APIKey:    "test-key",
@@ -81,7 +81,7 @@ func TestSyncPhotos(t *testing.T) {
 	path := filepath.Join(dir, "test.sqlite")
 
 	db, _ := Open(path, "default")
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	client := &flickr.Client{
 		APIKey:    "test-key",
@@ -117,7 +117,7 @@ func TestSyncPhotosPagination(t *testing.T) {
 	path := filepath.Join(dir, "test.sqlite")
 
 	db, _ := Open(path, "default")
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	client := &flickr.Client{
 		APIKey:    "test-key",

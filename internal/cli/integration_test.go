@@ -233,7 +233,7 @@ func TestAlbumsShowJSON(t *testing.T) {
 		t.Errorf("expected command=albums.show, got %s", env.Meta.Command)
 	}
 
-	data := env.Data.(map[string]any)
+	data, _ := env.Data.(map[string]any)
 	if data["id"] != "album-42" {
 		t.Errorf("expected id=album-42, got %v", data["id"])
 	}
@@ -279,7 +279,7 @@ func TestAlbumsCreateDryRun(t *testing.T) {
 	if !env.OK {
 		t.Fatalf("expected ok=true for dry-run, got error: %v", env.Error)
 	}
-	data := env.Data.(map[string]any)
+	data, _ := env.Data.(map[string]any)
 	if data["planned"] != true {
 		t.Errorf("expected planned=true, got %v", data["planned"])
 	}
@@ -345,7 +345,7 @@ func TestPhotosListJSON(t *testing.T) {
 		t.Errorf("expected command=photos.list, got %s", env.Meta.Command)
 	}
 
-	data := env.Data.(map[string]any)
+	data, _ := env.Data.(map[string]any)
 	items := data["items"].([]any)
 	if len(items) != 2 {
 		t.Fatalf("expected 2 photos, got %d", len(items))
@@ -375,7 +375,7 @@ func TestPhotosSearchJSON(t *testing.T) {
 		t.Errorf("expected command=photos.search, got %s", env.Meta.Command)
 	}
 
-	data := env.Data.(map[string]any)
+	data, _ := env.Data.(map[string]any)
 	items := data["items"].([]any)
 	if len(items) != 1 {
 		t.Fatalf("expected 1 photo, got %d", len(items))
@@ -412,7 +412,7 @@ func TestPhotosShowJSON(t *testing.T) {
 		t.Errorf("expected command=photos.show, got %s", env.Meta.Command)
 	}
 
-	data := env.Data.(map[string]any)
+	data, _ := env.Data.(map[string]any)
 	if data["id"] != "photo-99" {
 		t.Errorf("expected id=photo-99, got %v", data["id"])
 	}
@@ -477,7 +477,7 @@ func TestAPICallRawMode(t *testing.T) {
 	if !env.OK {
 		t.Fatalf("expected ok=true, got error: %v", env.Error)
 	}
-	data := env.Data.(map[string]any)
+	data, _ := env.Data.(map[string]any)
 	if _, ok := data["raw"]; !ok {
 		t.Error("expected data.raw to be present in raw mode")
 	}
@@ -535,7 +535,7 @@ func TestVersionGolden(t *testing.T) {
 		t.Errorf("expected schema_version=%s, got %s", model.SchemaVersion, env.Meta.SchemaVersion)
 	}
 
-	data := env.Data.(map[string]any)
+	data, _ := env.Data.(map[string]any)
 	if data["schema_version"] != model.SchemaVersion {
 		t.Errorf("expected data.schema_version=%s, got %v", model.SchemaVersion, data["schema_version"])
 	}
@@ -642,7 +642,7 @@ func TestPhotosUploadDryRun(t *testing.T) {
 		t.Errorf("expected command=photos.upload, got %s", env.Meta.Command)
 	}
 
-	data := env.Data.(map[string]any)
+	data, _ := env.Data.(map[string]any)
 	if data["planned"] != true {
 		t.Errorf("expected planned=true, got %v", data["planned"])
 	}
@@ -708,7 +708,7 @@ func TestFavoritesAddDryRun(t *testing.T) {
 	if !env.OK {
 		t.Fatalf("expected ok=true for dry-run, got error: %v", env.Error)
 	}
-	data := env.Data.(map[string]any)
+	data, _ := env.Data.(map[string]any)
 	if data["planned"] != true {
 		t.Errorf("expected planned=true, got %v", data["planned"])
 	}
@@ -856,7 +856,7 @@ func TestCommentsAddDryRun(t *testing.T) {
 	if !env.OK {
 		t.Fatalf("expected ok=true for dry-run, got error: %v", env.Error)
 	}
-	data := env.Data.(map[string]any)
+	data, _ := env.Data.(map[string]any)
 	if data["planned"] != true {
 		t.Errorf("expected planned=true, got %v", data["planned"])
 	}
@@ -973,7 +973,7 @@ func TestPhotosDownloadDryRun(t *testing.T) {
 	if !env.OK {
 		t.Fatalf("expected ok=true for dry-run, got error: %v", env.Error)
 	}
-	data := env.Data.(map[string]any)
+	data, _ := env.Data.(map[string]any)
 	if data["planned"] != true {
 		t.Errorf("expected planned=true, got %v", data["planned"])
 	}
