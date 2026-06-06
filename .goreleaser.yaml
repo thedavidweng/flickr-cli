@@ -91,11 +91,6 @@ release:
     ```
     go install github.com/thedavidweng/flickr-cli/cmd/flickr@{{ .Tag }}
     ```
-  extra_files:
-    - glob: checksums.txt
-    - glob: checksums.txt.sig
-    - glob: checksums.txt.cert
-    - glob: flickr.sbom.json
 
 signs:
   - artifacts: checksum
