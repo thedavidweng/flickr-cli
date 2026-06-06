@@ -118,9 +118,7 @@ brews:
     license: "MIT"
     install: |
       bin.install "flickr"
-      bash_completion.install "completions/flickr.bash" => "flickr"
-      zsh_completion.install "completions/flickr.zsh" => "_flickr"
-      fish_completion.install "completions/flickr.fish"
+      generate_completions_from_executable(bin/"flickr", "completion")
     test: |
       system "#{bin}/flickr", "version"
 

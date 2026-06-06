@@ -437,8 +437,9 @@ func waitForCallback(ctx context.Context, ln net.Listener) (string, error) {
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		v := req.URL.Query().Get("oauth_verifier")
 		if v == "" {
-			http.Error(w, "missing verifier", http.StatusBadRequest)
-			errCh <- fmt.Errorf("missing verifier in callback")
+			// Browsers may request favicon.ico or other resources;
+			// respond with 200 instead of error to avoid deadlock.
+			_, _ = fmt.Fprintf(w, "Waiting for authorization...")
 			return
 		}
 		_, _ = fmt.Fprintf(w, "Authorization successful! You can close this window.")
