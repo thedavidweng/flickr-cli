@@ -73,7 +73,7 @@ func TestSyncAlbums(t *testing.T) {
 func TestSyncPhotos(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok","photos":{"photo":[{"id":"photo-1","title":"Test Photo"}],"page":1,"pages":1,"per_page":500,"total":1}}`))
+		_, _ = w.Write([]byte(`{"stat":"ok","photos":{"photo":[{"id":"photo-1","title":"Test Photo"}],"page":1,"pages":1,"per_page":500,"total":1}}`))
 	}))
 	defer server.Close()
 
@@ -105,10 +105,10 @@ func TestSyncPhotosPagination(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		if callCount == 1 {
 			// Page 1 of 2: return 2 photos
-			w.Write([]byte(`{"stat":"ok","photos":{"photo":[{"id":"photo-1","title":"Photo 1"},{"id":"photo-2","title":"Photo 2"}],"page":1,"pages":2,"per_page":2,"total":3}}`))
+			_, _ = w.Write([]byte(`{"stat":"ok","photos":{"photo":[{"id":"photo-1","title":"Photo 1"},{"id":"photo-2","title":"Photo 2"}],"page":1,"pages":2,"per_page":2,"total":3}}`))
 		} else {
 			// Page 2 of 2: return 1 photo
-			w.Write([]byte(`{"stat":"ok","photos":{"photo":[{"id":"photo-3","title":"Photo 3"}],"page":2,"pages":2,"per_page":2,"total":3}}`))
+			_, _ = w.Write([]byte(`{"stat":"ok","photos":{"photo":[{"id":"photo-3","title":"Photo 3"}],"page":2,"pages":2,"per_page":2,"total":3}}`))
 		}
 	}))
 	defer server.Close()
