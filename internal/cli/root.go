@@ -208,4 +208,5 @@ func registerSubcommands(root *cobra.Command) {
 	root.AddCommand(checksumsCmd)
 	root.AddCommand(piwigoCmd)
 	root.AddCommand(doctorCmd)
+	root.AddCommand(completionCmd)
 }

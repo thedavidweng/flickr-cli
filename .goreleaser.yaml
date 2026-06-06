@@ -15,6 +15,7 @@ builds:
     goarch:
       - amd64
       - arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
   - formats: [tar.gz]
@@ -22,14 +23,93 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
+    # Include README and LICENSE in archives
+    extra_files:
+      - glob: LICENSE*
+      - glob: README*
 
 checksum:
   name_template: "checksums.txt"
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  use: github
+  groups:
+    - title: "🚀 Features"
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "🐛 Bug Fixes"
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: "📚 Documentation"
+      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: "🧹 Maintenance"
+      regexp: '^.*?(chore|refactor|style|test|ci)(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: "⬆️ Dependencies"
+      regexp: '^.*?(build|deps)(\([[:word:]]+\))??!?:.+$'
+      order: 4
+    - title: "Other"
+      order: 999
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore: release"
+      - "^ci:"
+      - "Merge pull request"
+      - "Merge branch"
 
 release:
   github:
     owner: thedavidweng
     name: flickr-cli
+  header: |
+    ## What's Changed
+
+    See the [changelog](https://github.com/thedavidweng/flickr-cli/blob/main/CHANGELOG.md) for full details.
+  footer: |
+    **Full Changelog**: https://github.com/thedavidweng/flickr-cli/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+    ---
+    ### Installation
+
+    **Homebrew (macOS/Linux):**
+    ```
+    brew tap thedavidweng/tap
+    brew install flickr
+    ```
+
+    **Scoop (Windows):**
+    ```
+    scoop bucket add thedavidweng https://github.com/thedavidweng/scoop-bucket
+    scoop install flickr
+    ```
+
+    **Go:**
+    ```
+    go install github.com/thedavidweng/flickr-cli/cmd/flickr@{{ .Tag }}
+    ```
+  extra_files:
+    - glob: checksums.txt
+    - glob: checksums.txt.sig
+    - glob: flickr.sbom.json
+
+signs:
+  - artifacts: checksum
+    cmd: cosign
+    args:
+      - sign-blob
+      - "--yes"
+      - "--output-signature=${signature}"
+      - "${artifact}"
+
+sboms:
+  - artifacts: archive
+    documents:
+      - "${artifact}.sbom.json"
 
 brews:
   - name: flickr
@@ -39,7 +119,26 @@ brews:
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: "https://github.com/thedavidweng/flickr-cli"
     description: "Agent-friendly CLI for Flickr photo management, backup, upload, and API access"
+    license: "MIT"
     install: |
       bin.install "flickr"
+      bash_completion.install "completions/flickr.bash" => "flickr"
+      zsh_completion.install "completions/flickr.zsh" => "_flickr"
+      fish_completion.install "completions/flickr.fish"
     test: |
       system "#{bin}/flickr", "version"
+    extra_install: |
+      generate_completions_from_executable(bin/"flickr", "completion")
+
+scoops:
+  - name: flickr
+    repository:
+      owner: thedavidweng
+      name: scoop-bucket
+      token: "{{ .Env.SCOOP_BUCKET_GITHUB_TOKEN }}"
+    homepage: "https://github.com/thedavidweng/flickr-cli"
+    description: "Agent-friendly CLI for Flickr photo management, backup, upload, and API access"
+    license: MIT
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
