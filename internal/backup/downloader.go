@@ -74,9 +74,9 @@ func (d *Downloader) Download(ctx context.Context, items []DownloadItem, opts Do
 		workers = 1
 	}
 
-	ch := make(chan DownloadItem, len(items))
-	for _, item := range items {
-		ch <- item
+	ch := make(chan *DownloadItem, len(items))
+	for i := range items {
+		ch <- &items[i]
 	}
 	close(ch)
 
@@ -115,7 +115,7 @@ func (d *Downloader) Download(ctx context.Context, items []DownloadItem, opts Do
 	return summary, nil
 }
 
-func (d *Downloader) downloadItem(ctx context.Context, item DownloadItem, opts DownloadOptions) (downloadResult, error) {
+func (d *Downloader) downloadItem(ctx context.Context, item *DownloadItem, opts DownloadOptions) (downloadResult, error) {
 	if !opts.Force {
 		if _, err := os.Stat(item.FilePath); err == nil {
 			return downloadSkipped, nil
@@ -222,7 +222,7 @@ func replaceExt(filePath, newExt string) string {
 	return filePath[:len(filePath)-len(ext)] + "." + newExt
 }
 
-func (d *Downloader) writeSidecars(ctx context.Context, item DownloadItem, includeExif bool) {
+func (d *Downloader) writeSidecars(ctx context.Context, item *DownloadItem, includeExif bool) {
 	params := map[string]string{"photo_id": item.PhotoID}
 	var info map[string]any
 	if err := d.Client.Call(ctx, "flickr.photos.getInfo", params, &info); err != nil {

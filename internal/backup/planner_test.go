@@ -102,7 +102,7 @@ func TestBuildPlanAlbums(t *testing.T) {
 		Size:        "original",
 	}
 
-	plan, err := BuildPlan(context.Background(), client, opts)
+	plan, err := BuildPlan(context.Background(), client, &opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -151,7 +151,7 @@ func TestBuildPlanAlbumsAll(t *testing.T) {
 		Size: "original",
 	}
 
-	plan, err := BuildPlan(context.Background(), client, opts)
+	plan, err := BuildPlan(context.Background(), client, &opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -179,7 +179,7 @@ func TestBuildPlanAlbumsNoSelection(t *testing.T) {
 		Size: "original",
 	}
 
-	_, err := BuildPlan(context.Background(), client, opts)
+	_, err := BuildPlan(context.Background(), client, &opts)
 	if err == nil {
 		t.Error("expected error for no album selection")
 	}
@@ -204,7 +204,7 @@ func TestBuildPlanUser(t *testing.T) {
 		Size:   "original",
 	}
 
-	plan, err := BuildPlan(context.Background(), client, opts)
+	plan, err := BuildPlan(context.Background(), client, &opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -231,7 +231,7 @@ func TestBuildPlanIDDirs(t *testing.T) {
 		Size: "original",
 	}
 
-	plan, err := BuildPlan(context.Background(), client, opts)
+	plan, err := BuildPlan(context.Background(), client, &opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -284,7 +284,7 @@ func TestBuildPlanAlbumsPagination(t *testing.T) {
 		Size: "original",
 	}
 
-	plan, err := BuildPlan(context.Background(), client, opts)
+	plan, err := BuildPlan(context.Background(), client, &opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -328,7 +328,7 @@ func TestBuildPlanUserPagination(t *testing.T) {
 		Size:   "original",
 	}
 
-	plan, err := BuildPlan(context.Background(), client, opts)
+	plan, err := BuildPlan(context.Background(), client, &opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -351,7 +351,7 @@ func TestBuildPlanInvalidMode(t *testing.T) {
 		Size: "original",
 	}
 
-	_, err := BuildPlan(context.Background(), client, opts)
+	_, err := BuildPlan(context.Background(), client, &opts)
 	if err == nil {
 		t.Error("expected error for invalid mode")
 	}

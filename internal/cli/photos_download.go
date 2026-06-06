@@ -80,7 +80,7 @@ func backupModeToPlanMode(layout string, all bool, hasAlbums bool) backup.PlanMo
 
 // downloadViaBackup handles backup mode using the backup package.
 func downloadViaBackup(cmd *cobra.Command, client *flickr.Client, r output.Renderer, meta output.RuntimeMetaInput, app *AppContext, opts backup.BackupPlanOptions) error {
-	plan, err := backup.BuildPlan(cmd.Context(), client, opts)
+	plan, err := backup.BuildPlan(cmd.Context(), client, &opts)
 	if err != nil {
 		return r.Failure(meta, output.Errorf(model.ErrValidationFailed, "%v", err))
 	}
