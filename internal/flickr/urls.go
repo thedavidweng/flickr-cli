@@ -368,7 +368,7 @@ func ResolvePhotoID(input string) (string, error) {
 
 // DeriveExtension determines the file extension from the download URL, media type,
 // or original format field. Falls back to "jpg" for photos and "mp4" for videos.
-func DeriveExtension(sourceURL string, media string, originalFormat string) string {
+func DeriveExtension(sourceURL, media, originalFormat string) string {
 	// Try to extract from URL path (strip query parameters)
 	if sourceURL != "" {
 		if u, err := url.Parse(sourceURL); err == nil {
@@ -405,7 +405,7 @@ func DeriveExtension(sourceURL string, media string, originalFormat string) stri
 
 // BestSizeURL returns the best available URL from a PhotoListItem's extras fields.
 // Prefers original (url_o) > 2048 (url_k) > large (url_l) > medium (url_m) > small (url_s).
-func BestSizeURL(p PhotoListItem) string {
+func BestSizeURL(p *PhotoListItem) string {
 	if p.URLO != "" {
 		return p.URLO
 	}

@@ -91,7 +91,8 @@ func syncPhotos(ctx context.Context, db *DB, client flickr.FlickrAPI, limit int)
 			return count, err
 		}
 
-		for _, p := range result.Photos.Photo {
+		for i := range result.Photos.Photo {
+			p := &result.Photos.Photo[i]
 			payload, _ := json.Marshal(p)
 			if err := db.UpsertPhoto(p.ID, string(payload)); err != nil {
 				return count, err

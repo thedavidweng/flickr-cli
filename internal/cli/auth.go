@@ -169,15 +169,15 @@ func handleRequestTokenError(r output.Renderer, meta output.RuntimeMetaInput, er
 }
 
 // resolveCredentials reads the API key and secret from flags, environment, or interactive prompt.
-func resolveCredentials(cmd *cobra.Command, r *output.Renderer, meta output.RuntimeMetaInput, creds config.Credentials) (string, string, error) {
-	apiKey := creds.APIKey
+func resolveCredentials(cmd *cobra.Command, r *output.Renderer, meta output.RuntimeMetaInput, creds config.Credentials) (apiKey, apiSecret string, err error) {
+	apiKey = creds.APIKey
 	if apiKey == "" {
-		apiKeyFlag, _ := cmd.Flags().GetString("api-key")
-		if apiKeyFlag != "" {
-			apiKey = apiKeyFlag
-		} else if !isTerminal() {
+		switch {
+		case cmd.Flags().Changed("api-key"):
+			apiKey, _ = cmd.Flags().GetString("api-key")
+		case !isTerminal():
 			return "", "", r.Failure(meta, output.Errorf(model.ErrConfig, "API key required. Get one at https://www.flickr.com/services/apps/"))
-		} else {
+		default:
 			_, _ = fmt.Fprintln(r.Err, "A Flickr API key and secret are required.")
 			_, _ = fmt.Fprintln(r.Err, "Get yours at: https://www.flickr.com/services/apps/")
 			_, _ = fmt.Fprintln(r.Err)
@@ -186,16 +186,17 @@ func resolveCredentials(cmd *cobra.Command, r *output.Renderer, meta output.Runt
 		}
 	}
 
-	apiSecret := creds.APISecret
+	apiSecret = creds.APISecret
 	if apiSecret == "" {
-		apiSecretFlag, _ := cmd.Flags().GetString("api-secret")
-		if apiSecretFlag != "" {
-			apiSecret = apiSecretFlag
-		} else if envName, _ := cmd.Flags().GetString("api-secret-env"); envName != "" {
+		switch {
+		case cmd.Flags().Changed("api-secret"):
+			apiSecret, _ = cmd.Flags().GetString("api-secret")
+		case cmd.Flags().Changed("api-secret-env"):
+			envName, _ := cmd.Flags().GetString("api-secret-env")
 			apiSecret = os.Getenv(envName)
-		} else if !isTerminal() {
+		case !isTerminal():
 			return "", "", r.Failure(meta, output.Errorf(model.ErrConfig, "API secret required. Get one at https://www.flickr.com/services/apps/"))
-		} else {
+		default:
 			_, _ = fmt.Fprint(r.Err, "API secret: ")
 			apiSecret = readLine()
 		}

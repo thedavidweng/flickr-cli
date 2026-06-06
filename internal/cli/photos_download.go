@@ -41,7 +41,7 @@ var photosDownloadCmd = &cobra.Command{
 		backupMode := allAlbums || len(albumTitles) > 0 || len(albumIDs) > 0 || layout != ""
 
 		if backupMode {
-			return downloadViaBackup(ctx.Cmd, ctx.Client, ctx.R, ctx.Meta, ctx.App, backup.BackupPlanOptions{
+			return downloadViaBackup(ctx.Cmd, ctx.Client, ctx.R, ctx.Meta, ctx.App, &backup.BackupPlanOptions{
 				Mode:        backupModeToPlanMode(layout, allAlbums, len(albumTitles) > 0 || len(albumIDs) > 0),
 				Dest:        dest,
 				AlbumTitles: albumTitles,
@@ -64,7 +64,7 @@ var photosDownloadCmd = &cobra.Command{
 }
 
 // backupModeToPlanMode converts CLI flags to backup plan mode.
-func backupModeToPlanMode(layout string, all bool, hasAlbums bool) backup.PlanMode {
+func backupModeToPlanMode(layout string, all, hasAlbums bool) backup.PlanMode {
 	switch layout {
 	case "id-dirs":
 		return backup.BackupIDDirs
@@ -79,8 +79,8 @@ func backupModeToPlanMode(layout string, all bool, hasAlbums bool) backup.PlanMo
 }
 
 // downloadViaBackup handles backup mode using the backup package.
-func downloadViaBackup(cmd *cobra.Command, client *flickr.Client, r output.Renderer, meta output.RuntimeMetaInput, app *AppContext, opts backup.BackupPlanOptions) error {
-	plan, err := backup.BuildPlan(cmd.Context(), client, &opts)
+func downloadViaBackup(cmd *cobra.Command, client *flickr.Client, r output.Renderer, meta output.RuntimeMetaInput, app *AppContext, opts *backup.BackupPlanOptions) error {
+	plan, err := backup.BuildPlan(cmd.Context(), client, opts)
 	if err != nil {
 		return r.Failure(meta, output.Errorf(model.ErrValidationFailed, "%v", err))
 	}
@@ -96,7 +96,8 @@ func downloadViaBackup(cmd *cobra.Command, client *flickr.Client, r output.Rende
 	}
 
 	items := make([]backup.DownloadItem, len(plan.Items))
-	for i, item := range plan.Items {
+	for i := range plan.Items {
+		item := &plan.Items[i]
 		// Use a placeholder extension; the downloader will fix it after resolving the download URL.
 		ext := flickr.DeriveExtension("", item.Media, item.OriginalFormat)
 		var filePath string
