@@ -219,7 +219,7 @@ func (e *Executor) uploadSingle(ctx context.Context, pu PlannedUpload, opts Plan
 	// Move file after successful upload
 	if e.MoveAfter != "" {
 		if err := os.MkdirAll(e.MoveAfter, 0o755); err != nil {
-			e.Events.Emit(model.Event{
+			e.Events.Emit(&model.Event{
 				Type:    "warning",
 				Command: "photos.upload",
 				Message: fmt.Sprintf("failed to create move-after dir %s: %v", e.MoveAfter, err),
@@ -227,7 +227,7 @@ func (e *Executor) uploadSingle(ctx context.Context, pu PlannedUpload, opts Plan
 		} else {
 			dest := filepath.Join(e.MoveAfter, filepath.Base(pu.LocalPath))
 			if err := os.Rename(pu.LocalPath, dest); err != nil {
-				e.Events.Emit(model.Event{
+				e.Events.Emit(&model.Event{
 					Type:    "warning",
 					Command: "photos.upload",
 					Message: fmt.Sprintf("failed to move %s to %s: %v", pu.LocalPath, dest, err),
@@ -255,7 +255,7 @@ func (e *Executor) uploadSingle(ctx context.Context, pu PlannedUpload, opts Plan
 		for _, albumID := range pu.AlbumIDs {
 			if err := e.Client.AddToAlbum(ctx, albumID, uploadResult.PhotoID); err != nil {
 				// Log warning but don't fail the upload
-				e.Events.Emit(model.Event{
+				e.Events.Emit(&model.Event{
 					Type:    "warning",
 					Command: "photos.upload",
 					Message: fmt.Sprintf("failed to add to album %s: %v", albumID, err),

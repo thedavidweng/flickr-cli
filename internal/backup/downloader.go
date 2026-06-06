@@ -93,7 +93,7 @@ func (d *Downloader) Download(ctx context.Context, items []DownloadItem, opts Do
 					mu.Lock()
 					summary.Failed++
 					mu.Unlock()
-					d.Events.Emit(model.Event{
+					d.Events.Emit(&model.Event{
 						Type:    "download_failed",
 						PhotoID: item.PhotoID,
 						Message: err.Error(),

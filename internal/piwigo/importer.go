@@ -67,7 +67,7 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 					exists, err := piwigo.ImageExists(ctx, []string{img.MD5Sum})
 					if err == nil && exists[img.MD5Sum] {
 						summary.Skipped++
-						i.Events.Emit(model.Event{
+						i.Events.Emit(&model.Event{
 							Type:    string(StateSkippedExist),
 							PhotoID: img.ID,
 							Message: "already exists (checksum match)",
@@ -81,14 +81,13 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 				tmpFile, err := downloadToTemp(ctx, imageURL)
 				if err != nil {
 					summary.Failed++
-					i.Events.Emit(model.Event{
+					i.Events.Emit(&model.Event{
 						Type:    string(StateFailed),
 						PhotoID: img.ID,
 						Message: fmt.Sprintf("download failed: %v", err),
 					})
 					continue
 				}
-				defer func() { _ = os.Remove(tmpFile) }()
 
 				// Build tags
 				tags := Tags(&img)
@@ -105,8 +104,9 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 
 				result, err := i.Flickr.Upload(ctx, tmpFile, uploadOpts)
 				if err != nil {
+					_ = os.Remove(tmpFile)
 					summary.Failed++
-					i.Events.Emit(model.Event{
+					i.Events.Emit(&model.Event{
 						Type:    string(StateFailed),
 						PhotoID: img.ID,
 						Message: fmt.Sprintf("upload failed: %v", err),
@@ -117,7 +117,7 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 				// Add to albums
 				for _, albumName := range albums {
 					if err := i.Flickr.AddToAlbum(ctx, albumName, result.PhotoID); err != nil {
-						i.Events.Emit(model.Event{
+						i.Events.Emit(&model.Event{
 							Type:    "import_warning",
 							PhotoID: img.ID,
 							Message: fmt.Sprintf("failed to add to album %s: %v", albumName, err),
@@ -133,7 +133,7 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 						"lon":      fmt.Sprintf("%f", img.Longitude),
 					}
 					if err := i.Flickr.Call(ctx, "flickr.photos.geo.setLocation", geoParams, nil); err != nil {
-						i.Events.Emit(model.Event{
+						i.Events.Emit(&model.Event{
 							Type:    string(StateGeoDone),
 							PhotoID: img.ID,
 							Message: fmt.Sprintf("geo-location transfer failed: %v", err),
@@ -142,11 +142,12 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 				}
 
 				summary.Succeeded++
-				i.Events.Emit(model.Event{
+				i.Events.Emit(&model.Event{
 					Type:    string(StateDone),
 					PhotoID: img.ID,
 					Message: fmt.Sprintf("uploaded as %s", result.PhotoID),
 				})
+				_ = os.Remove(tmpFile)
 			}
 
 			if page >= totalPages {
