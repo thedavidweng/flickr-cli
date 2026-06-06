@@ -8,10 +8,7 @@ linters:
     - ineffassign
     - staticcheck
     - unused
-    - gosimple
     - gocritic
-    - gofmt
-    - goimports
     - misspell
     - unconvert
     - prealloc
@@ -26,14 +23,15 @@ linters:
         - style
     misspell:
       locale: US
-    goimports:
-      local-prefixes:
-        - github.com/thedavidweng/flickr-cli
 
 formatters:
   enable:
     - gofmt
     - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/thedavidweng/flickr-cli
 
 issues:
   exclude-rules:
