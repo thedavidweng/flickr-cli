@@ -23,10 +23,6 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
-    # Include README and LICENSE in archives
-    extra_files:
-      - glob: LICENSE*
-      - glob: README*
 
 checksum:
   name_template: "checksums.txt"
