@@ -50,7 +50,7 @@ func (c *Client) Upload(ctx context.Context, filePath string, opts UploadOptions
 	if err != nil {
 		return nil, fmt.Errorf("opening file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	// Build multipart body
 	body := new(bytes.Buffer)
@@ -70,31 +70,31 @@ func (c *Client) Upload(ctx context.Context, filePath string, opts UploadOptions
 	if title == "" {
 		title = strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath))
 	}
-	writer.WriteField("title", title)
+	_ = writer.WriteField("title", title) // bytes.Buffer never errors
 
 	if opts.Description != "" {
-		writer.WriteField("description", opts.Description)
+		_ = writer.WriteField("description", opts.Description) // bytes.Buffer never errors
 	}
 
 	if len(opts.Tags) > 0 {
-		writer.WriteField("tags", strings.Join(opts.Tags, " "))
+		_ = writer.WriteField("tags", strings.Join(opts.Tags, " ")) // bytes.Buffer never errors
 	}
 
-	writer.WriteField("is_public", boolToNum(opts.IsPublic))
-	writer.WriteField("is_friend", boolToNum(opts.IsFriend))
-	writer.WriteField("is_family", boolToNum(opts.IsFamily))
+	_ = writer.WriteField("is_public", boolToNum(opts.IsPublic)) // bytes.Buffer never errors
+	_ = writer.WriteField("is_friend", boolToNum(opts.IsFriend)) // bytes.Buffer never errors
+	_ = writer.WriteField("is_family", boolToNum(opts.IsFamily)) // bytes.Buffer never errors
 
 	if opts.SafetyLevel > 0 {
-		writer.WriteField("safety_level", fmt.Sprintf("%d", opts.SafetyLevel))
+		_ = writer.WriteField("safety_level", fmt.Sprintf("%d", opts.SafetyLevel)) // bytes.Buffer never errors
 	}
 	if opts.ContentType > 0 {
-		writer.WriteField("content_type", fmt.Sprintf("%d", opts.ContentType))
+		_ = writer.WriteField("content_type", fmt.Sprintf("%d", opts.ContentType)) // bytes.Buffer never errors
 	}
 	if opts.Hidden > 0 {
-		writer.WriteField("hidden", fmt.Sprintf("%d", opts.Hidden))
+		_ = writer.WriteField("hidden", fmt.Sprintf("%d", opts.Hidden)) // bytes.Buffer never errors
 	}
 
-	writer.Close()
+	_ = writer.Close() // bytes.Buffer never errors
 
 	// Build OAuth signature params (exclude the photo field)
 	sigParams := make(map[string][]string)

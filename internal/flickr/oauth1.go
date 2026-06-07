@@ -151,13 +151,13 @@ func (s OAuthSigner) Sign(method, baseURL string, params map[string][]string) (m
 
 // AuthorizationHeader formats OAuth parameters as an Authorization header value.
 func AuthorizationHeader(oauthParams map[string]string) string {
-	var keys []string
+	keys := make([]string, 0, len(oauthParams))
 	for k := range oauthParams {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
-	var parts []string
+	parts := make([]string, 0, len(keys))
 	for _, k := range keys {
 		parts = append(parts, PercentEncode(k)+"=\""+PercentEncode(oauthParams[k])+"\"")
 	}

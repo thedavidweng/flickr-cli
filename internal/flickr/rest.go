@@ -93,7 +93,7 @@ func (c *Client) callRawOnce(ctx context.Context, method string, params map[stri
 	} else {
 		// Unauthenticated call: GET with query params
 		reqURL := c.Endpoints.REST + "?" + form.Encode()
-		req, err = http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+		req, err = http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 		if err != nil {
 			return nil, fmt.Errorf("creating request: %w", err), false
 		}

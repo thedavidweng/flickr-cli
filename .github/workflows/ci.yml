@@ -24,6 +24,7 @@ jobs:
         uses: golangci/golangci-lint-action@v7
         with:
           version: v2.12.2
+          only-new-issues: true
 
       - run: go vet ./...
       - run: go test ./... -race

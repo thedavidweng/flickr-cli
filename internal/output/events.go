@@ -19,7 +19,7 @@ type EventWriter struct {
 
 // Emit writes a single NDJSON event line to stderr.
 // Safe for concurrent use.
-func (w *EventWriter) Emit(event model.Event) {
+func (w *EventWriter) Emit(event *model.Event) {
 	if !w.Enabled || w.Err == nil {
 		return
 	}
@@ -32,5 +32,5 @@ func (w *EventWriter) Emit(event model.Event) {
 	}
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	fmt.Fprintf(w.Err, "%s\n", b)
+	_, _ = fmt.Fprintf(w.Err, "%s\n", b)
 }

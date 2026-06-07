@@ -3,11 +3,12 @@ package cli
 import (
 	"fmt"
 
+	"github.com/spf13/cobra"
+
 	"github.com/thedavidweng/flickr-cli/internal/config"
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
-	"github.com/spf13/cobra"
 )
 
 // newRenderer creates a Renderer from AppContext and cobra.Command,

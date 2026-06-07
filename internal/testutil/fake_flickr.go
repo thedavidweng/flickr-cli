@@ -210,12 +210,12 @@ func (f *FakeFlickr) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 func (f *FakeFlickr) handleRequestToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
-	fmt.Fprint(w, "oauth_token=req-token&oauth_token_secret=req-secret&oauth_callback_confirmed=true")
+	_, _ = fmt.Fprint(w, "oauth_token=req-token&oauth_token_secret=req-secret&oauth_callback_confirmed=true")
 }
 
 func (f *FakeFlickr) handleAccessToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
-	fmt.Fprint(w, "oauth_token=access-token&oauth_token_secret=access-secret&user_nsid=test-user-123&username=testuser&fullname=Test+User")
+	_, _ = fmt.Fprint(w, "oauth_token=access-token&oauth_token_secret=access-secret&user_nsid=test-user-123&username=testuser&fullname=Test+User")
 }
 
 func (f *FakeFlickr) handleAuthorize(w http.ResponseWriter, r *http.Request) {
@@ -438,10 +438,10 @@ func (f *FakeFlickr) handleGetGalleries(w http.ResponseWriter, r *http.Request) 
 			"gallery": []map[string]any{
 				{"id": "gallery-1", "title": "Test Gallery", "description": "A gallery", "count_photos": 5},
 			},
-			"page":   1,
-			"pages":  1,
+			"page":    1,
+			"pages":   1,
 			"perpage": 100,
-			"total":  1,
+			"total":   1,
 		},
 	})
 }
@@ -470,10 +470,10 @@ func (f *FakeFlickr) handleGetGroups(w http.ResponseWriter, r *http.Request) {
 			"group": []map[string]any{
 				{"nsid": "group-1", "name": "Test Group", "members": 100},
 			},
-			"page":   1,
-			"pages":  1,
+			"page":    1,
+			"pages":   1,
 			"perpage": 100,
-			"total":  1,
+			"total":   1,
 		},
 	})
 }
@@ -489,10 +489,10 @@ func (f *FakeFlickr) handleGetContacts(w http.ResponseWriter, r *http.Request) {
 			"contact": []map[string]any{
 				{"nsid": "user-1", "username": "testuser", "realname": "Test User"},
 			},
-			"page":   1,
-			"pages":  1,
+			"page":    1,
+			"pages":   1,
 			"perpage": 100,
-			"total":  1,
+			"total":   1,
 		},
 	})
 }
@@ -504,10 +504,10 @@ func (f *FakeFlickr) handleGetPopularPhotos(w http.ResponseWriter, r *http.Reque
 			"photo": []map[string]any{
 				{"id": "p1", "title": "Popular Photo", "stats": map[string]any{"views": 1000}},
 			},
-			"page":   1,
-			"pages":  1,
+			"page":    1,
+			"pages":   1,
 			"perpage": 100,
-			"total":  1,
+			"total":   1,
 		},
 	})
 }
@@ -550,7 +550,7 @@ func extractParams(r *http.Request) map[string]string {
 
 func writeJSON(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(v)
+	_ = json.NewEncoder(w).Encode(v)
 }
 
 // Client creates a flickr.Client pointing at the fake server.

@@ -12,10 +12,11 @@ import (
 	"path/filepath"
 	"sync"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
-	"gopkg.in/yaml.v3"
 )
 
 // DownloadItem represents a photo to download.
@@ -73,9 +74,9 @@ func (d *Downloader) Download(ctx context.Context, items []DownloadItem, opts Do
 		workers = 1
 	}
 
-	ch := make(chan DownloadItem, len(items))
-	for _, item := range items {
-		ch <- item
+	ch := make(chan *DownloadItem, len(items))
+	for i := range items {
+		ch <- &items[i]
 	}
 	close(ch)
 
@@ -92,7 +93,7 @@ func (d *Downloader) Download(ctx context.Context, items []DownloadItem, opts Do
 					mu.Lock()
 					summary.Failed++
 					mu.Unlock()
-					d.Events.Emit(model.Event{
+					d.Events.Emit(&model.Event{
 						Type:    "download_failed",
 						PhotoID: item.PhotoID,
 						Message: err.Error(),
@@ -114,7 +115,7 @@ func (d *Downloader) Download(ctx context.Context, items []DownloadItem, opts Do
 	return summary, nil
 }
 
-func (d *Downloader) downloadItem(ctx context.Context, item DownloadItem, opts DownloadOptions) (downloadResult, error) {
+func (d *Downloader) downloadItem(ctx context.Context, item *DownloadItem, opts DownloadOptions) (downloadResult, error) {
 	if !opts.Force {
 		if _, err := os.Stat(item.FilePath); err == nil {
 			return downloadSkipped, nil
@@ -174,7 +175,7 @@ func (d *Downloader) downloadItem(ctx context.Context, item DownloadItem, opts D
 	if err != nil {
 		return downloadCompleted, fmt.Errorf("downloading: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return downloadCompleted, fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
@@ -190,13 +191,13 @@ func (d *Downloader) downloadItem(ctx context.Context, item DownloadItem, opts D
 	writer := io.MultiWriter(f, h)
 
 	if _, err := io.Copy(writer, resp.Body); err != nil {
-		f.Close()
-		os.Remove(tmpPath)
+		_ = f.Close()
+		_ = os.Remove(tmpPath)
 		return downloadCompleted, fmt.Errorf("writing file: %w", err)
 	}
 
 	if err := f.Close(); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return downloadCompleted, err
 	}
 
@@ -221,7 +222,7 @@ func replaceExt(filePath, newExt string) string {
 	return filePath[:len(filePath)-len(ext)] + "." + newExt
 }
 
-func (d *Downloader) writeSidecars(ctx context.Context, item DownloadItem, includeExif bool) {
+func (d *Downloader) writeSidecars(ctx context.Context, item *DownloadItem, includeExif bool) {
 	params := map[string]string{"photo_id": item.PhotoID}
 	var info map[string]any
 	if err := d.Client.Call(ctx, "flickr.photos.getInfo", params, &info); err != nil {
@@ -236,16 +237,18 @@ func (d *Downloader) writeSidecars(ctx context.Context, item DownloadItem, inclu
 	}
 
 	// Clean up Flickr's {"_content": "value"} pattern for cleaner sidecars
-	info = flickr.CleanContent(info).(map[string]any)
+	if cleaned, ok := flickr.CleanContent(info).(map[string]any); ok {
+		info = cleaned
+	}
 
 	if item.MetadataPathJSON != "" {
 		if data, err := json.MarshalIndent(info, "", "  "); err == nil {
-			os.WriteFile(item.MetadataPathJSON, data, 0o644)
+			_ = os.WriteFile(item.MetadataPathJSON, data, 0o644)
 		}
 	}
 	if item.MetadataPathYAML != "" {
 		if data, err := yaml.Marshal(info); err == nil {
-			os.WriteFile(item.MetadataPathYAML, data, 0o644)
+			_ = os.WriteFile(item.MetadataPathYAML, data, 0o644)
 		}
 	}
 }

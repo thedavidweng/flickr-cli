@@ -60,7 +60,7 @@ func TestFakeFlickrClient(t *testing.T) {
 
 	client := fake.Client()
 	if client == nil {
-		t.Error("expected non-nil client")
+		t.Fatal("expected non-nil client")
 	}
 	if client.APIKey != "test-api-key" {
 		t.Errorf("expected test-api-key, got %s", client.APIKey)

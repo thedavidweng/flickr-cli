@@ -12,7 +12,7 @@ func TestEventWriterEmit(t *testing.T) {
 	out := new(bytes.Buffer)
 	w := EventWriter{Enabled: true, Err: out}
 
-	w.Emit(model.Event{
+	w.Emit(&model.Event{
 		Type:    "progress",
 		Command: "photos.upload",
 		PhotoID: "12345",
@@ -38,7 +38,7 @@ func TestEventWriterDisabled(t *testing.T) {
 	out := new(bytes.Buffer)
 	w := EventWriter{Enabled: false, Err: out}
 
-	w.Emit(model.Event{Type: "test"})
+	w.Emit(&model.Event{Type: "test"})
 
 	if out.Len() != 0 {
 		t.Errorf("expected no output, got %q", out.String())
@@ -49,9 +49,9 @@ func TestEventWriterMultipleEvents(t *testing.T) {
 	out := new(bytes.Buffer)
 	w := EventWriter{Enabled: true, Err: out}
 
-	w.Emit(model.Event{Type: "start"})
-	w.Emit(model.Event{Type: "progress"})
-	w.Emit(model.Event{Type: "done"})
+	w.Emit(&model.Event{Type: "start"})
+	w.Emit(&model.Event{Type: "progress"})
+	w.Emit(&model.Event{Type: "done"})
 
 	lines := bytes.Split(bytes.TrimSpace(out.Bytes()), []byte("\n"))
 	if len(lines) != 3 {
@@ -63,13 +63,13 @@ func TestEventWriterWithTimestamp(t *testing.T) {
 	out := new(bytes.Buffer)
 	w := EventWriter{Enabled: true, Err: out}
 
-	w.Emit(model.Event{
+	w.Emit(&model.Event{
 		Type: "test",
 		TS:   "2024-01-01T00:00:00Z",
 	})
 
 	var event model.Event
-	json.Unmarshal(bytes.TrimSpace(out.Bytes()), &event)
+	_ = json.Unmarshal(bytes.TrimSpace(out.Bytes()), &event)
 	if event.TS != "2024-01-01T00:00:00Z" {
 		t.Errorf("expected custom timestamp, got %s", event.TS)
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -29,7 +30,7 @@ func TestAppendJSONL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("audit file not created: %v", err)
 	}
-	if info.Mode().Perm() != 0o600 {
+	if runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
 		t.Errorf("expected permissions 0600, got %o", info.Mode().Perm())
 	}
 

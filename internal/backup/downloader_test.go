@@ -161,13 +161,13 @@ func TestDownloadConcurrency(t *testing.T) {
 		}
 		time.Sleep(50 * time.Millisecond)
 		atomic.AddInt32(&concurrent, -1)
-		w.Write([]byte("fake-photo-data"))
+		_, _ = w.Write([]byte("fake-photo-data"))
 	}))
 	defer photoServer.Close()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok","sizes":{"size":[{"label":"Original","width":100,"height":100,"source":"` + photoServer.URL + `/photo.jpg","url":"` + photoServer.URL + `/photo.jpg","media":"photo"}]}}`))
+		_, _ = w.Write([]byte(`{"stat":"ok","sizes":{"size":[{"label":"Original","width":100,"height":100,"source":"` + photoServer.URL + `/photo.jpg","url":"` + photoServer.URL + `/photo.jpg","media":"photo"}]}}`))
 	}))
 	defer server.Close()
 

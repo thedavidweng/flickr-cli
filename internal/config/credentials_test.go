@@ -29,14 +29,14 @@ func TestCredentialsFromProfileAndEnv(t *testing.T) {
 }
 
 func TestCredentialsEnvOverride(t *testing.T) {
-	os.Setenv("FLICKR_API_KEY", "env-key")
-	os.Setenv("FLICKR_API_SECRET", "env-secret")
-	os.Setenv("FLICKR_OAUTH_TOKEN", "env-token")
-	os.Setenv("FLICKR_OAUTH_TOKEN_SECRET", "env-token-secret")
-	defer os.Unsetenv("FLICKR_API_KEY")
-	defer os.Unsetenv("FLICKR_API_SECRET")
-	defer os.Unsetenv("FLICKR_OAUTH_TOKEN")
-	defer os.Unsetenv("FLICKR_OAUTH_TOKEN_SECRET")
+	_ = os.Setenv("FLICKR_API_KEY", "env-key")
+	_ = os.Setenv("FLICKR_API_SECRET", "env-secret")
+	_ = os.Setenv("FLICKR_OAUTH_TOKEN", "env-token")
+	_ = os.Setenv("FLICKR_OAUTH_TOKEN_SECRET", "env-token-secret")
+	defer func() { _ = os.Unsetenv("FLICKR_API_KEY") }()
+	defer func() { _ = os.Unsetenv("FLICKR_API_SECRET") }()
+	defer func() { _ = os.Unsetenv("FLICKR_OAUTH_TOKEN") }()
+	defer func() { _ = os.Unsetenv("FLICKR_OAUTH_TOKEN_SECRET") }()
 
 	p := &Profile{
 		APIKey:    "profile-key",

@@ -53,7 +53,7 @@ type BackupItem struct {
 }
 
 // BuildPlan creates a backup plan from the given options.
-func BuildPlan(ctx context.Context, client flickr.FlickrAPI, opts BackupPlanOptions) (*BackupPlan, error) {
+func BuildPlan(ctx context.Context, client flickr.FlickrAPI, opts *BackupPlanOptions) (*BackupPlan, error) {
 	plan := &BackupPlan{}
 
 	switch opts.Mode {
@@ -68,7 +68,7 @@ func BuildPlan(ctx context.Context, client flickr.FlickrAPI, opts BackupPlanOpti
 	}
 }
 
-func buildAlbumPlan(ctx context.Context, client flickr.FlickrAPI, opts BackupPlanOptions, plan *BackupPlan) (*BackupPlan, error) {
+func buildAlbumPlan(ctx context.Context, client flickr.FlickrAPI, opts *BackupPlanOptions, plan *BackupPlan) (*BackupPlan, error) {
 	if !opts.All && len(opts.AlbumTitles) == 0 && len(opts.AlbumIDs) == 0 {
 		return nil, fmt.Errorf("specify --all, --album, or --album-id")
 	}
@@ -149,7 +149,8 @@ func getAlbumPhotos(ctx context.Context, client flickr.FlickrAPI, albumID, album
 			return nil, err
 		}
 
-		for _, p := range result.Photoset.Photo {
+		for i := range result.Photoset.Photo {
+			p := &result.Photoset.Photo[i]
 			items = append(items, BackupItem{
 				PhotoID:        p.ID,
 				Title:          p.Title,
@@ -171,7 +172,7 @@ func getAlbumPhotos(ctx context.Context, client flickr.FlickrAPI, albumID, album
 	return items, nil
 }
 
-func buildUserPlan(ctx context.Context, client flickr.FlickrAPI, opts BackupPlanOptions, plan *BackupPlan) (*BackupPlan, error) {
+func buildUserPlan(ctx context.Context, client flickr.FlickrAPI, opts *BackupPlanOptions, plan *BackupPlan) (*BackupPlan, error) {
 	userID := opts.UserID
 	if userID == "" {
 		userID = "me"
@@ -192,7 +193,8 @@ func buildUserPlan(ctx context.Context, client flickr.FlickrAPI, opts BackupPlan
 			return nil, fmt.Errorf("listing photos: %w", err)
 		}
 
-		for _, p := range result.Photos.Photo {
+		for i := range result.Photos.Photo {
+			p := &result.Photos.Photo[i]
 			plan.Items = append(plan.Items, BackupItem{
 				PhotoID:        p.ID,
 				Title:          p.Title,
@@ -213,7 +215,7 @@ func buildUserPlan(ctx context.Context, client flickr.FlickrAPI, opts BackupPlan
 	return plan, nil
 }
 
-func buildIDDirsPlan(ctx context.Context, client flickr.FlickrAPI, opts BackupPlanOptions, plan *BackupPlan) (*BackupPlan, error) {
+func buildIDDirsPlan(ctx context.Context, client flickr.FlickrAPI, opts *BackupPlanOptions, plan *BackupPlan) (*BackupPlan, error) {
 	return buildUserPlan(ctx, client, opts, plan)
 }
 

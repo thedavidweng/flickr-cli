@@ -1,11 +1,12 @@
 package cli
 
 import (
+	"github.com/spf13/cobra"
+
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
 	"github.com/thedavidweng/flickr-cli/internal/piwigo"
 	"github.com/thedavidweng/flickr-cli/internal/safety"
-	"github.com/spf13/cobra"
 )
 
 var piwigoCmd = &cobra.Command{

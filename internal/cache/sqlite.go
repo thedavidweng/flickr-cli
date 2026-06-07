@@ -32,7 +32,7 @@ func Open(path string, profile string) (*DB, error) {
 	}
 
 	if _, err := conn.Exec(Schema); err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, fmt.Errorf("creating schema: %w", err)
 	}
 

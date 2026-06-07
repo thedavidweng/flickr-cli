@@ -5,11 +5,12 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"github.com/thedavidweng/flickr-cli/internal/backup"
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
-	"github.com/spf13/cobra"
 )
 
 var photosDownloadCmd = &cobra.Command{
@@ -40,7 +41,7 @@ var photosDownloadCmd = &cobra.Command{
 		backupMode := allAlbums || len(albumTitles) > 0 || len(albumIDs) > 0 || layout != ""
 
 		if backupMode {
-			return downloadViaBackup(ctx.Cmd, ctx.Client, ctx.R, ctx.Meta, ctx.App, backup.BackupPlanOptions{
+			return downloadViaBackup(ctx.Cmd, ctx.Client, ctx.R, ctx.Meta, ctx.App, &backup.BackupPlanOptions{
 				Mode:        backupModeToPlanMode(layout, allAlbums, len(albumTitles) > 0 || len(albumIDs) > 0),
 				Dest:        dest,
 				AlbumTitles: albumTitles,
@@ -63,7 +64,7 @@ var photosDownloadCmd = &cobra.Command{
 }
 
 // backupModeToPlanMode converts CLI flags to backup plan mode.
-func backupModeToPlanMode(layout string, all bool, hasAlbums bool) backup.PlanMode {
+func backupModeToPlanMode(layout string, all, hasAlbums bool) backup.PlanMode {
 	switch layout {
 	case "id-dirs":
 		return backup.BackupIDDirs
@@ -78,7 +79,7 @@ func backupModeToPlanMode(layout string, all bool, hasAlbums bool) backup.PlanMo
 }
 
 // downloadViaBackup handles backup mode using the backup package.
-func downloadViaBackup(cmd *cobra.Command, client *flickr.Client, r output.Renderer, meta output.RuntimeMetaInput, app *AppContext, opts backup.BackupPlanOptions) error {
+func downloadViaBackup(cmd *cobra.Command, client *flickr.Client, r output.Renderer, meta output.RuntimeMetaInput, app *AppContext, opts *backup.BackupPlanOptions) error {
 	plan, err := backup.BuildPlan(cmd.Context(), client, opts)
 	if err != nil {
 		return r.Failure(meta, output.Errorf(model.ErrValidationFailed, "%v", err))
@@ -95,7 +96,8 @@ func downloadViaBackup(cmd *cobra.Command, client *flickr.Client, r output.Rende
 	}
 
 	items := make([]backup.DownloadItem, len(plan.Items))
-	for i, item := range plan.Items {
+	for i := range plan.Items {
+		item := &plan.Items[i]
 		// Use a placeholder extension; the downloader will fix it after resolving the download URL.
 		ext := flickr.DeriveExtension("", item.Media, item.OriginalFormat)
 		var filePath string
@@ -136,10 +138,10 @@ func downloadViaBackup(cmd *cobra.Command, client *flickr.Client, r output.Rende
 	}
 
 	summary, err := downloader.Download(cmd.Context(), items, backup.DownloadOptions{
-		Force:    opts.Force,
-		Size:     opts.Size,
-		SizeMax:  opts.SizeMax,
-		Exif:     opts.Exif,
+		Force:   opts.Force,
+		Size:    opts.Size,
+		SizeMax: opts.SizeMax,
+		Exif:    opts.Exif,
 	})
 	if err != nil {
 		return r.Failure(meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
@@ -160,7 +162,7 @@ func downloadViaBackup(cmd *cobra.Command, client *flickr.Client, r output.Rende
 // downloadByIDs handles direct download of specific photo IDs using backup.Downloader.
 func downloadByIDs(cmd *cobra.Command, client *flickr.Client, r output.Renderer, meta output.RuntimeMetaInput, app *AppContext, photoIDs []string, dest, size string, sizeMax int, metadata string, force, exif bool) error {
 	if app.DryRun {
-		var planned []map[string]any
+		planned := make([]map[string]any, 0, len(photoIDs))
 		for _, id := range photoIDs {
 			planned = append(planned, map[string]any{"photo_id": id, "dest": dest, "size": size})
 		}

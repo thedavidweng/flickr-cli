@@ -7,11 +7,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/cobra"
+
 	"github.com/thedavidweng/flickr-cli/internal/checksum"
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
-	"github.com/spf13/cobra"
 )
 
 var checksumsCmd = &cobra.Command{
@@ -128,7 +129,7 @@ var checksumsAddCmd = &cobra.Command{
 			// Download and compute checksum
 			tmpFile := filepath.Join(tmpDir, fmt.Sprintf("flickr-checksum-%s", photo.ID))
 			hash, dlErr := downloadAndHash(client.HTTP, sourceURL, tmpFile, hashAlgo)
-			os.Remove(tmpFile)
+			_ = os.Remove(tmpFile)
 
 			if dlErr != nil {
 				failed++
@@ -372,13 +373,13 @@ func downloadAndHash(httpClient *http.Client, url, tmpPath, algorithm string) (s
 	if err != nil {
 		return "", fmt.Errorf("creating temp file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	if _, err := io.Copy(f, resp.Body); err != nil {
 		return "", fmt.Errorf("writing file: %w", err)
 	}
 	// Close before hashing so all data is flushed to disk.
-	f.Close()
+	_ = f.Close()
 
 	return checksum.FileHash(tmpPath, algorithm)
 }
@@ -489,7 +490,7 @@ func verifyPhoto(client *flickr.Client, cmd *cobra.Command, photoID, tmpDir stri
 	// Download and compute checksum
 	tmpFile := filepath.Join(tmpDir, fmt.Sprintf("flickr-verify-%s", photoID))
 	actualHash, dlErr := downloadAndHash(client.HTTP, sourceURL, tmpFile, algorithm)
-	os.Remove(tmpFile)
+	_ = os.Remove(tmpFile)
 
 	if dlErr != nil {
 		return checksum.PhotoVerifyResult{
