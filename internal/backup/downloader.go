@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"sync"
 
@@ -215,7 +214,7 @@ func (d *Downloader) downloadItem(ctx context.Context, item *DownloadItem, opts 
 
 // replaceExt replaces the file extension in a path.
 func replaceExt(filePath, newExt string) string {
-	ext := path.Ext(filePath)
+	ext := filepath.Ext(filePath)
 	if ext == "" {
 		return filePath + "." + newExt
 	}

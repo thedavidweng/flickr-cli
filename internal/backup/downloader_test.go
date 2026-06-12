@@ -213,3 +213,46 @@ func TestDownloadConcurrency(t *testing.T) {
 		t.Errorf("expected concurrent downloads (peak=%d), but downloads ran sequentially", peak)
 	}
 }
+
+func TestReplaceExt(t *testing.T) {
+	tests := []struct {
+		name     string
+		filePath string
+		newExt   string
+		want     string
+	}{
+		{
+			name:     "simple extension replacement",
+			filePath: filepath.Join("photos", "image.jpg"),
+			newExt:   "png",
+			want:     filepath.Join("photos", "image.png"),
+		},
+		{
+			name:     "deeply nested path",
+			filePath: filepath.Join("backup", "ab", "cd", "12345", "12345.jpg"),
+			newExt:   "png",
+			want:     filepath.Join("backup", "ab", "cd", "12345", "12345.png"),
+		},
+		{
+			name:     "no existing extension",
+			filePath: filepath.Join("photos", "image"),
+			newExt:   "jpg",
+			want:     filepath.Join("photos", "image") + ".jpg",
+		},
+		{
+			name:     "double extension in filename",
+			filePath: filepath.Join("photos", "my.photo.jpg"),
+			newExt:   "png",
+			want:     filepath.Join("photos", "my.photo.png"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := replaceExt(tt.filePath, tt.newExt)
+			if got != tt.want {
+				t.Errorf("replaceExt(%q, %q) = %q, want %q", tt.filePath, tt.newExt, got, tt.want)
+			}
+		})
+	}
+}
