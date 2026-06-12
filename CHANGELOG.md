@@ -7,8 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
-- **BREAKING (macOS):** Config, cache, and state directories now use native OS paths instead of XDG-style `~/.config/`, `~/.cache/`, `~/.local/state/`. On macOS, this means:
-  - Config: `~/Library/Preferences/flickr-cli/` (was `~/.config/flickr-cli/`)
+- **BREAKING (macOS):** Config, cache, and state directories now use native OS paths instead of XDG-style `~/.config/`, `~/.cache/`. On macOS, this means:
+  - Config: `~/Library/Application Support/flickr-cli/` (was `~/.config/flickr-cli/`)
   - Cache: `~/Library/Caches/flickr-cli/` (was `~/.cache/flickr-cli/`)
   - State: `~/.local/state/flickr-cli/` (unchanged)
   - To keep the old paths, set `XDG_CONFIG_HOME=~/.config`, `XDG_CACHE_HOME=~/.cache`.
