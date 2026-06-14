@@ -21,7 +21,7 @@ type FlickrAPI interface {
 	GetSizes(ctx context.Context, photoID string) ([]Size, error)
 	GetVideoStreams(ctx context.Context, photoID string) ([]VideoStream, error)
 	GetExif(ctx context.Context, photoID string) (*ExifData, error)
-	Upload(ctx context.Context, filePath string, opts UploadOptions) (*UploadResult, error)
+	Upload(ctx context.Context, filePath string, opts *UploadOptions) (*UploadResult, error)
 	AddToAlbum(ctx context.Context, albumID, photoID string) error
 
 	// Auth

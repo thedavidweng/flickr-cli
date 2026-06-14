@@ -86,11 +86,12 @@ func (r *Renderer) writeJSON(metaInput RuntimeMetaInput, data any, warnings []st
 		b   []byte
 		err error
 	)
-	if r.Pretty {
+	switch {
+	case r.Pretty:
 		b, err = json.MarshalIndent(env, "", "  ")
-	} else if r.Compact && !r.Full {
+	case r.Compact && !r.Full:
 		b, err = marshalCompact(env)
-	} else {
+	default:
 		b, err = json.Marshal(env)
 	}
 	if err != nil {

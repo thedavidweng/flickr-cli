@@ -22,7 +22,7 @@ func TestAuthHelp(t *testing.T) {
 	buf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
 	rootCmd.SetArgs([]string{"auth", "--help"})
-	rootCmd.Execute()
+	_ = rootCmd.Execute()
 
 	if buf.Len() == 0 {
 		t.Error("expected help output")
@@ -33,7 +33,7 @@ func TestAuthLoginHelp(t *testing.T) {
 	buf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
 	rootCmd.SetArgs([]string{"auth", "login", "--help"})
-	rootCmd.Execute()
+	_ = rootCmd.Execute()
 
 	if buf.Len() == 0 {
 		t.Error("expected help output")
@@ -44,7 +44,7 @@ func TestAuthStatusHelp(t *testing.T) {
 	buf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
 	rootCmd.SetArgs([]string{"auth", "status", "--help"})
-	rootCmd.Execute()
+	_ = rootCmd.Execute()
 
 	if buf.Len() == 0 {
 		t.Error("expected help output")
@@ -55,7 +55,7 @@ func TestAuthLogoutHelp(t *testing.T) {
 	buf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
 	rootCmd.SetArgs([]string{"auth", "logout", "--help"})
-	rootCmd.Execute()
+	_ = rootCmd.Execute()
 
 	if buf.Len() == 0 {
 		t.Error("expected help output")

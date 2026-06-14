@@ -16,7 +16,7 @@ func TestCacheHelp(t *testing.T) {
 	buf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
 	rootCmd.SetArgs([]string{"cache", "--help"})
-	rootCmd.Execute()
+	_ = rootCmd.Execute()
 
 	if buf.Len() == 0 {
 		t.Error("expected help output")
@@ -66,17 +66,33 @@ func TestCacheStatsNoCache(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected data.counts to be a map, got %T", data["counts"])
 	}
-	if counts["albums"].(float64) != 0 {
-		t.Errorf("expected 0 albums, got %v", counts["albums"])
+	albums, ok := counts["albums"].(float64)
+	if !ok {
+		t.Fatalf("expected albums to be a number, got %T", counts["albums"])
 	}
-	if counts["photos"].(float64) != 0 {
-		t.Errorf("expected 0 photos, got %v", counts["photos"])
+	if albums != 0 {
+		t.Errorf("expected 0 albums, got %v", albums)
 	}
-	if counts["checksums"].(float64) != 0 {
-		t.Errorf("expected 0 checksums, got %v", counts["checksums"])
+	photos, ok := counts["photos"].(float64)
+	if !ok {
+		t.Fatalf("expected photos to be a number, got %T", counts["photos"])
 	}
-	if counts["jobs"].(float64) != 0 {
-		t.Errorf("expected 0 jobs, got %v", counts["jobs"])
+	if photos != 0 {
+		t.Errorf("expected 0 photos, got %v", photos)
+	}
+	checksums, ok := counts["checksums"].(float64)
+	if !ok {
+		t.Fatalf("expected checksums to be a number, got %T", counts["checksums"])
+	}
+	if checksums != 0 {
+		t.Errorf("expected 0 checksums, got %v", checksums)
+	}
+	jobs, ok := counts["jobs"].(float64)
+	if !ok {
+		t.Fatalf("expected jobs to be a number, got %T", counts["jobs"])
+	}
+	if jobs != 0 {
+		t.Errorf("expected 0 jobs, got %v", jobs)
 	}
 
 	// file_bytes should be present and positive (schema creation writes data).

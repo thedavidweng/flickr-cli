@@ -22,7 +22,7 @@ func TestAppendJSONL(t *testing.T) {
 		Result:    "success",
 	}
 
-	if err := Append(path, ev); err != nil {
+	if err := Append(path, &ev); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -38,7 +38,7 @@ func TestAppendJSONL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("opening audit file: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	scanner := bufio.NewScanner(f)
 	if !scanner.Scan() {
@@ -63,7 +63,7 @@ func TestAppendMultiple(t *testing.T) {
 	path := filepath.Join(dir, "audit.jsonl")
 
 	for i := 0; i < 3; i++ {
-		if err := Append(path, AuditEvent{Command: "test"}); err != nil {
+		if err := Append(path, &AuditEvent{Command: "test"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	}
@@ -72,7 +72,7 @@ func TestAppendMultiple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("opening audit file: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	lines := 0
 	scanner := bufio.NewScanner(f)
@@ -88,7 +88,7 @@ func TestAppendCreatesDirectory(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "subdir", "audit.jsonl")
 
-	if err := Append(path, AuditEvent{Command: "test"}); err != nil {
+	if err := Append(path, &AuditEvent{Command: "test"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 

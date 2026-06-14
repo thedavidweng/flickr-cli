@@ -17,7 +17,7 @@ type DB struct {
 }
 
 // Open opens or creates the cache database.
-func Open(path string, profile string) (*DB, error) {
+func Open(path, profile string) (*DB, error) {
 	// Create directory if needed
 	dir := filepath.Dir(path)
 	if dir != "" && dir != "." {

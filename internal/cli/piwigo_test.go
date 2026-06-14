@@ -11,7 +11,7 @@ func TestPiwigoHelp(t *testing.T) {
 	buf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
 	rootCmd.SetArgs([]string{"piwigo", "--help"})
-	rootCmd.Execute()
+	_ = rootCmd.Execute()
 
 	if buf.Len() == 0 {
 		t.Error("expected help output")

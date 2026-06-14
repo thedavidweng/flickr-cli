@@ -55,7 +55,7 @@ type Plan struct {
 }
 
 // BuildPlan creates an upload plan from local files.
-func BuildPlan(files []LocalFile, opts PlanOptions) (*Plan, error) {
+func BuildPlan(files []LocalFile, opts *PlanOptions) (*Plan, error) {
 	plan := &Plan{
 		Invalid: []InvalidFile{},
 		Skipped: []SkippedUpload{},

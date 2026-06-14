@@ -22,7 +22,7 @@ type Importer struct {
 }
 
 // Import runs the Piwigo import.
-func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSummary, error) {
+func (i *Importer) Import(ctx context.Context, opts *ImportOptions) (*ImportSummary, error) {
 	// Create Piwigo client
 	piwigo := NewClient(opts.URL, opts.Username, opts.Password)
 
@@ -54,7 +54,8 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 				return nil, fmt.Errorf("getting images for category %s: %w", cat.ID, err)
 			}
 
-			for _, img := range images {
+			for idx := range images {
+				img := &images[idx]
 				summary.Planned++
 
 				// Check limit
@@ -90,10 +91,10 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 				}
 
 				// Build tags
-				tags := Tags(&img)
+				tags := Tags(img)
 
 				// Build albums
-				albums := Albums(&img, categories, opts.AlbumPrefix, opts.ImportAlbum)
+				albums := Albums(img, categories, opts.AlbumPrefix, opts.ImportAlbum)
 
 				// Upload to Flickr
 				uploadOpts := flickr.UploadOptions{
@@ -102,7 +103,7 @@ func (i *Importer) Import(ctx context.Context, opts ImportOptions) (*ImportSumma
 					Tags:        tags,
 				}
 
-				result, err := i.Flickr.Upload(ctx, tmpFile, uploadOpts)
+				result, err := i.Flickr.Upload(ctx, tmpFile, &uploadOpts)
 				if err != nil {
 					_ = os.Remove(tmpFile)
 					summary.Failed++

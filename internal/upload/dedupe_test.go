@@ -21,7 +21,7 @@ func TestDeduplicatorCreation(t *testing.T) {
 func TestCheckByChecksumFound(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok","photos":{"photo":[{"id":"existing-photo-123"}],"total":1}}`))
+		_, _ = w.Write([]byte(`{"stat":"ok","photos":{"photo":[{"id":"existing-photo-123"}],"total":1}}`))
 	}))
 	defer server.Close()
 
@@ -51,7 +51,7 @@ func TestCheckByChecksumFound(t *testing.T) {
 func TestCheckByChecksumNotFound(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok","photos":{"photo":[],"total":0}}`))
+		_, _ = w.Write([]byte(`{"stat":"ok","photos":{"photo":[],"total":0}}`))
 	}))
 	defer server.Close()
 

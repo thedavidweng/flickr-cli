@@ -9,7 +9,7 @@ func TestDoctorHelp(t *testing.T) {
 	buf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
 	rootCmd.SetArgs([]string{"doctor", "--help"})
-	rootCmd.Execute()
+	_ = rootCmd.Execute()
 
 	if buf.Len() == 0 {
 		t.Error("expected help output")
@@ -97,7 +97,10 @@ func TestDoctorRunE(t *testing.T) {
 
 		// First 3 should pass
 		for i, name := range []string{"config", "profile", "api_key"} {
-			c := checksRaw[i].(map[string]any)
+			c, ok := checksRaw[i].(map[string]any)
+			if !ok {
+				t.Fatalf("check %d: not a map", i)
+			}
 			if c["name"] != name {
 				t.Errorf("check %d: expected name=%s, got %v", i, name, c["name"])
 			}
@@ -107,7 +110,10 @@ func TestDoctorRunE(t *testing.T) {
 		}
 
 		// OAuth check should fail
-		oauthCheck := checksRaw[3].(map[string]any)
+		oauthCheck, ok := checksRaw[3].(map[string]any)
+		if !ok {
+			t.Fatal("oauth check: not a map")
+		}
 		if oauthCheck["name"] != "oauth" {
 			t.Errorf("expected name=oauth, got %v", oauthCheck["name"])
 		}
@@ -134,7 +140,7 @@ func TestDoctorRunE(t *testing.T) {
 		}
 
 		output := buf.String()
-		if len(output) == 0 {
+		if output == "" {
 			t.Fatal("expected human-readable output")
 		}
 

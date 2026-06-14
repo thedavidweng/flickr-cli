@@ -10,7 +10,9 @@ func TestScanStableOrder(t *testing.T) {
 	dir := t.TempDir()
 	files := []string{"c.jpg", "a.jpg", "b.jpg"}
 	for _, f := range files {
-		os.WriteFile(filepath.Join(dir, f), []byte("test"), 0o644)
+		if err := os.WriteFile(filepath.Join(dir, f), []byte("test"), 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	valid, _, err := Scan([]string{dir}, ScanOptions{Recursive: false})
@@ -36,9 +38,15 @@ func TestScanStableOrder(t *testing.T) {
 
 func TestScanInvalidExtensions(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "photo.jpg"), []byte("test"), 0o644)
-	os.WriteFile(filepath.Join(dir, "doc.txt"), []byte("test"), 0o644)
-	os.WriteFile(filepath.Join(dir, "image.png"), []byte("test"), 0o644)
+	if err := os.WriteFile(filepath.Join(dir, "photo.jpg"), []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "doc.txt"), []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "image.png"), []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	valid, invalid, err := Scan([]string{dir}, ScanOptions{Recursive: false})
 	if err != nil {
@@ -59,7 +67,9 @@ func TestScanInvalidExtensions(t *testing.T) {
 func TestScanSingleFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "photo.jpg")
-	os.WriteFile(path, []byte("test"), 0o644)
+	if err := os.WriteFile(path, []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	valid, _, err := Scan([]string{path}, ScanOptions{})
 	if err != nil {
@@ -77,9 +87,15 @@ func TestScanSingleFile(t *testing.T) {
 func TestScanRecursive(t *testing.T) {
 	dir := t.TempDir()
 	subdir := filepath.Join(dir, "sub")
-	os.Mkdir(subdir, 0o755)
-	os.WriteFile(filepath.Join(dir, "a.jpg"), []byte("test"), 0o644)
-	os.WriteFile(filepath.Join(subdir, "b.jpg"), []byte("test"), 0o644)
+	if err := os.Mkdir(subdir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "a.jpg"), []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(subdir, "b.jpg"), []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	valid, _, err := Scan([]string{dir}, ScanOptions{Recursive: true})
 	if err != nil {
@@ -94,9 +110,15 @@ func TestScanRecursive(t *testing.T) {
 func TestScanNonRecursiveDir(t *testing.T) {
 	dir := t.TempDir()
 	subdir := filepath.Join(dir, "sub")
-	os.Mkdir(subdir, 0o755)
-	os.WriteFile(filepath.Join(dir, "a.jpg"), []byte("test"), 0o644)
-	os.WriteFile(filepath.Join(subdir, "b.jpg"), []byte("test"), 0o644)
+	if err := os.Mkdir(subdir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "a.jpg"), []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(subdir, "b.jpg"), []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	valid, _, err := Scan([]string{dir}, ScanOptions{Recursive: false})
 	if err != nil {
@@ -110,8 +132,12 @@ func TestScanNonRecursiveDir(t *testing.T) {
 
 func TestScanCustomExtensions(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "photo.jpg"), []byte("test"), 0o644)
-	os.WriteFile(filepath.Join(dir, "photo.raw"), []byte("test"), 0o644)
+	if err := os.WriteFile(filepath.Join(dir, "photo.jpg"), []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "photo.raw"), []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	valid, invalid, err := Scan([]string{dir}, ScanOptions{
 		AcceptedExt: []string{"raw"},

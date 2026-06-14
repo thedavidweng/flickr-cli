@@ -363,7 +363,7 @@ func downloadAndHash(httpClient *http.Client, url, tmpPath, algorithm string) (s
 	if err != nil {
 		return "", fmt.Errorf("downloading: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("download failed: HTTP %d", resp.StatusCode)

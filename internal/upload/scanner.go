@@ -89,18 +89,19 @@ func Scan(paths []string, opts ScanOptions) (valid []LocalFile, invalid []Invali
 					return nil, nil, fmt.Errorf("reading dir %s: %w", p, err)
 				}
 				for _, entry := range entries {
-					if !entry.IsDir() {
-						fullPath := filepath.Join(p, entry.Name())
-						fi, err := entry.Info()
-						if err != nil {
-							continue
-						}
-						lf, inv := classifyFile(fullPath, entry.Name(), fi, accepted)
-						if lf != nil {
-							valid = append(valid, *lf)
-						} else if inv != nil {
-							invalid = append(invalid, *inv)
-						}
+					if entry.IsDir() {
+						continue
+					}
+					fullPath := filepath.Join(p, entry.Name())
+					fi, err := entry.Info()
+					if err != nil {
+						continue
+					}
+					lf, inv := classifyFile(fullPath, entry.Name(), fi, accepted)
+					if lf != nil {
+						valid = append(valid, *lf)
+					} else if inv != nil {
+						invalid = append(invalid, *inv)
 					}
 				}
 			}

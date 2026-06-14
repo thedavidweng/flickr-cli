@@ -45,7 +45,7 @@ var cacheSyncCmd = &cobra.Command{
 		if err != nil {
 			return r.Failure(meta, output.Errorf(model.ErrCache, "opening cache: %v", err))
 		}
-		defer db.Close()
+		defer func() { _ = db.Close() }()
 
 		result, err := cache.Sync(cmd.Context(), db, client, cache.SyncOptions{
 			Albums: albums,
@@ -82,7 +82,7 @@ var cacheStatsCmd = &cobra.Command{
 		if err != nil {
 			return r.Failure(meta, output.Errorf(model.ErrCache, "opening cache: %v", err))
 		}
-		defer db.Close()
+		defer func() { _ = db.Close() }()
 
 		stats, err := db.Stats()
 		if err != nil {
@@ -130,7 +130,7 @@ var cacheCleanupCmd = &cobra.Command{
 		if err != nil {
 			return r.Failure(meta, output.Errorf(model.ErrCache, "opening cache: %v", err))
 		}
-		defer db.Close()
+		defer func() { _ = db.Close() }()
 
 		count, err := db.Cleanup(olderThan)
 		if err != nil {

@@ -99,7 +99,7 @@ func HMACSHA1Signature(baseString, signingKey string) string {
 }
 
 // OAuthParams returns the standard OAuth parameters.
-func (s OAuthSigner) OAuthParams() map[string]string {
+func (s *OAuthSigner) OAuthParams() map[string]string {
 	return map[string]string{
 		"oauth_consumer_key":     s.Creds.ConsumerKey,
 		"oauth_nonce":            s.Nonce(),
@@ -113,7 +113,7 @@ func (s OAuthSigner) OAuthParams() map[string]string {
 // The returned map includes all OAuth protocol parameters (consumer_key, nonce,
 // timestamp, signature, etc.) plus any params that start with "oauth_" from the
 // input params (e.g. oauth_callback, oauth_verifier).
-func (s OAuthSigner) Sign(method, baseURL string, params map[string][]string) (map[string]string, error) {
+func (s *OAuthSigner) Sign(method, baseURL string, params map[string][]string) (map[string]string, error) {
 	oauthParams := s.OAuthParams()
 
 	// Add token if present

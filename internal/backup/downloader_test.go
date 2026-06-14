@@ -73,13 +73,13 @@ func TestDownloadItem(t *testing.T) {
 func TestDownload(t *testing.T) {
 	// Create a mock server that returns a photo
 	photoServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("fake-photo-data"))
+		_, _ = w.Write([]byte("fake-photo-data"))
 	}))
 	defer photoServer.Close()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok","sizes":{"size":[{"label":"Original","width":4000,"height":3000,"source":"` + photoServer.URL + `/photo.jpg","url":"` + photoServer.URL + `/photo.jpg","media":"photo"}]}}`))
+		_, _ = w.Write([]byte(`{"stat":"ok","sizes":{"size":[{"label":"Original","width":4000,"height":3000,"source":"` + photoServer.URL + `/photo.jpg","url":"` + photoServer.URL + `/photo.jpg","media":"photo"}]}}`))
 	}))
 	defer server.Close()
 
@@ -120,7 +120,9 @@ func TestDownload(t *testing.T) {
 func TestDownloadSkipExisting(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "photo.jpg")
-	os.WriteFile(filePath, []byte("existing"), 0o644)
+	if err := os.WriteFile(filePath, []byte("existing"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	downloader := &Downloader{
 		HTTP:        http.DefaultClient,

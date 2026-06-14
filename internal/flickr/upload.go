@@ -45,7 +45,7 @@ type flickrUploadResponse struct {
 }
 
 // Upload uploads a photo to Flickr.
-func (c *Client) Upload(ctx context.Context, filePath string, opts UploadOptions) (*UploadResult, error) {
+func (c *Client) Upload(ctx context.Context, filePath string, opts *UploadOptions) (*UploadResult, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("opening file: %w", err)
@@ -127,7 +127,7 @@ func (c *Client) Upload(ctx context.Context, filePath string, opts UploadOptions
 	if err != nil {
 		return nil, fmt.Errorf("uploading: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024))
 	if err != nil {

@@ -100,7 +100,7 @@ func (c *Client) RequestToken(ctx context.Context, callback string) (*RequestTok
 	if err != nil {
 		return nil, fmt.Errorf("requesting token: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024))
 	if err != nil {
@@ -174,7 +174,7 @@ func (c *Client) AccessToken(ctx context.Context, requestToken, requestTokenSecr
 	if err != nil {
 		return nil, fmt.Errorf("requesting access token: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024))
 	if err != nil {
