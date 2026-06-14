@@ -12,7 +12,7 @@ import (
 func TestCallRawSuccess(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok","result":"success"}`))
+		_, _ = w.Write([]byte(`{"stat":"ok","result":"success"}`))
 	}))
 	defer server.Close()
 
@@ -34,7 +34,7 @@ func TestCallRawSuccess(t *testing.T) {
 func TestCallRawFailResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"fail","code":1,"message":"Not found"}`))
+		_, _ = w.Write([]byte(`{"stat":"fail","code":1,"message":"Not found"}`))
 	}))
 	defer server.Close()
 
@@ -53,7 +53,7 @@ func TestCallRawFailResponse(t *testing.T) {
 func TestCallRawHTTPError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal Server Error"))
+		_, _ = w.Write([]byte("Internal Server Error"))
 	}))
 	defer server.Close()
 
@@ -72,7 +72,7 @@ func TestCallRawHTTPError(t *testing.T) {
 func TestCallDecodesResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok","name":"test"}`))
+		_, _ = w.Write([]byte(`{"stat":"ok","name":"test"}`))
 	}))
 	defer server.Close()
 
@@ -108,7 +108,7 @@ func TestRESTAddsDefaultParams(t *testing.T) {
 			t.Error("missing nojsoncallback=1")
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok"}`))
+		_, _ = w.Write([]byte(`{"stat":"ok"}`))
 	}))
 	defer server.Close()
 
@@ -124,7 +124,7 @@ func TestRESTAddsDefaultParams(t *testing.T) {
 func TestTestLogin(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok","user":{"id":"test-user-123","username":{"_content":"testuser"}}}`))
+		_, _ = w.Write([]byte(`{"stat":"ok","user":{"id":"test-user-123","username":{"_content":"testuser"}}}`))
 	}))
 	defer server.Close()
 
@@ -152,7 +152,7 @@ func TestTestLogin(t *testing.T) {
 func TestTestEcho(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok"}`))
+		_, _ = w.Write([]byte(`{"stat":"ok"}`))
 	}))
 	defer server.Close()
 
@@ -174,11 +174,11 @@ func TestRetryHTTP503(t *testing.T) {
 		n := atomic.AddInt32(&attempts, 1)
 		if n <= 2 {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte("Service Unavailable"))
+			_, _ = w.Write([]byte("Service Unavailable"))
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok","result":"recovered"}`))
+		_, _ = w.Write([]byte(`{"stat":"ok","result":"recovered"}`))
 	}))
 	defer server.Close()
 
@@ -205,7 +205,7 @@ func TestRESTSignsAuthenticatedCall(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedAuth = r.Header.Get("Authorization")
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok"}`))
+		_, _ = w.Write([]byte(`{"stat":"ok"}`))
 	}))
 	defer server.Close()
 

@@ -73,7 +73,7 @@ var photosUploadCmd = &cobra.Command{
 			MoveAfter:   moveAfter,
 		}
 
-		plan, err := upload.BuildPlan(valid, planOpts)
+		plan, err := upload.BuildPlan(valid, &planOpts)
 		if err != nil {
 			return ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrValidationFailed, "%v", err))
 		}
@@ -116,7 +116,7 @@ var photosUploadCmd = &cobra.Command{
 			MoveAfter:   moveAfter,
 		}
 
-		summary, err := executor.Execute(ctx.Cmd.Context(), *plan, planOpts)
+		summary, err := executor.Execute(ctx.Cmd.Context(), *plan, &planOpts)
 		if err != nil {
 			var cmdErr *model.CommandError
 			if errors.As(err, &cmdErr) {

@@ -22,7 +22,7 @@ func TestAlbumResolverCreation(t *testing.T) {
 func TestAlbumResolverLoad(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok","photosets":{"photoset":[{"id":"album-1","title":{"_content":"Test Album"},"photos":10}]}}`))
+		_, _ = w.Write([]byte(`{"stat":"ok","photosets":{"photoset":[{"id":"album-1","title":{"_content":"Test Album"},"photos":10}]}}`))
 	}))
 	defer server.Close()
 
@@ -46,7 +46,7 @@ func TestAlbumResolverLoad(t *testing.T) {
 func TestAlbumResolverResolveOrCreate(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok","photoset":{"id":"new-album-123"}}`))
+		_, _ = w.Write([]byte(`{"stat":"ok","photoset":{"id":"new-album-123"}}`))
 	}))
 	defer server.Close()
 

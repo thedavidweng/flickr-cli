@@ -23,7 +23,7 @@ type AuditEvent struct {
 }
 
 // Append writes a single audit event to the JSONL audit log.
-func Append(path string, ev AuditEvent) error {
+func Append(path string, ev *AuditEvent) error {
 	if ev.TS == "" {
 		ev.TS = time.Now().UTC().Format(time.RFC3339)
 	}

@@ -23,7 +23,7 @@ func Tags(image *ImageInfo) []string {
 }
 
 // Albums builds the album list for an image.
-func Albums(image *ImageInfo, categories []Category, prefix string, importAlbum string) []string {
+func Albums(image *ImageInfo, categories []Category, prefix, importAlbum string) []string {
 	var albums []string
 
 	if importAlbum != "" {

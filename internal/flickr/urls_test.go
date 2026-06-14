@@ -64,7 +64,7 @@ func TestSelectSizeOriginalFallback(t *testing.T) {
 func TestGetSizes(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok","sizes":{"size":[{"label":"Original","width":4000,"height":3000,"source":"original.jpg","url":"http://example.com","media":"photo"}]}}`))
+		_, _ = w.Write([]byte(`{"stat":"ok","sizes":{"size":[{"label":"Original","width":4000,"height":3000,"source":"original.jpg","url":"http://example.com","media":"photo"}]}}`))
 	}))
 	defer server.Close()
 

@@ -19,11 +19,11 @@ import (
 )
 
 // setupFakeCLI creates a fake Flickr server and writes a config pointing at it.
-func setupFakeCLI(t *testing.T) (*testutil.FakeFlickr, string) {
+func setupFakeCLI(t *testing.T) (fake *testutil.FakeFlickr, cfgDir string) {
 	t.Helper()
-	fake := testutil.NewFakeFlickr(t)
+	fake = testutil.NewFakeFlickr(t)
 
-	cfgDir := t.TempDir()
+	cfgDir = t.TempDir()
 	cfgPath := filepath.Join(cfgDir, "config.yaml")
 	cfgContent := fmt.Sprintf(`schema_version: "2026-06-02"
 default_profile: default
@@ -173,7 +173,7 @@ func TestAlbumsListJSON(t *testing.T) {
 	if len(items) != 1 {
 		t.Fatalf("expected 1 album, got %d", len(items))
 	}
-	album := items[0].(map[string]any)
+	album, _ := items[0].(map[string]any)
 	if album["id"] != "album-1" {
 		t.Errorf("expected album id=album-1, got %v", album["id"])
 	}
@@ -268,8 +268,8 @@ func TestAlbumsCreateDryRun(t *testing.T) {
 	fake, cfg := setupFakeCLI(t)
 
 	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
-	cmd.Flags().Set("title", "New Album")
-	cmd.Flags().Set("primary-photo-id", "photo-99")
+	_ = cmd.Flags().Set("title", "New Album")
+	_ = cmd.Flags().Set("primary-photo-id", "photo-99")
 	err := albumsCreateCmd.RunE(cmd, nil)
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -346,7 +346,7 @@ func TestPhotosListJSON(t *testing.T) {
 	}
 
 	data, _ := env.Data.(map[string]any)
-	items := data["items"].([]any)
+	items, _ := data["items"].([]any)
 	if len(items) != 2 {
 		t.Fatalf("expected 2 photos, got %d", len(items))
 	}
@@ -361,7 +361,7 @@ func TestPhotosSearchJSON(t *testing.T) {
 	fake.Photos["p1"] = testutil.FakePhoto{ID: "p1", Title: "Sunset", Owner: "user1", Tags: "nature"}
 
 	cmd, buf := cmdContext(t, cfg, true)
-	cmd.Flags().Set("text", "sunset")
+	_ = cmd.Flags().Set("text", "sunset")
 	err := photosSearchCmd.RunE(cmd, nil)
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -376,7 +376,7 @@ func TestPhotosSearchJSON(t *testing.T) {
 	}
 
 	data, _ := env.Data.(map[string]any)
-	items := data["items"].([]any)
+	items, _ := data["items"].([]any)
 	if len(items) != 1 {
 		t.Fatalf("expected 1 photo, got %d", len(items))
 	}
@@ -467,7 +467,7 @@ func TestAPICallRawMode(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
 	cmd, buf := cmdContext(t, cfg, true)
-	cmd.Flags().Set("raw", "true")
+	_ = cmd.Flags().Set("raw", "true")
 	err := apiCallCmd.RunE(cmd, []string{"flickr.test.echo"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -595,13 +595,13 @@ func TestImplementedCommandsSucceed(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			cmd, buf := cmdContext(t, cfg, true)
-			tc.cmd.Flags().Set("confirm", "true")
-			tc.cmd.Flags().Set("tag", "test")
-			tc.cmd.Flags().Set("tag-id", "tag-1")
-			tc.cmd.Flags().Set("title", "New Title")
-			tc.cmd.Flags().Set("privacy", "public")
-			tc.cmd.Flags().Set("lat", "40.0")
-			tc.cmd.Flags().Set("lon", "-74.0")
+			_ = tc.cmd.Flags().Set("confirm", "true")
+			_ = tc.cmd.Flags().Set("tag", "test")
+			_ = tc.cmd.Flags().Set("tag-id", "tag-1")
+			_ = tc.cmd.Flags().Set("title", "New Title")
+			_ = tc.cmd.Flags().Set("privacy", "public")
+			_ = tc.cmd.Flags().Set("lat", "40.0")
+			_ = tc.cmd.Flags().Set("lon", "-74.0")
 			err := tc.cmd.RunE(cmd, tc.args)
 
 			env := parseEnvelope(t, buf)
@@ -663,8 +663,8 @@ func TestPhotosUploadDryRun(t *testing.T) {
 	// Verify the test file is in the planned list
 	found := false
 	for _, item := range plannedItems {
-		pu := item.(map[string]any)
-		if strings.Contains(pu["local_path"].(string), "test.jpg") {
+		pu, _ := item.(map[string]any)
+		if lp, ok := pu["local_path"].(string); ok && strings.Contains(lp, "test.jpg") {
 			found = true
 			break
 		}

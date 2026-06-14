@@ -43,7 +43,7 @@ type Executor struct {
 }
 
 // Execute runs the upload plan concurrently and returns results.
-func (e *Executor) Execute(ctx context.Context, plan Plan, opts PlanOptions) (*UploadSummary, error) {
+func (e *Executor) Execute(ctx context.Context, plan Plan, opts *PlanOptions) (*UploadSummary, error) {
 	summary := &UploadSummary{
 		Planned: len(plan.Planned),
 		Results: make([]UploadResult, len(plan.Planned)),
@@ -61,9 +61,9 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts PlanOptions) (*U
 	}
 
 	if gateResult.Planned {
-		for i, pu := range plan.Planned {
+		for i := range plan.Planned {
 			summary.Results[i] = UploadResult{
-				LocalPath: pu.LocalPath,
+				LocalPath: plan.Planned[i].LocalPath,
 				Status:    "planned",
 			}
 		}
@@ -81,8 +81,8 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts PlanOptions) (*U
 	}
 
 	ch := make(chan indexedItem, len(plan.Planned))
-	for i, pu := range plan.Planned {
-		ch <- indexedItem{index: i, plan: pu}
+	for i := range plan.Planned {
+		ch <- indexedItem{index: i, plan: plan.Planned[i]}
 	}
 	close(ch)
 
@@ -94,7 +94,7 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts PlanOptions) (*U
 		go func() {
 			defer wg.Done()
 			for item := range ch {
-				result, err := e.uploadSingle(ctx, item.plan, opts)
+				result, err := e.uploadSingle(ctx, &plan.Planned[i], opts)
 				summary.Results[item.index] = result
 				if err != nil {
 					return
@@ -118,7 +118,7 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts PlanOptions) (*U
 	return summary, nil
 }
 
-func (e *Executor) uploadSingle(ctx context.Context, pu PlannedUpload, opts PlanOptions) (UploadResult, error) {
+func (e *Executor) uploadSingle(ctx context.Context, pu *PlannedUpload, opts *PlanOptions) (UploadResult, error) {
 	result := UploadResult{
 		LocalPath: pu.LocalPath,
 	}
@@ -191,14 +191,14 @@ func (e *Executor) uploadSingle(ctx context.Context, pu PlannedUpload, opts Plan
 		uploadOpts.Hidden = 1
 	}
 
-	uploadResult, err := e.Client.Upload(ctx, pu.LocalPath, uploadOpts)
+	uploadResult, err := e.Client.Upload(ctx, pu.LocalPath, &uploadOpts)
 	if err != nil {
 		result.Status = "failed"
 		result.Error = fmt.Sprintf("upload failed: %v", err)
 
 		// Audit the failure
 		if e.AuditPath != "" {
-			if auditErr := safety.Append(e.AuditPath, safety.AuditEvent{
+			if auditErr := safety.Append(e.AuditPath, &safety.AuditEvent{
 				RequestID: e.RequestID,
 				Profile:   e.Profile,
 				Command:   "photos.upload",
@@ -238,7 +238,7 @@ func (e *Executor) uploadSingle(ctx context.Context, pu PlannedUpload, opts Plan
 
 	// Audit the success
 	if e.AuditPath != "" {
-		if auditErr := safety.Append(e.AuditPath, safety.AuditEvent{
+		if auditErr := safety.Append(e.AuditPath, &safety.AuditEvent{
 			RequestID: e.RequestID,
 			Profile:   e.Profile,
 			Command:   "photos.upload",

@@ -94,7 +94,7 @@ func TestAuthorizationURL(t *testing.T) {
 func TestRequestToken(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
-		w.Write([]byte("oauth_token=req-token&oauth_token_secret=req-secret&oauth_callback_confirmed=true"))
+		_, _ = w.Write([]byte("oauth_token=req-token&oauth_token_secret=req-secret&oauth_callback_confirmed=true"))
 	}))
 	defer server.Close()
 
@@ -117,7 +117,7 @@ func TestRequestToken(t *testing.T) {
 func TestAccessToken(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
-		w.Write([]byte("oauth_token=access-token&oauth_token_secret=access-secret&user_nsid=user123&username=testuser"))
+		_, _ = w.Write([]byte("oauth_token=access-token&oauth_token_secret=access-secret&user_nsid=user123&username=testuser"))
 	}))
 	defer server.Close()
 

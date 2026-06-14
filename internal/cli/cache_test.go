@@ -16,7 +16,7 @@ func TestCacheHelp(t *testing.T) {
 	buf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
 	rootCmd.SetArgs([]string{"cache", "--help"})
-	rootCmd.Execute()
+	_ = rootCmd.Execute()
 
 	if buf.Len() == 0 {
 		t.Error("expected help output")
@@ -66,16 +66,16 @@ func TestCacheStatsNoCache(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected data.counts to be a map, got %T", data["counts"])
 	}
-	if counts["albums"].(float64) != 0 {
+	if v, ok := counts["albums"].(float64); ok && v != 0 {
 		t.Errorf("expected 0 albums, got %v", counts["albums"])
 	}
-	if counts["photos"].(float64) != 0 {
+	if v, ok := counts["photos"].(float64); ok && v != 0 {
 		t.Errorf("expected 0 photos, got %v", counts["photos"])
 	}
-	if counts["checksums"].(float64) != 0 {
+	if v, ok := counts["checksums"].(float64); ok && v != 0 {
 		t.Errorf("expected 0 checksums, got %v", counts["checksums"])
 	}
-	if counts["jobs"].(float64) != 0 {
+	if v, ok := counts["jobs"].(float64); ok && v != 0 {
 		t.Errorf("expected 0 jobs, got %v", counts["jobs"])
 	}
 

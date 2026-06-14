@@ -81,7 +81,7 @@ func TestPendingOAuthAddAndGet(t *testing.T) {
 		Perms:         "write",
 		ExpiresAt:     time.Now().Add(10 * time.Minute).UTC().Format(time.RFC3339),
 	}
-	cfg.SetPendingOAuth("abc-123", entry)
+	cfg.SetPendingOAuth("abc-123", &entry)
 
 	got, ok := cfg.GetPendingOAuth("abc-123")
 	if !ok {

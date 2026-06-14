@@ -65,7 +65,7 @@ func TestExecutorExecuteDryRun(t *testing.T) {
 		},
 	}
 
-	summary, err := executor.Execute(context.Background(), plan, PlanOptions{})
+	summary, err := executor.Execute(context.Background(), plan, &PlanOptions{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -89,7 +89,7 @@ func TestExecutorExecuteReadOnly(t *testing.T) {
 		},
 	}
 
-	_, err := executor.Execute(context.Background(), plan, PlanOptions{})
+	_, err := executor.Execute(context.Background(), plan, &PlanOptions{})
 	if err == nil {
 		t.Error("expected error for read-only mode")
 	}
@@ -98,13 +98,13 @@ func TestExecutorExecuteReadOnly(t *testing.T) {
 func TestExecutorExecuteUploadSuccess(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/xml")
-		w.Write([]byte(`<?xml version="1.0"?><rsp stat="ok"><photoid>12345</photoid></rsp>`))
+		_, _ = w.Write([]byte(`<?xml version="1.0"?><rsp stat="ok"><photoid>12345</photoid></rsp>`))
 	}))
 	defer server.Close()
 
 	tmpDir := t.TempDir()
 	tmpFile := tmpDir + "/test.jpg"
-	os.WriteFile(tmpFile, []byte("fake-image-data"), 0o644)
+	_ = os.WriteFile(tmpFile, []byte("fake-image-data"), 0o644)
 
 	client := &flickr.Client{
 		APIKey:    "test-key",
@@ -126,7 +126,7 @@ func TestExecutorExecuteUploadSuccess(t *testing.T) {
 		},
 	}
 
-	summary, err := executor.Execute(context.Background(), plan, PlanOptions{})
+	summary, err := executor.Execute(context.Background(), plan, &PlanOptions{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

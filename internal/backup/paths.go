@@ -13,7 +13,7 @@ import (
 var unsafeChars = regexp.MustCompile(`[/\\` + "`" + `\x00-\x1f]`)
 
 // SafeName sanitizes a string for use as a filename.
-func SafeName(input string, fallback string) string {
+func SafeName(input, fallback string) string {
 	s := unsafeChars.ReplaceAllString(input, "_")
 	s = strings.TrimRight(strings.TrimSpace(s), ".")
 
@@ -21,7 +21,7 @@ func SafeName(input string, fallback string) string {
 	upper := strings.ToUpper(s)
 	for _, r := range reserved {
 		if upper == r {
-			s = s + "_"
+			s += "_"
 			break
 		}
 	}
@@ -43,7 +43,7 @@ func SafeName(input string, fallback string) string {
 }
 
 // IDDirsPath generates the path for an id-dirs backup.
-func IDDirsPath(dest string, photoID string, ext string) string {
+func IDDirsPath(dest, photoID, ext string) string {
 	h := md5.New()
 	_, _ = io.WriteString(h, photoID)
 	hash := fmt.Sprintf("%x", h.Sum(nil))

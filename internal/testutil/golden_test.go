@@ -9,7 +9,7 @@ import (
 func TestLoadGolden(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.json")
-	os.WriteFile(path, []byte(`{"key":"value"}`), 0o644)
+	_ = os.WriteFile(path, []byte(`{"key":"value"}`), 0o644)
 
 	content := LoadGolden(t, path)
 	if string(content) != `{"key":"value"}` {

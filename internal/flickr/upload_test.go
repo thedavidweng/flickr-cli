@@ -55,7 +55,7 @@ func TestBoolToNum(t *testing.T) {
 func TestUpload(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/xml")
-		w.Write([]byte(`<?xml version="1.0"?><rsp stat="ok"><photoid>12345</photoid></rsp>`))
+		_, _ = w.Write([]byte(`<?xml version="1.0"?><rsp stat="ok"><photoid>12345</photoid></rsp>`))
 	}))
 	defer server.Close()
 
@@ -69,9 +69,9 @@ func TestUpload(t *testing.T) {
 	// Create a temp file to upload
 	tmpDir := t.TempDir()
 	tmpFile := tmpDir + "/test.jpg"
-	os.WriteFile(tmpFile, []byte("fake-image-data"), 0o644)
+	_ = os.WriteFile(tmpFile, []byte("fake-image-data"), 0o644)
 
-	result, err := client.Upload(context.Background(), tmpFile, UploadOptions{Title: "Test"})
+	result, err := client.Upload(context.Background(), tmpFile, &UploadOptions{Title: "Test"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestUpload(t *testing.T) {
 func TestAddToAlbum(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"stat":"ok"}`))
+		_, _ = w.Write([]byte(`{"stat":"ok"}`))
 	}))
 	defer server.Close()
 
@@ -104,7 +104,7 @@ func TestUploadSignatureExcludesPhoto(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedAuth = r.Header.Get("Authorization")
 		w.Header().Set("Content-Type", "application/xml")
-		w.Write([]byte(`<?xml version="1.0"?><rsp stat="ok"><photoid>99999</photoid></rsp>`))
+		_, _ = w.Write([]byte(`<?xml version="1.0"?><rsp stat="ok"><photoid>99999</photoid></rsp>`))
 	}))
 	defer server.Close()
 
@@ -120,9 +120,9 @@ func TestUploadSignatureExcludesPhoto(t *testing.T) {
 	// Create a temp file to upload
 	tmpDir := t.TempDir()
 	tmpFile := tmpDir + "/test.jpg"
-	os.WriteFile(tmpFile, []byte("fake-image-data"), 0o644)
+	_ = os.WriteFile(tmpFile, []byte("fake-image-data"), 0o644)
 
-	_, err := client.Upload(context.Background(), tmpFile, UploadOptions{
+	_, err := client.Upload(context.Background(), tmpFile, &UploadOptions{
 		Title:    "My Photo",
 		IsPublic: true,
 		Tags:     []string{"nature"},

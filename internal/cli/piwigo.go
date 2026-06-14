@@ -97,7 +97,7 @@ var piwigoImportCmd = &cobra.Command{
 		}
 
 		// Run import
-		summary, err := imp.Import(cmd.Context(), opts)
+		summary, err := imp.Import(cmd.Context(), &opts)
 		if err != nil {
 			return r.Failure(meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
 		}

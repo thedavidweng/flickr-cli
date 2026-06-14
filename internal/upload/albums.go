@@ -48,7 +48,7 @@ func (r *AlbumResolver) Load(ctx context.Context) error {
 }
 
 // ResolveOrCreate finds an album by title or creates it.
-func (r *AlbumResolver) ResolveOrCreate(ctx context.Context, title string, primaryPhotoID string) (id string, created bool, err error) {
+func (r *AlbumResolver) ResolveOrCreate(ctx context.Context, title, primaryPhotoID string) (id string, created bool, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

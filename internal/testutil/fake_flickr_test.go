@@ -47,7 +47,7 @@ func TestFakeFlickrCountMethod(t *testing.T) {
 
 	// Make a call to register it
 	resp, _ := http.Get(fake.Server.URL + "/services/rest/?method=flickr.test.login&api_key=test&format=json&nojsoncallback=1")
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if fake.CountMethod("flickr.test.login") != 1 {
 		t.Error("expected 1 call after request")
@@ -73,7 +73,7 @@ func TestFakeFlickrLastCall(t *testing.T) {
 
 	// Make a call to register it
 	resp, _ := http.Get(fake.Server.URL + "/services/rest/?method=flickr.test.login&api_key=test&format=json&nojsoncallback=1")
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	call, found := fake.LastCall("flickr.test.login")
 	if !found {
@@ -109,10 +109,10 @@ func TestFakeFlickrHandleREST(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error for %s: %v", method, err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		var result map[string]any
-		json.NewDecoder(resp.Body).Decode(&result)
+		_ = json.NewDecoder(resp.Body).Decode(&result)
 	}
 }
 
@@ -124,7 +124,7 @@ func TestFakeFlickrHandleUpload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200, got %d", resp.StatusCode)
@@ -139,7 +139,7 @@ func TestFakeFlickrHandleRequestToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200, got %d", resp.StatusCode)
@@ -154,7 +154,7 @@ func TestFakeFlickrHandleAccessToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200, got %d", resp.StatusCode)
@@ -176,7 +176,7 @@ func TestFakeFlickrHandleAuthorize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// Should redirect
 	if resp.StatusCode != http.StatusFound {
@@ -197,10 +197,10 @@ func TestFakeFlickrHandleGetAlbums(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	var result map[string]any
-	json.NewDecoder(resp.Body).Decode(&result)
+	_ = json.NewDecoder(resp.Body).Decode(&result)
 }
 
 func TestFakeFlickrHandleGetAlbumInfo(t *testing.T) {
@@ -217,20 +217,20 @@ func TestFakeFlickrHandleGetAlbumInfo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	var result map[string]any
-	json.NewDecoder(resp.Body).Decode(&result)
+	_ = json.NewDecoder(resp.Body).Decode(&result)
 
 	// Test not found
 	resp2, err := http.Get(fake.Server.URL + "/services/rest/?method=flickr.photosets.getInfo&api_key=test&format=json&nojsoncallback=1&photoset_id=nonexistent")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	defer resp2.Body.Close()
+	defer func() { _ = resp2.Body.Close() }()
 
 	var result2 map[string]any
-	json.NewDecoder(resp2.Body).Decode(&result2)
+	_ = json.NewDecoder(resp2.Body).Decode(&result2)
 	if result2["stat"] != "fail" {
 		t.Errorf("expected stat=fail for nonexistent album, got %v", result2["stat"])
 	}
@@ -244,10 +244,10 @@ func TestFakeFlickrHandleGetAlbumPhotos(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	var result map[string]any
-	json.NewDecoder(resp.Body).Decode(&result)
+	_ = json.NewDecoder(resp.Body).Decode(&result)
 }
 
 func TestFakeFlickrHandlePhotoSearch(t *testing.T) {
@@ -263,10 +263,10 @@ func TestFakeFlickrHandlePhotoSearch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	var result map[string]any
-	json.NewDecoder(resp.Body).Decode(&result)
+	_ = json.NewDecoder(resp.Body).Decode(&result)
 }
 
 func TestFakeFlickrHandleGetUserPhotos(t *testing.T) {
@@ -277,10 +277,10 @@ func TestFakeFlickrHandleGetUserPhotos(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	var result map[string]any
-	json.NewDecoder(resp.Body).Decode(&result)
+	_ = json.NewDecoder(resp.Body).Decode(&result)
 }
 
 func TestFakeFlickrHandleGetPhotoInfo(t *testing.T) {
@@ -297,20 +297,20 @@ func TestFakeFlickrHandleGetPhotoInfo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	var result map[string]any
-	json.NewDecoder(resp.Body).Decode(&result)
+	_ = json.NewDecoder(resp.Body).Decode(&result)
 
 	// Test not found
 	resp2, err := http.Get(fake.Server.URL + "/services/rest/?method=flickr.photos.getInfo&api_key=test&format=json&nojsoncallback=1&photo_id=nonexistent")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	defer resp2.Body.Close()
+	defer func() { _ = resp2.Body.Close() }()
 
 	var result2 map[string]any
-	json.NewDecoder(resp2.Body).Decode(&result2)
+	_ = json.NewDecoder(resp2.Body).Decode(&result2)
 	if result2["stat"] != "fail" {
 		t.Errorf("expected stat=fail for nonexistent photo, got %v", result2["stat"])
 	}
@@ -324,10 +324,10 @@ func TestFakeFlickrHandleGetPhotoSizes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	var result map[string]any
-	json.NewDecoder(resp.Body).Decode(&result)
+	_ = json.NewDecoder(resp.Body).Decode(&result)
 }
 
 func TestFakeFlickrExtractParams(t *testing.T) {
@@ -336,7 +336,7 @@ func TestFakeFlickrExtractParams(t *testing.T) {
 
 	// Make a call with params
 	resp, _ := http.Get(fake.Server.URL + "/services/rest/?method=flickr.test.echo&api_key=test&format=json&nojsoncallback=1&param1=value1")
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	call, _ := fake.LastCall("flickr.test.echo")
 	if call.Params["param1"] != "value1" {
@@ -353,7 +353,7 @@ func TestFakeFlickrWriteJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -374,10 +374,10 @@ func TestFakeFlickrWithFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result map[string]any
-	json.NewDecoder(resp.Body).Decode(&result)
+	_ = json.NewDecoder(resp.Body).Decode(&result)
 
 	if result["stat"] != "fail" {
 		t.Errorf("expected stat=fail, got %s", result["stat"])
@@ -392,10 +392,10 @@ func TestFakeFlickrUnknownMethod(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result map[string]any
-	json.NewDecoder(resp.Body).Decode(&result)
+	_ = json.NewDecoder(resp.Body).Decode(&result)
 
 	if result["stat"] != "ok" {
 		t.Errorf("expected stat=ok for unknown method, got %s", result["stat"])

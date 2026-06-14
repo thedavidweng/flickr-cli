@@ -11,7 +11,7 @@ import (
 )
 
 // FileHash computes the hash of a file using the specified algorithm.
-func FileHash(path string, algorithm string) (string, error) {
+func FileHash(path, algorithm string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return "", fmt.Errorf("opening file: %w", err)

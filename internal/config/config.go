@@ -151,11 +151,11 @@ func (c *Config) SetProfile(name string, p *Profile) {
 }
 
 // SetPendingOAuth stores a pending OAuth entry under the given ID.
-func (c *Config) SetPendingOAuth(id string, entry PendingOAuthEntry) {
+func (c *Config) SetPendingOAuth(id string, entry *PendingOAuthEntry) {
 	if c.State.PendingOAuth == nil {
 		c.State.PendingOAuth = make(map[string]PendingOAuthEntry)
 	}
-	c.State.PendingOAuth[id] = entry
+	c.State.PendingOAuth[id] = *entry
 }
 
 // GetPendingOAuth retrieves a pending OAuth entry by ID.
