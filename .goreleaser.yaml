@@ -118,15 +118,5 @@ brews:
     test: |
       system "#{bin}/flickr", "version"
 
-scoops:
-  - name: flickr
-    repository:
-      owner: thedavidweng
-      name: scoop-bucket
-      token: "{{ .Env.SCOOP_BUCKET_GITHUB_TOKEN }}"
-    homepage: "https://github.com/thedavidweng/flickr-cli"
-    description: "Agent-friendly CLI for Flickr photo management, backup, upload, and API access"
-    license: MIT
-
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
