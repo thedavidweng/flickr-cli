@@ -88,6 +88,15 @@ release:
     go install github.com/thedavidweng/flickr-cli/cmd/flickr@{{ .Tag }}
     ```
 
+    **Verify checksum:**
+    ```bash
+    cosign verify-blob \
+      --bundle checksums.txt.sig \
+      --certificate-identity-regexp='https://github.com/thedavidweng/flickr-cli' \
+      --certificate-oidc-issuer='https://token.actions.githubusercontent.com' \
+      checksums.txt
+    ```
+
 signs:
   - artifacts: checksum
     cmd: cosign
