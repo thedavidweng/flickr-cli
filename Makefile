@@ -13,3 +13,9 @@ build:
 	go build -o bin/flickr ./cmd/flickr
 
 lint: fmt vet test
+
+changelog:
+\tgit cliff -o CHANGELOG.md
+
+changelog-preview:
+\tgit cliff --latest
