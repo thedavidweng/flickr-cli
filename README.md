@@ -1,209 +1,101 @@
-<p align="center">
-  <h1 align="center">flickr-cli</h1>
-  <p align="center">
-    <strong>Agent-friendly Flickr CLI</strong>
-  </p>
-  <p align="center">
-    Single-binary tool for photo management, backup, upload, and full API access.
-  </p>
-</p>
+# flickr-cli
 
-<p align="center">
-  <a href="https://github.com/thedavidweng/flickr-cli/actions/workflows/ci.yml"><img src="https://github.com/thedavidweng/flickr-cli/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/thedavidweng/flickr-cli/releases"><img src="https://img.shields.io/github/v/release/thedavidweng/flickr-cli" alt="Release"></a>
-  <a href="https://pkg.go.dev/github.com/thedavidweng/flickr-cli"><img src="https://pkg.go.dev/badge/github.com/thedavidweng/flickr-cli.svg" alt="Go Reference"></a>
-  <a href="https://github.com/thedavidweng/flickr-cli/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <img src="https://img.shields.io/badge/go-1.26.3-00ADD8?logo=go" alt="Go">
-</p>
+[![CI](https://github.com/thedavidweng/flickr-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/thedavidweng/flickr-cli/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/thedavidweng/flickr-cli)](https://github.com/thedavidweng/flickr-cli/releases)
+[![Go Reference](https://pkg.go.dev/badge/github.com/thedavidweng/flickr-cli.svg)](https://pkg.go.dev/github.com/thedavidweng/flickr-cli)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](https://github.com/thedavidweng/flickr-cli/blob/main/LICENSE)
+[![Go](https://img.shields.io/badge/go-1.26.3-00ADD8?logo=go)](https://go.dev/)
 
----
+Agent-friendly Flickr CLI. Single-binary tool for photo management, backup, upload, and full API access.
 
-## Highlights
+## Quickstart
 
-- **Single binary** — no dependencies, no runtime, no containers
-- **47 commands** — photos, albums, favorites, galleries, groups, comments, contacts, stats, urls, checksums, cache, Piwigo import, raw API
-- **JSON-first** — `--json` on every command, consistent envelope, machine-parseable
-- **Safety gates** — `--read-only`, `--dry-run`, `--confirm` for destructive operations
-- **Agent-ready** — exit codes, error categories, NDJSON events stream, secret redaction
-- **Cross-platform** — Linux, macOS, Windows (amd64/arm64)
+### Install
 
-## Install
+Run the following on macOS or Linux:
 
-### Homebrew
+```shell
+curl -fsSL https://raw.githubusercontent.com/thedavidweng/flickr-cli/main/install.sh | sh
+```
 
-```sh
+Run the following on Windows:
+
+```shell
+powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/thedavidweng/flickr-cli/main/install.ps1 | iex"
+```
+
+The installer detects Homebrew automatically and uses it when available (recommended for easy upgrades). Otherwise it downloads the binary to `~/.local/bin`.
+
+<details>
+<summary>Other installation methods</summary>
+
+**Homebrew Cask (macOS/Linux):**
+
+```shell
 brew install --cask thedavidweng/tap/flickr
 ```
 
-### Go
+**Go:**
 
-```sh
+```shell
 go install github.com/thedavidweng/flickr-cli/cmd/flickr@latest
 ```
 
-### Binary download
+**Manual download:** grab the archive for your platform from the [latest GitHub Release](https://github.com/thedavidweng/flickr-cli/releases/latest), extract it, and place the `flickr` binary on your `PATH`.
 
-Download from [Releases](https://github.com/thedavidweng/flickr-cli/releases).
+**Build from source:**
 
-### Build from source
-
-```sh
+```shell
 git clone https://github.com/thedavidweng/flickr-cli.git
 cd flickr-cli
 make build
 ```
 
-## Quick Start
+</details>
 
-```sh
-# 1. Authenticate
+### Set up
+
+```shell
 flickr auth login --perms write
-
-# 2. Verify
 flickr doctor
+```
 
-# 3. Use it
+Then try it:
+
+```shell
 flickr albums list
 flickr photos upload ./vacation/ --recursive --album "Summer 2026"
 flickr photos download --all --dest ./backup --layout id-dirs
 ```
 
-## Usage
+### Uninstall
 
-### Photos
+```shell
+# Homebrew Cask
+brew uninstall --cask thedavidweng/tap/flickr
 
-```sh
-flickr photos list                          # list your photos
-flickr photos search --text "sunset"        # search by text
-flickr photos show 51234567890              # show metadata + sizes + albums
-flickr photos download 51234567890          # download original
-flickr photos set-tags 51234567890 --tag landscape --tag hdr
-flickr photos set-privacy 51234567890 --privacy private
-flickr photos delete 51234567890 --confirm
+# install.sh
+curl -fsSL https://raw.githubusercontent.com/thedavidweng/flickr-cli/main/install.sh | sh -s uninstall
+
+# Go
+rm "$(go env GOPATH)/bin/flickr"
 ```
 
-### Albums
-
-```sh
-flickr albums list --sort count
-flickr albums create --title "Vacation" --primary-photo-id 12345
-flickr albums photos 72157712345678901
-flickr albums delete 72157712345678901 --confirm
-```
-
-### Upload
-
-```sh
-# single file
-flickr photos upload photo.jpg --album "Photos"
-
-# directory with deduplication
-flickr photos upload ./photos/ --recursive --album "Import" --dedupe checksum --hash md5
-
-# dry-run first
-flickr photos upload ./photos/ --recursive --dry-run
-```
-
-### Backup
-
-```sh
-# download all photos organized by album
-flickr photos download --all --dest ./backup --layout album
-
-# download with date filter via search + download
-flickr photos search --min-upload-date 2025-01-01 --privacy private --json | jq -r '.data.items[].id' | xargs flickr photos download --dest ./backup
-
-# stable id-dirs layout (idempotent, skips existing files)
-flickr photos download --all --dest ./backup --layout id-dirs --metadata both
-```
-
-### API Access
-
-```sh
-# call any Flickr method
-flickr api call flickr.photos.search --param text=mountains --param per_page=5 --json
-
-# list available methods
-flickr api methods
-
-# method documentation
-flickr api method-info flickr.photos.search
-```
-
-### Automation
-
-```sh
-# JSON output for scripts
-flickr albums list --json | jq '.data[] | .title'
-
-# safe scripting with read-only mode
-FLICKR_READ_ONLY=1 flickr photos list --json
-
-# progress events on stderr, result on stdout
-flickr photos upload ./photos/ --json --events
-```
-
-## Global Flags
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--config` | | Config file path |
-| `--profile` | `default` | Credential profile |
-| `--json` | `false` | JSON envelope to stdout |
-| `--pretty` | `false` | Pretty-print JSON |
-| `--compact` | `false` | Compact output fields |
-| `--full` | `false` | Full normalized fields (overrides `--compact`) |
-| `--read-only` | `false` | Block all remote mutations |
-| `--dry-run` | `false` | Preview without execution |
-| `--confirm` | `false` | Confirm high-risk operations |
-| `--timeout` | `30s` | API timeout |
-| `--retries` | `3` | Retry count for retryable failures |
-| `--concurrency` | `4` | Parallel workers |
-| `--events` | `false` | NDJSON progress to stderr |
-| `--no-color` | `false` | Disable ANSI color |
-| `--verbose` | `false` | Diagnostics to stderr |
-| `--debug` | `false` | Debug diagnostics with secrets redacted |
-| `--quiet` | `false` | Suppress progress output |
-
-Run `flickr --help` or `flickr <command> --help` for full flag details.
+Remove config if desired: `rm -rf ~/.config/flickr-cli`
 
 ## Documentation
 
-| | Document | Description |
-|-|----------|-------------|
-| 📋 | [Command Reference](COMMANDS.md) | All 47 commands with flags and examples |
-| 🔧 | [Architecture](docs/ARCHITECTURE.md) | Package layout and design decisions |
-| 🔐 | [Authentication](docs/auth.md) | OAuth setup and profiles |
-| 📤 | [Upload](docs/upload.md) | Upload workflow, flags, deduplication |
-| 💾 | [Backup](docs/backup.md) | Three backup modes, resume, metadata |
-| 🛡️ | [Safety](docs/safety.md) | Safety gates and audit logging |
-| 📊 | [JSON Schema](JSON_SCHEMA.md) | Envelope format, error codes, exit codes |
-| 🤖 | [Agent Guide](docs/agent-guide.md) | Scripting, JSON mode, exit codes |
-| 🔄 | [Piwigo Import](docs/piwigo.md) | Migrate from Piwigo galleries |
-| 📝 | [Changelog](CHANGELOG.md) | Version history |
-
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `FLICKR_API_KEY` | Flickr API key |
-| `FLICKR_API_SECRET` | Flickr API secret |
-| `FLICKR_OAUTH_TOKEN` | OAuth access token |
-| `FLICKR_OAUTH_TOKEN_SECRET` | OAuth access token secret |
-| `FLICKR_CONFIG` | Config file path |
-| `FLICKR_PROFILE` | Active profile name |
-| `FLICKR_READ_ONLY` | Set `1` to block mutations |
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-```sh
-git clone https://github.com/thedavidweng/flickr-cli.git
-cd flickr-cli
-make test
-```
-
+- [Command Reference](COMMANDS.md) — all 47 commands with flags and examples
+- [Authentication](docs/auth.md) — OAuth setup and profiles
+- [Upload](docs/upload.md) — upload workflow, flags, deduplication
+- [Backup](docs/backup.md) — three backup modes, resume, metadata
+- [Safety Model](docs/safety.md) — safety gates and audit logging
+- [JSON Schema](JSON_SCHEMA.md) — envelope format, error codes, exit codes
+- [Global Flags & Environment Variables](docs/flags.md) — all CLI flags and env vars
+- [Capabilities](docs/capabilities.md) — high-level feature overview
+- [Architecture](docs/ARCHITECTURE.md) — package layout and design decisions
+- [Agent Guide](docs/agent-guide.md) — scripting, JSON mode, exit codes
+- [Piwigo Import](docs/piwigo.md) — migrate from Piwigo galleries
 
 ## Infrastructure
 
