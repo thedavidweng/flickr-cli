@@ -66,16 +66,32 @@ func TestCacheStatsNoCache(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected data.counts to be a map, got %T", data["counts"])
 	}
-	if v, ok := counts["albums"].(float64); ok && v != 0 {
+	albumsCount, ok := counts["albums"].(float64)
+	if !ok {
+		t.Fatal("expected float64 for albums count")
+	}
+	if albumsCount != 0 {
 		t.Errorf("expected 0 albums, got %v", counts["albums"])
 	}
-	if v, ok := counts["photos"].(float64); ok && v != 0 {
+	photosCount, ok := counts["photos"].(float64)
+	if !ok {
+		t.Fatal("expected float64 for photos count")
+	}
+	if photosCount != 0 {
 		t.Errorf("expected 0 photos, got %v", counts["photos"])
 	}
-	if v, ok := counts["checksums"].(float64); ok && v != 0 {
+	checksumsCount, ok := counts["checksums"].(float64)
+	if !ok {
+		t.Fatal("expected float64 for checksums count")
+	}
+	if checksumsCount != 0 {
 		t.Errorf("expected 0 checksums, got %v", counts["checksums"])
 	}
-	if v, ok := counts["jobs"].(float64); ok && v != 0 {
+	jobsCount, ok := counts["jobs"].(float64)
+	if !ok {
+		t.Fatal("expected float64 for jobs count")
+	}
+	if jobsCount != 0 {
 		t.Errorf("expected 0 jobs, got %v", counts["jobs"])
 	}
 

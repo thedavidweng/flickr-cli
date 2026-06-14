@@ -94,7 +94,7 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts *PlanOptions) (*
 		go func() {
 			defer wg.Done()
 			for item := range ch {
-				result, err := e.uploadSingle(ctx, &plan.Planned[i], opts)
+				result, err := e.uploadSingle(ctx, &plan.Planned[item.index], opts)
 				summary.Results[item.index] = result
 				if err != nil {
 					return
