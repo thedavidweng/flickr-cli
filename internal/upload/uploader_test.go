@@ -137,4 +137,55 @@ func TestExecutorExecuteUploadSuccess(t *testing.T) {
 	}
 }
 
+func TestExecutorExecuteUploadError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/xml")
+		_, _ = w.Write([]byte(`<?xml version="1.0"?><rsp stat="ok"><photoid>12345</photoid></rsp>`))
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	tmpFile := tmpDir + "/test.jpg"
+	if err := os.WriteFile(tmpFile, []byte("fake-image-data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	client := &flickr.Client{
+		APIKey:    "test-key",
+		APISecret: "test-secret",
+		HTTP:      server.Client(),
+		Endpoints: flickr.Endpoints{Upload: server.URL + "/upload"},
+	}
+
+	executor := &Executor{
+		Client:    client,
+		Gate:      safety.GateInput{},
+		Events:    &output.EventWriter{},
+		Profile:   "default",
+		AuditPath: "/dev/null/impossible/audit.jsonl",
+	}
+
+	plan := Plan{
+		Planned: []PlannedUpload{
+			{LocalPath: tmpFile, SizeBytes: 100, Title: "Test1"},
+			{LocalPath: tmpFile, SizeBytes: 100, Title: "Test2"},
+		},
+	}
+
+	summary, err := executor.Execute(context.Background(), plan, &PlanOptions{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if summary.Failed != 2 {
+		t.Errorf("expected 2 failed, got %d", summary.Failed)
+	}
+	if summary.Succeeded != 0 {
+		t.Errorf("expected 0 succeeded, got %d", summary.Succeeded)
+	}
+	if len(summary.Results) != 2 {
+		t.Errorf("expected 2 results, got %d", len(summary.Results))
+	}
+}
+
 var _ = time.Now

@@ -97,7 +97,10 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts *PlanOptions) (*
 				result, err := e.uploadSingle(ctx, item.plan, opts)
 				summary.Results[item.index] = result
 				if err != nil {
-					return
+					mu.Lock()
+					summary.Failed++
+					mu.Unlock()
+					continue
 				}
 
 				mu.Lock()
