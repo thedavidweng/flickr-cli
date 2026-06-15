@@ -667,13 +667,11 @@ func TestStatsPopularAuthRequired(t *testing.T) {
 	}
 }
 
-// --- Favorites add requires confirm (no confirm flag) ---
+// --- Favorites add blocked by read-only ---
 
-func TestFavoritesAddRequiresConfirm(t *testing.T) {
+func TestFavoritesAddReadOnly(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	// DryRun is false, Confirm is false -> safety gate should require confirm for medium-risk mutations
-	// Actually, favorites.add may be low-risk. Let's test read-only instead.
 	cmd, buf := cmdContext(t, cfg, true, &AppContext{ReadOnly: true})
 	err := favoritesAddCmd.RunE(cmd, []string{"p1"})
 	if err == nil {
