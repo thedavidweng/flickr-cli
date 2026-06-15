@@ -1,6 +1,7 @@
 package piwigo
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -316,7 +317,7 @@ func TestDownloadToTemp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading temp file: %v", err)
 	}
-	if string(data) != string(body) {
+	if !bytes.Equal(data, body) {
 		t.Errorf("file content = %q, want %q", data, body)
 	}
 }

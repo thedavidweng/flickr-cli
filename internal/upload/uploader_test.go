@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -145,8 +146,14 @@ func TestExecutorExecuteUploadError(t *testing.T) {
 	defer server.Close()
 
 	tmpDir := t.TempDir()
-	tmpFile := tmpDir + "/test.jpg"
+	tmpFile := filepath.Join(tmpDir, "test.jpg")
 	if err := os.WriteFile(tmpFile, []byte("fake-image-data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a file where the audit directory would be, so MkdirAll fails cross-platform.
+	blocker := filepath.Join(tmpDir, "blocker")
+	if err := os.WriteFile(blocker, []byte("not-a-dir"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -162,7 +169,7 @@ func TestExecutorExecuteUploadError(t *testing.T) {
 		Gate:      safety.GateInput{},
 		Events:    &output.EventWriter{},
 		Profile:   "default",
-		AuditPath: "/dev/null/impossible/audit.jsonl",
+		AuditPath: filepath.Join(blocker, "audit.jsonl"), // blocker is a file, not a dir
 	}
 
 	plan := Plan{

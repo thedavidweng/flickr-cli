@@ -4,21 +4,21 @@ import "testing"
 
 func TestPhotosHelp(t *testing.T) {
 	help := subcommandHelp(t, rootCmd, "photos")
-	if len(help) == 0 {
+	if help == "" {
 		t.Error("expected help output")
 	}
 }
 
 func TestPhotosListHelp(t *testing.T) {
 	help := subcommandHelp(t, photosCmd, "list")
-	if len(help) == 0 {
+	if help == "" {
 		t.Error("expected help output")
 	}
 }
 
 func TestPhotosSearchHelp(t *testing.T) {
 	help := subcommandHelp(t, photosCmd, "search")
-	if len(help) == 0 {
+	if help == "" {
 		t.Error("expected help output")
 	}
 }
