@@ -1,39 +1,24 @@
 package cli
 
-import (
-	"bytes"
-	"testing"
-)
+import "testing"
 
 func TestPhotosHelp(t *testing.T) {
-	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetArgs([]string{"photos", "--help"})
-	_ = rootCmd.Execute()
-
-	if buf.Len() == 0 {
+	help := subcommandHelp(t, rootCmd, "photos")
+	if help == "" {
 		t.Error("expected help output")
 	}
 }
 
 func TestPhotosListHelp(t *testing.T) {
-	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetArgs([]string{"photos", "list", "--help"})
-	_ = rootCmd.Execute()
-
-	if buf.Len() == 0 {
+	help := subcommandHelp(t, photosCmd, "list")
+	if help == "" {
 		t.Error("expected help output")
 	}
 }
 
 func TestPhotosSearchHelp(t *testing.T) {
-	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetArgs([]string{"photos", "search", "--help"})
-	_ = rootCmd.Execute()
-
-	if buf.Len() == 0 {
+	help := subcommandHelp(t, photosCmd, "search")
+	if help == "" {
 		t.Error("expected help output")
 	}
 }

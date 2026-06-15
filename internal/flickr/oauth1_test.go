@@ -162,3 +162,34 @@ func TestOAuthSpecSampleSignature(t *testing.T) {
 		t.Errorf("oauth_signature = %q, want %q", oauthParams["oauth_signature"], expected)
 	}
 }
+
+func BenchmarkPercentEncode(b *testing.B) {
+	b.ReportAllocs()
+	s := "https://api.flickr.com/services/rest?method=flickr.photos.search&text=hello+world"
+	for b.Loop() {
+		PercentEncode(s)
+	}
+}
+
+func BenchmarkNormalizeParams(b *testing.B) {
+	b.ReportAllocs()
+	params := map[string][]string{
+		"oauth_consumer_key":     {"abcdef1234567890"},
+		"oauth_nonce":            {"kllo9940pd9333jh"},
+		"oauth_signature_method": {"HMAC-SHA1"},
+		"oauth_timestamp":        {"1191242096"},
+		"oauth_version":          {"1.0"},
+	}
+	for b.Loop() {
+		NormalizeParams(params)
+	}
+}
+
+func BenchmarkHMACSHA1Signature(b *testing.B) {
+	b.ReportAllocs()
+	baseString := "POST&https%3A%2F%2Fapi.flickr.com%2Fservices%2Frest&method%3Dflickr.photos.search%26oauth_consumer_key%3Dabcdef1234567890%26oauth_nonce%3Dkllo9940pd9333jh%26oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D1191242096%26oauth_version%3D1.0"
+	signingKey := "consumer_secret&token_secret"
+	for b.Loop() {
+		HMACSHA1Signature(baseString, signingKey)
+	}
+}

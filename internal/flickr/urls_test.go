@@ -82,3 +82,35 @@ func TestGetSizes(t *testing.T) {
 		t.Errorf("expected 1 size, got %d", len(sizes))
 	}
 }
+
+func BenchmarkSelectSize(b *testing.B) {
+	sizes := []Size{
+		{Label: "Thumbnail", Width: 100, Height: 75, Source: "thumb.jpg"},
+		{Label: "Small 320", Width: 320, Height: 240, Source: "small320.jpg"},
+		{Label: "Small", Width: 240, Height: 180, Source: "small.jpg"},
+		{Label: "Medium 640", Width: 640, Height: 480, Source: "medium640.jpg"},
+		{Label: "Medium 800", Width: 800, Height: 600, Source: "medium800.jpg"},
+		{Label: "Medium", Width: 500, Height: 375, Source: "medium.jpg"},
+		{Label: "Large 1600", Width: 1600, Height: 1200, Source: "large1600.jpg"},
+		{Label: "Large", Width: 1024, Height: 768, Source: "large.jpg"},
+		{Label: "Original", Width: 4000, Height: 3000, Source: "original.jpg"},
+	}
+	b.ReportAllocs()
+	for b.Loop() {
+		_, _ = SelectSize(sizes, "large")
+	}
+}
+
+func BenchmarkDecodeShortURL(b *testing.B) {
+	b.ReportAllocs()
+	for b.Loop() {
+		_, _ = DecodeShortURL("https://flic.kr/p/2oFnQhB")
+	}
+}
+
+func BenchmarkDeriveExtension(b *testing.B) {
+	b.ReportAllocs()
+	for b.Loop() {
+		_ = DeriveExtension("https://live.staticflickr.com/65535/54321098765_abcdef1234_b.jpg", "photo", "")
+	}
+}

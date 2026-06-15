@@ -91,3 +91,30 @@ func TestExtractPageInfoMissingKey(t *testing.T) {
 		t.Errorf("expected page 0 for missing key, got %d", info.Page)
 	}
 }
+
+func BenchmarkFetchAll(b *testing.B) {
+	b.ReportAllocs()
+
+	itemsPerPage := 34 // 34 * 2 = 68; last page gets 100 - 68 = 32 items
+	totalPages := 3
+
+	fetcher := func(ctx context.Context, page, perPage int) (PageResult[int], error) {
+		count := itemsPerPage
+		if page == totalPages {
+			count = 100 - itemsPerPage*(totalPages-1) // 32 items on last page
+		}
+		items := make([]int, count)
+		return PageResult[int]{
+			Info:  PageInfo{Page: page, Pages: totalPages, PerPage: perPage, Total: 100},
+			Items: items,
+		}, nil
+	}
+
+	b.ResetTimer()
+	for b.Loop() {
+		_, err := FetchAll(context.Background(), itemsPerPage, fetcher, nil)
+		if err != nil {
+			b.Fatalf("unexpected error: %v", err)
+		}
+	}
+}
