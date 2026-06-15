@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/icon.png" alt="flickr-cli" width="160" />
+  <img src="public/icon.webp" alt="flickr-cli" width="160" />
 </p>
 
 <h1 align="center">flickr-cli</h1>
