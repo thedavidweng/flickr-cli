@@ -93,13 +93,10 @@ Initial release.
 - Supported formats: JPG, JPEG, PNG, GIF, TIFF, BMP, WebP, HEIC, HEIF, MP4, MOV, AVI, M4V
 
 #### Backup
-- `backup albums` — backup photos organized by album with template-based path rendering
-- `backup user` — backup by user with date range and privacy filters
-- `backup id-dirs` — stable full backup with hash-based directory structure (`hash/hash/id/id.ext`)
+- `photos download` — download photos by ID, album, or all with multiple layout modes (`flat`, `album`, `id-dirs`)
 - Metadata sidecar files in JSON, YAML, or both formats
-- Template-based directory layout (`archive` template or custom)
-- Resume interrupted backups (`--resume`)
-- Configurable download size (original/large/medium)
+- Existing files skipped by default (use `--force` to re-download)
+- Configurable download size (original/large/medium/small)
 
 #### Checksums
 - `checksums add` — compute and store checksum machine tags on photos
@@ -108,14 +105,9 @@ Initial release.
 - MD5 and SHA1 hash algorithm support
 
 #### Piwigo Import
-- `piwigo import` — migrate photos from Piwigo to Flickr
-- Direct MySQL database reading for metadata
-- File migration from Piwigo uploads directory
-- Tag and category to Flickr tag mapping
-- Privacy level mapping (Piwigo levels to Flickr visibility)
-- Geo data import
-- Checksum-based deduplication
-- Resume interrupted imports (`--resume`)
+- `piwigo import` — migrate photos from Piwigo to Flickr via REST API (`ws.php`)
+- Category-to-album mapping with configurable prefix
+- MD5 checksum deduplication via `pwg.images.exist`
 - Import limit for incremental migration (`--limit`)
 
 #### API Access

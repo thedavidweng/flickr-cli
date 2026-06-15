@@ -107,15 +107,9 @@ Remove config if desired: `rm -rf ~/.config/flickr-cli`
 
 ## Documentation
 
-- [Command Reference](COMMANDS.md) — all 47 commands with flags and examples
+- [Command Reference](COMMANDS.md) — all commands with flags, examples, and safety gates
 - [Common Workflows](docs/workflows.md) — inspect, upload, backup, raw API, and safe scripting examples
-- [Authentication](docs/auth.md) — OAuth setup and profiles
-- [Upload](docs/upload.md) — upload workflow, flags, deduplication
-- [Backup](docs/backup.md) — three backup modes, resume, metadata
-- [Safety Model](docs/safety.md) — safety gates and audit logging
 - [JSON Schema](JSON_SCHEMA.md) — envelope format, error codes, exit codes
-- [Global Flags & Environment Variables](docs/flags.md) — all CLI flags and env vars
-- [Capabilities](docs/capabilities.md) — high-level feature overview
 - [Architecture](docs/ARCHITECTURE.md) — package layout and design decisions
 - [Agent Guide](docs/agent-guide.md) — scripting, JSON mode, exit codes
 - [Piwigo Import](docs/piwigo.md) — migrate from Piwigo galleries
