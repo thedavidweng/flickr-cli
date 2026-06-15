@@ -1,12 +1,34 @@
-# flickr-cli
+<p align="center">
+  <img src="public/icon.png" alt="flickr-cli" width="160" />
+</p>
 
-[![CI](https://github.com/thedavidweng/flickr-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/thedavidweng/flickr-cli/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/thedavidweng/flickr-cli)](https://github.com/thedavidweng/flickr-cli/releases)
-[![Go Reference](https://pkg.go.dev/badge/github.com/thedavidweng/flickr-cli.svg)](https://pkg.go.dev/github.com/thedavidweng/flickr-cli)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](https://github.com/thedavidweng/flickr-cli/blob/main/LICENSE)
-[![Go](https://img.shields.io/badge/go-1.26.3-00ADD8?logo=go)](https://go.dev/)
+<h1 align="center">flickr-cli</h1>
 
-Agent-friendly Flickr CLI. Single-binary tool for photo management, backup, upload, and full API access.
+<p align="center">
+  Agent-friendly Flickr CLI for photo management, backup, upload, and API access.
+</p>
+
+<p align="center">
+  <a href="https://github.com/thedavidweng/flickr-cli/actions/workflows/ci.yml"><img src="https://github.com/thedavidweng/flickr-cli/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/thedavidweng/flickr-cli/releases"><img src="https://img.shields.io/github/v/release/thedavidweng/flickr-cli" alt="Release"></a>
+  <a href="https://pkg.go.dev/github.com/thedavidweng/flickr-cli"><img src="https://pkg.go.dev/badge/github.com/thedavidweng/flickr-cli.svg" alt="Go Reference"></a>
+  <a href="https://github.com/thedavidweng/flickr-cli/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
+  <img src="https://img.shields.io/badge/go-1.26.3-00ADD8?logo=go" alt="Go">
+</p>
+
+`flickr-cli` is a single-binary toolkit for maintaining a Flickr library: inspect metadata, upload folders, back up originals, manage albums, use checksum dedupe, migrate from Piwigo, and call raw Flickr API methods when needed.
+
+## Highlights
+
+- Single binary: no runtime, containers, or sidecar service required
+- 47 commands across photos, albums, favorites, galleries, groups, comments, contacts, stats, URLs, checksums, cache, Piwigo import, and raw API access
+- JSON-first output with a consistent envelope for scripts and agents
+- Safety gates for remote mutations: `--read-only`, `--dry-run`, and `--confirm`
+- NDJSON progress events on stderr for long uploads and backups
+
+## Why
+
+Photo libraries need repeatable operations more than one-off browser sessions. `flickr-cli` keeps uploads, backups, metadata edits, and migrations scriptable while protecting remote mutations with explicit safety gates.
 
 ## Quickstart
 
@@ -86,6 +108,7 @@ Remove config if desired: `rm -rf ~/.config/flickr-cli`
 ## Documentation
 
 - [Command Reference](COMMANDS.md) — all 47 commands with flags and examples
+- [Common Workflows](docs/workflows.md) — inspect, upload, backup, raw API, and safe scripting examples
 - [Authentication](docs/auth.md) — OAuth setup and profiles
 - [Upload](docs/upload.md) — upload workflow, flags, deduplication
 - [Backup](docs/backup.md) — three backup modes, resume, metadata
