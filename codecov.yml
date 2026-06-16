@@ -7,6 +7,10 @@ coverage:
     patch:
       default:
         target: 80%
+  ignore:
+    - "cmd/**"                    # Entry point
+    - "internal/testutil/**"      # Test infrastructure
+    - "internal/model/**"         # Pure struct definitions
 
   precision: 1
   round: down

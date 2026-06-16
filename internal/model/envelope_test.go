@@ -32,3 +32,11 @@ func TestExitCodeMapping(t *testing.T) {
 		})
 	}
 }
+
+func TestCommandError_Error(t *testing.T) {
+	err := &CommandError{Code: "TEST", Message: "something failed"}
+	got := err.Error()
+	if got != "something failed" {
+		t.Errorf("CommandError.Error() = %q, want %q", got, "something failed")
+	}
+}

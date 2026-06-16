@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,7 +15,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
+	"github.com/thedavidweng/flickr-cli/internal/backup"
+	"github.com/thedavidweng/flickr-cli/internal/config"
 	"github.com/thedavidweng/flickr-cli/internal/model"
+	"github.com/thedavidweng/flickr-cli/internal/output"
 	"github.com/thedavidweng/flickr-cli/internal/testutil"
 )
 
@@ -1019,5 +1023,251 @@ func TestRequireAuthWritesErrorCode(t *testing.T) {
 	}
 	if env.Meta.Command != "photos.list" {
 		t.Errorf("expected command=photos.list, got %s", env.Meta.Command)
+	}
+}
+
+// --- backupModeToPlanMode unit tests ---
+
+func TestBackupModeToPlanMode(t *testing.T) {
+	tests := []struct {
+		name       string
+		layout     string
+		all        bool
+		hasAlbums  bool
+		wantMode   backup.PlanMode
+	}{
+		{"id-dirs layout", "id-dirs", false, false, backup.BackupIDDirs},
+		{"album layout", "album", false, false, backup.BackupAlbums},
+		{"all flag with empty layout", "", true, false, backup.BackupAlbums},
+		{"hasAlbums with empty layout", "", false, true, backup.BackupAlbums},
+		{"default user mode", "", false, false, backup.BackupUser},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := backupModeToPlanMode(tc.layout, tc.all, tc.hasAlbums)
+			if got != tc.wantMode {
+				t.Errorf("backupModeToPlanMode(%q, %v, %v) = %q, want %q",
+					tc.layout, tc.all, tc.hasAlbums, got, tc.wantMode)
+			}
+		})
+	}
+}
+
+// --- Photos download backup dry-run test ---
+
+func TestPhotosDownloadBackupDryRun(t *testing.T) {
+	fake, cfg := setupFakeCLI(t)
+	fake.Albums["album-1"] = testutil.FakeAlbum{
+		ID:          "album-1",
+		Title:       "Summer",
+		Description: "Summer photos",
+		PhotoCount:  2,
+		PrimaryID:   "p1",
+	}
+	fake.Photos["p1"] = testutil.FakePhoto{ID: "p1", Title: "Sunset", Owner: "test-user-123"}
+	fake.Photos["p2"] = testutil.FakePhoto{ID: "p2", Title: "Beach", Owner: "test-user-123"}
+	fake.AlbumPhotos["album-1"] = []string{"p1", "p2"}
+
+	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd.Flags().Bool("all", false, "")
+	_ = cmd.Flags().Set("all", "true")
+	cmd.Flags().String("dest", "", "")
+	_ = cmd.Flags().Set("dest", "/tmp/test-dest")
+	cmd.Flags().String("size", "original", "")
+	cmd.Flags().Int("size-max", 0, "")
+	cmd.Flags().String("metadata", "json", "")
+	cmd.Flags().Bool("force", false, "")
+	cmd.Flags().String("layout", "", "")
+	cmd.Flags().StringSlice("album", nil, "")
+	cmd.Flags().StringSlice("album-id", nil, "")
+	cmd.Flags().Bool("exif", false, "")
+
+	err := photosDownloadCmd.RunE(cmd, nil)
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true, got error: %v", env.Error)
+	}
+
+	data, ok := env.Data.(map[string]any)
+	if !ok {
+		t.Fatalf("expected data to be a map, got %T", env.Data)
+	}
+	if data["planned"] != true {
+		t.Errorf("expected planned=true, got %v", data["planned"])
+	}
+	total, ok := data["total"].(float64)
+	if !ok {
+		t.Fatalf("expected total to be a number, got %T", data["total"])
+	}
+	if int(total) != 2 {
+		t.Errorf("expected total=2, got %d", int(total))
+	}
+}
+
+// --- handleRequestTokenError tests ---
+
+func TestHandleRequestTokenError(t *testing.T) {
+	buf := new(bytes.Buffer)
+	r := output.Renderer{Out: buf, Err: buf, JSON: true}
+	meta := output.RuntimeMetaInput{Command: "test", StartedAt: time.Now()}
+
+	// 400 error -> AuthFailed with "Invalid API key" message
+	err := handleRequestTokenError(r, meta, fmt.Errorf("400 bad request"))
+	if err == nil {
+		t.Fatal("expected error for 400")
+	}
+	var cmdErr *model.CommandError
+	if !stderrors.As(err, &cmdErr) {
+		t.Fatalf("expected CommandError, got %T", err)
+	}
+	if cmdErr.Code != model.ErrAuthFailed {
+		t.Errorf("expected AUTH_FAILED, got %s", cmdErr.Code)
+	}
+	if !strings.Contains(cmdErr.Message, "Invalid API key") {
+		t.Errorf("expected message about invalid API key, got %q", cmdErr.Message)
+	}
+
+	// Non-400 error -> AuthFailed with "requesting token" message
+	buf.Reset()
+	err = handleRequestTokenError(r, meta, fmt.Errorf("network timeout"))
+	if err == nil {
+		t.Fatal("expected error for non-400")
+	}
+	if !stderrors.As(err, &cmdErr) {
+		t.Fatalf("expected CommandError, got %T", err)
+	}
+	if cmdErr.Code != model.ErrAuthFailed {
+		t.Errorf("expected AUTH_FAILED, got %s", cmdErr.Code)
+	}
+	if !strings.Contains(cmdErr.Message, "requesting token") {
+		t.Errorf("expected message about requesting token, got %q", cmdErr.Message)
+	}
+}
+
+// --- resolveCredentials from flags test ---
+
+func TestResolveCredentialsFromFlags(t *testing.T) {
+	buf := new(bytes.Buffer)
+	r := output.Renderer{Out: buf, Err: buf, JSON: true}
+	meta := output.RuntimeMetaInput{Command: "test", StartedAt: time.Now()}
+
+	cmd := &cobra.Command{}
+	cmd.Flags().String("api-key", "", "")
+	cmd.Flags().String("api-secret", "", "")
+	cmd.Flags().String("api-secret-env", "", "")
+	_ = cmd.Flags().Set("api-key", "my-api-key")
+	_ = cmd.Flags().Set("api-secret", "my-api-secret")
+
+	apiKey, apiSecret, err := resolveCredentials(cmd, &r, meta, config.Credentials{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if apiKey != "my-api-key" {
+		t.Errorf("expected api-key=my-api-key, got %s", apiKey)
+	}
+	if apiSecret != "my-api-secret" {
+		t.Errorf("expected api-secret=my-api-secret, got %s", apiSecret)
+	}
+}
+
+// --- Checksums add read-only guard test ---
+
+func TestChecksumsReadOnly(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true, &AppContext{ReadOnly: true})
+	err := checksumsAddCmd.RunE(cmd, nil)
+	if err == nil {
+		t.Fatal("expected error with --read-only")
+	}
+
+	env := parseEnvelope(t, buf)
+	if env.OK {
+		t.Fatal("expected ok=false")
+	}
+	if env.Error.Code != model.ErrReadOnlyViolation {
+		t.Errorf("expected READ_ONLY_VIOLATION, got %s", env.Error.Code)
+	}
+}
+
+// --- Photos download no args validation test ---
+
+func TestPhotosDownloadNoArgs(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true)
+	// Ensure download-specific flags are registered with defaults (no --all, etc.)
+	cmd.Flags().Bool("all", false, "")
+	cmd.Flags().String("dest", "", "")
+	cmd.Flags().String("size", "original", "")
+	cmd.Flags().Int("size-max", 0, "")
+	cmd.Flags().String("metadata", "json", "")
+	cmd.Flags().Bool("force", false, "")
+	cmd.Flags().String("layout", "", "")
+	cmd.Flags().StringSlice("album", nil, "")
+	cmd.Flags().StringSlice("album-id", nil, "")
+	cmd.Flags().Bool("exif", false, "")
+
+	err := photosDownloadCmd.RunE(cmd, nil)
+	if err == nil {
+		t.Fatal("expected validation error with no args and no --all/--album")
+	}
+
+	env := parseEnvelope(t, buf)
+	if env.OK {
+		t.Fatal("expected ok=false")
+	}
+	if env.Error.Code != model.ErrValidationFailed {
+		t.Errorf("expected VALIDATION_FAILED, got %s", env.Error.Code)
+	}
+}
+
+// --- Photos download by IDs with metadata test ---
+
+func TestPhotosDownloadByIDsWithMetadata(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd.Flags().String("dest", "", "")
+	cmd.Flags().String("size", "original", "")
+	cmd.Flags().Int("size-max", 0, "")
+	cmd.Flags().String("metadata", "json", "")
+	_ = cmd.Flags().Set("metadata", "both")
+	cmd.Flags().Bool("force", false, "")
+	cmd.Flags().String("layout", "", "")
+	cmd.Flags().StringSlice("album", nil, "")
+	cmd.Flags().StringSlice("album-id", nil, "")
+	cmd.Flags().Bool("all", false, "")
+	cmd.Flags().Bool("exif", false, "")
+
+	err := photosDownloadCmd.RunE(cmd, []string{"p1", "p2"})
+	if err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	env := parseEnvelope(t, buf)
+	if !env.OK {
+		t.Fatalf("expected ok=true, got error: %v", env.Error)
+	}
+
+	data, ok := env.Data.(map[string]any)
+	if !ok {
+		t.Fatalf("expected data to be a map, got %T", env.Data)
+	}
+	if data["planned"] != true {
+		t.Errorf("expected planned=true, got %v", data["planned"])
+	}
+
+	items, ok := data["items"].([]any)
+	if !ok {
+		t.Fatalf("expected items to be an array, got %T", data["items"])
+	}
+	if len(items) != 2 {
+		t.Errorf("expected 2 planned items, got %d", len(items))
 	}
 }

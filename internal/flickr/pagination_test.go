@@ -3,6 +3,9 @@ package flickr
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"strings"
+	"sync"
 	"testing"
 )
 
@@ -115,6 +118,226 @@ func BenchmarkFetchAll(b *testing.B) {
 		_, err := FetchAll(context.Background(), itemsPerPage, fetcher, nil)
 		if err != nil {
 			b.Fatalf("unexpected error: %v", err)
+		}
+	}
+}
+
+// --- Walker tests ---
+
+func TestNewWalker(t *testing.T) {
+	fetcher := func(ctx context.Context, page, perPage int) (PageResult[string], error) {
+		return PageResult[string]{}, nil
+	}
+	w := NewWalker(context.Background(), 10, fetcher)
+	if w == nil {
+		t.Fatal("NewWalker returned nil")
+	}
+	if w.perPage != 10 {
+		t.Errorf("expected perPage 10, got %d", w.perPage)
+	}
+	if w.page != 1 {
+		t.Errorf("expected page 1, got %d", w.page)
+	}
+	if w.done {
+		t.Error("new walker should not be done")
+	}
+}
+
+func TestWalkerSinglePage(t *testing.T) {
+	fetcher := func(ctx context.Context, page, perPage int) (PageResult[string], error) {
+		return PageResult[string]{
+			Info:  PageInfo{Page: 1, Pages: 1, PerPage: perPage},
+			Items: []string{"a", "b", "c"},
+		}, nil
+	}
+
+	w := NewWalker(context.Background(), 100, fetcher)
+	var got []string
+	for item := range w.Items() {
+		got = append(got, item)
+	}
+	if err := w.Err(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("expected 3 items, got %d", len(got))
+	}
+	if got[0] != "a" || got[1] != "b" || got[2] != "c" {
+		t.Errorf("unexpected items: %v", got)
+	}
+}
+
+func TestWalkerMultiplePages(t *testing.T) {
+	var mu sync.Mutex
+	fetchedPages := make(map[int]bool)
+	fetcher := func(ctx context.Context, page, perPage int) (PageResult[int], error) {
+		mu.Lock()
+		fetchedPages[page] = true
+		mu.Unlock()
+		switch page {
+		case 1:
+			return PageResult[int]{
+				Info:  PageInfo{Page: 1, Pages: 3, PerPage: perPage},
+				Items: []int{1, 2},
+			}, nil
+		case 2:
+			return PageResult[int]{
+				Info:  PageInfo{Page: 2, Pages: 3, PerPage: perPage},
+				Items: []int{3, 4},
+			}, nil
+		case 3:
+			return PageResult[int]{
+				Info:  PageInfo{Page: 3, Pages: 3, PerPage: perPage},
+				Items: []int{5, 6},
+			}, nil
+		default:
+			return PageResult[int]{
+				Info: PageInfo{Page: page, Pages: 3, PerPage: perPage},
+			}, nil
+		}
+	}
+
+	w := NewWalker(context.Background(), 2, fetcher)
+	var got []int
+	for item := range w.Items() {
+		got = append(got, item)
+	}
+	if err := w.Err(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 6 {
+		t.Fatalf("expected 6 items, got %d: %v", len(got), got)
+	}
+	for i, v := range got {
+		if v != i+1 {
+			t.Errorf("item %d: expected %d, got %d", i, i+1, v)
+		}
+	}
+
+	// Verify all 3 pages were fetched.
+	mu.Lock()
+	defer mu.Unlock()
+	for p := 1; p <= 3; p++ {
+		if !fetchedPages[p] {
+			t.Errorf("page %d should have been fetched", p)
+		}
+	}
+}
+
+func TestWalkerEmptyResult(t *testing.T) {
+	fetcher := func(ctx context.Context, page, perPage int) (PageResult[string], error) {
+		return PageResult[string]{
+			Info: PageInfo{Page: 1, Pages: 0, PerPage: perPage},
+		}, nil
+	}
+
+	w := NewWalker(context.Background(), 100, fetcher)
+	var count int
+	for range w.Items() {
+		count++
+	}
+	if err := w.Err(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("expected 0 items, got %d", count)
+	}
+}
+
+func TestWalkerFetcherError(t *testing.T) {
+	fetcher := func(ctx context.Context, page, perPage int) (PageResult[int], error) {
+		if page == 1 {
+			return PageResult[int]{
+				Info:  PageInfo{Page: 1, Pages: 2, PerPage: perPage},
+				Items: []int{1, 2},
+			}, nil
+		}
+		return PageResult[int]{}, errors.New("network timeout")
+	}
+
+	w := NewWalker(context.Background(), 100, fetcher)
+	var got []int
+	for item := range w.Items() {
+		got = append(got, item)
+	}
+	err := w.Err()
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "fetching page 2") {
+		t.Errorf("error %q should contain 'fetching page 2'", err.Error())
+	}
+	if len(got) != 2 {
+		t.Errorf("expected 2 partial items, got %d", len(got))
+	}
+}
+
+func TestWalkerContextCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	fetcher := func(ctx context.Context, page, perPage int) (PageResult[int], error) {
+		return PageResult[int]{
+			Info:  PageInfo{Page: page, Pages: 3, PerPage: perPage},
+			Items: []int{10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
+		}, nil
+	}
+
+	w := NewWalker(ctx, 5, fetcher)
+	ch := w.Items()
+
+	// Consume one item, then cancel.
+	<-ch
+	cancel()
+
+	// Drain remaining items (may or may not get a few more).
+	for range ch {
+	}
+
+	if w.Err() != context.Canceled {
+		t.Errorf("expected context.Canceled, got %v", w.Err())
+	}
+}
+
+func TestWalkerManyItemsAcrossPages(t *testing.T) {
+	fetcher := func(ctx context.Context, page, perPage int) (PageResult[string], error) {
+		switch page {
+		case 1:
+			return PageResult[string]{
+				Info:  PageInfo{Page: 1, Pages: 3, PerPage: perPage},
+				Items: []string{"a1", "a2"},
+			}, nil
+		case 2:
+			return PageResult[string]{
+				Info:  PageInfo{Page: 2, Pages: 3, PerPage: perPage},
+				Items: []string{"b1", "b2"},
+			}, nil
+		case 3:
+			return PageResult[string]{
+				Info:  PageInfo{Page: 3, Pages: 3, PerPage: perPage},
+				Items: []string{"c1", "c2"},
+			}, nil
+		default:
+			return PageResult[string]{
+				Info: PageInfo{Page: page, Pages: 3, PerPage: perPage},
+			}, nil
+		}
+	}
+
+	w := NewWalker(context.Background(), 2, fetcher)
+	var got []string
+	for item := range w.Items() {
+		got = append(got, item)
+	}
+	if err := w.Err(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := []string{"a1", "a2", "b1", "b2", "c1", "c2"}
+	if len(got) != len(expected) {
+		t.Fatalf("expected %d items, got %d", len(expected), len(got))
+	}
+	for i, v := range got {
+		if v != expected[i] {
+			t.Errorf("item %d: expected %q, got %q", i, expected[i], v)
 		}
 	}
 }
