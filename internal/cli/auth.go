@@ -18,6 +18,13 @@ import (
 	"github.com/thedavidweng/flickr-cli/internal/output"
 )
 
+// Package-level seams for testing.
+var (
+	readInput = func() string { return readFrom(os.Stdin) }
+	netListen = net.Listen
+	netDial   = net.Dial
+)
+
 var authCmd = &cobra.Command{
 	Use:   "auth",
 	Short: "Manage Flickr authentication",
@@ -182,7 +189,7 @@ func resolveCredentials(cmd *cobra.Command, r *output.Renderer, meta output.Runt
 			_, _ = fmt.Fprintln(r.Err, "Get yours at: https://www.flickr.com/services/apps/")
 			_, _ = fmt.Fprintln(r.Err)
 			_, _ = fmt.Fprint(r.Err, "API key: ")
-			apiKey = readLine()
+			apiKey = readInput()
 		}
 	}
 
@@ -198,7 +205,7 @@ func resolveCredentials(cmd *cobra.Command, r *output.Renderer, meta output.Runt
 			return "", "", r.Failure(meta, output.Errorf(model.ErrConfig, "API secret required. Get one at https://www.flickr.com/services/apps/"))
 		default:
 			_, _ = fmt.Fprint(r.Err, "API secret: ")
-			apiSecret = readLine()
+			apiSecret = readInput()
 		}
 	}
 
@@ -363,11 +370,11 @@ func readFrom(r io.Reader) string {
 // IP) can also complete the authorization.
 func localhostFlow(ctx context.Context, r *output.Renderer, client *flickr.Client, perms string, port int) (*flickr.RequestTokenResponse, string, error) {
 	serverIP := detectOutboundIP()
-	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", serverIP, port))
+	ln, err := netListen("tcp", fmt.Sprintf("%s:%d", serverIP, port))
 	if err != nil {
 		// Fallback to localhost if specific IP fails
 		serverIP = "127.0.0.1"
-		ln, err = net.Listen("tcp", fmt.Sprintf("%s:%d", serverIP, port))
+		ln, err = netListen("tcp", fmt.Sprintf("%s:%d", serverIP, port))
 		if err != nil {
 			return nil, "", fmt.Errorf("listening on port %d: %w", port, err)
 		}
@@ -419,7 +426,7 @@ func oobAuthorize(ctx context.Context, r *output.Renderer, client *flickr.Client
 	}
 
 	_, _ = fmt.Fprint(os.Stderr, "Verification code: ")
-	verifier := readLine()
+	verifier := readInput()
 	if verifier == "" {
 		return "", fmt.Errorf("no verification code entered")
 	}
@@ -462,7 +469,7 @@ func waitForCallback(ctx context.Context, ln net.Listener) (string, error) {
 
 // detectOutboundIP returns the preferred outbound IP of this machine.
 func detectOutboundIP() string {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
+	conn, err := netDial("udp", "8.8.8.8:80")
 	if err != nil {
 		return "localhost"
 	}
