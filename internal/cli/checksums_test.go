@@ -95,7 +95,7 @@ func TestDownloadAndHash(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading downloaded file: %v", err)
 	}
-	if string(data) != string(fixture) {
+	if !bytes.Equal(data, fixture) {
 		t.Errorf("file content mismatch")
 	}
 }

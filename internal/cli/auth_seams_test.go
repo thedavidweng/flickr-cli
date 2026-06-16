@@ -29,7 +29,11 @@ func TestDetectOutboundIP(t *testing.T) {
 		if err != nil {
 			return nil, err
 		}
-		return pc.(*net.UDPConn), nil
+		udpConn, ok := pc.(*net.UDPConn)
+		if !ok {
+			return nil, fmt.Errorf("expected *net.UDPConn, got %T", pc)
+		}
+		return udpConn, nil
 	}
 
 	ip := detectOutboundIP()
