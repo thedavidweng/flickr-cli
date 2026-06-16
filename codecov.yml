@@ -7,11 +7,14 @@ coverage:
     patch:
       default:
         target: 80%
+        paths:
+          - "internal/**"
+          - "!internal/testutil/**"
+          - "!internal/model/**"
   ignore:
     - "cmd/**"                    # Entry point
     - "internal/testutil/**"      # Test infrastructure
     - "internal/model/**"         # Pure struct definitions
-    - "**/*_test.go"              # Test files
 
   precision: 1
   round: down
