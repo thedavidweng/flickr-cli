@@ -1030,11 +1030,11 @@ func TestRequireAuthWritesErrorCode(t *testing.T) {
 
 func TestBackupModeToPlanMode(t *testing.T) {
 	tests := []struct {
-		name       string
-		layout     string
-		all        bool
-		hasAlbums  bool
-		wantMode   backup.PlanMode
+		name      string
+		layout    string
+		all       bool
+		hasAlbums bool
+		wantMode  backup.PlanMode
 	}{
 		{"id-dirs layout", "id-dirs", false, false, backup.BackupIDDirs},
 		{"album layout", "album", false, false, backup.BackupAlbums},

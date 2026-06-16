@@ -408,7 +408,7 @@ func TestCleanMapNonEmptyNestedMap(t *testing.T) {
 func TestCleanMapNestedBecomesEmpty(t *testing.T) {
 	m := map[string]any{
 		"willVanish": map[string]any{
-			"empty": "",
+			"empty":  "",
 			"nilval": nil,
 		},
 		"keep": "yes",

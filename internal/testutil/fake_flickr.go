@@ -56,7 +56,7 @@ type FakeFlickr struct {
 	Calls       []Call
 	Photos      map[string]FakePhoto
 	Albums      map[string]FakeAlbum
-	AlbumPhotos map[string][]string // album ID -> ordered photo IDs
+	AlbumPhotos map[string][]string   // album ID -> ordered photo IDs
 	PhotoSizes  map[string][]FakeSize // photo ID -> custom sizes (nil = use defaults)
 	Failures    map[string]FakeFailure
 }
