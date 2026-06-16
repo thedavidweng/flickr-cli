@@ -250,7 +250,7 @@ func TestSelectByCode(t *testing.T) {
 		{"original by code", "o", "orig.jpg", "Original label match"},
 		{"2048 by label", "k", "l2048.jpg", "label contains 2048"},
 		{"1600 by label", "h", "l1600.jpg", "label contains 1600"},
-		{"Large by label", "l", "sq150.jpg", "label contains Large (Large Square matches first)"},
+		{"Large 1024 by label", "l", "l1024.jpg", "label contains 1024"},
 		{"640 by label", "z", "m640.jpg", "label contains 640"},
 		{"Medium by label", "m", "m500.jpg", "label contains Medium (first match)"},
 		{"Square by label", "s", "sq75.jpg", "label contains Square (first match)"},

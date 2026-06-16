@@ -126,7 +126,7 @@ var sizeCodeMap = map[string]struct {
 	"3k": {labelContains: "", maxDim: 3072},
 	"k":  {labelContains: "2048", maxDim: 2048},
 	"h":  {labelContains: "1600", maxDim: 1600},
-	"l":  {labelContains: "Large", maxDim: 1024},
+	"l":  {labelContains: "1024", maxDim: 1024},
 	"c":  {labelContains: "800", maxDim: 800},
 	"z":  {labelContains: "640", maxDim: 640},
 	"m":  {labelContains: "Medium", maxDim: 500},

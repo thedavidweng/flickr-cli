@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestFetchAll(t *testing.T) {
@@ -289,12 +290,29 @@ func TestWalkerContextCancellation(t *testing.T) {
 	<-ch
 	cancel()
 
-	// Drain remaining items (may or may not get a few more).
-	for range ch {
+	// Wait for the walker goroutine to set w.err WITHOUT consuming from ch.
+	// Since ch is unbuffered, not reading forces the goroutine's
+	// select { case ch <- item: case <-ctx.Done(): } to pick ctx.Done()
+	// deterministically (ch<- blocks when nobody reads).
+	deadline := time.After(5 * time.Second)
+	for {
+		if w.Err() != nil {
+			break
+		}
+		select {
+		case <-deadline:
+			t.Fatal("timed out waiting for walker to detect cancellation")
+		default:
+			time.Sleep(time.Millisecond)
+		}
 	}
 
 	if w.Err() != context.Canceled {
 		t.Errorf("expected context.Canceled, got %v", w.Err())
+	}
+
+	// Drain ch to let the goroutine finish and avoid goroutine leak.
+	for range ch {
 	}
 }
 
