@@ -15,8 +15,4 @@ build:
 lint: fmt vet test
 
 
-changelog:
-	git cliff -o CHANGELOG.md
 
-changelog-preview:
-	git cliff --latest

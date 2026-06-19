@@ -35,38 +35,13 @@ checksum:
   algorithm: sha256
 
 changelog:
-  sort: asc
-  use: github
-  groups:
-    - title: "Features"
-      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
-      order: 0
-    - title: "Bug Fixes"
-      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
-      order: 1
-    - title: "Documentation"
-      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
-      order: 2
-    - title: "Maintenance"
-      regexp: '^.*?(chore|refactor|style|test|ci)(\([[:word:]]+\))??!?:.+$'
-      order: 3
-    - title: "Dependencies"
-      regexp: '^.*?(build|deps)(\([[:word:]]+\))??!?:.+$'
-      order: 4
-    - title: "Other"
-      order: 999
-  filters:
-    exclude:
-      - "^test:"
-      - "^chore: release"
-      - "^ci:"
-      - "Merge pull request"
-      - "Merge branch"
+  disable: true
 
 release:
   github:
     owner: thedavidweng
     name: flickr-cli
+  mode: append
   header: |
     ## What's Changed
 
