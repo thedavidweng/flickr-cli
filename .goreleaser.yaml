@@ -41,7 +41,7 @@ release:
   github:
     owner: thedavidweng
     name: flickr-cli
-  mode: keep-existing
+  mode: append
 
 signs:
   - artifacts: checksum
