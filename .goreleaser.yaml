@@ -42,35 +42,6 @@ release:
     owner: thedavidweng
     name: flickr-cli
   mode: keep-existing
-  header: |
-    ## What's Changed
-
-    See the [changelog](https://github.com/thedavidweng/flickr-cli/blob/main/CHANGELOG.md) for full details.
-  footer: |
-    **Full Changelog**: https://github.com/thedavidweng/flickr-cli/compare/{{ .PreviousTag }}...{{ .Tag }}
-
-    ---
-    ### Installation
-
-    **Homebrew (macOS/Linux):**
-    ```
-    brew tap thedavidweng/tap
-    brew install flickr
-    ```
-
-    **Go:**
-    ```
-    go install github.com/thedavidweng/flickr-cli/cmd/flickr@{{ .Tag }}
-    ```
-
-    **Verify checksum:**
-    ```bash
-    cosign verify-blob \
-      --bundle checksums.txt.sig \
-      --certificate-identity-regexp='https://github.com/thedavidweng/flickr-cli' \
-      --certificate-oidc-issuer='https://token.actions.githubusercontent.com' \
-      checksums.txt
-    ```
 
 signs:
   - artifacts: checksum
