@@ -37,15 +37,19 @@ jobs:
           if [ -f CHANGELOG.md ]; then
             NOTES=$(awk "/^## \[${ESCAPED_VERSION}\]/{found=1; next} /^## \[/{if(found) exit} found{print}" CHANGELOG.md || true)
           fi
-          INSTALL="# Installation
+                    INSTALL=$(cat <<'EOF'
+          # Installation
 
-          \`\`\`bash
+          ```bash
           # Homebrew (macOS)
-          brew install --cask thedavidweng/tap/flickr-cli
+          brew install --cask thedavidweng/tap/flickr
 
           # Go (cross-platform)
-          go install github.com/thedavidweng/flickr-cli/cmd/flickr@${TAG}
-          \`\`\`"
+          go install github.com/thedavidweng/flickr-cli/cmd/flickr@VERSION_PLACEHOLDER
+          ```
+          EOF
+          )
+          INSTALL="${INSTALL/VERSION_PLACEHOLDER/$TAG}"
           FULL_NOTES="${NOTES:-Release $TAG}
 
           ${INSTALL}"
