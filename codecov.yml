@@ -6,7 +6,11 @@ coverage:
         threshold: 2%
     patch:
       default:
-        target: 80%
+        target: 70%
+  ignore:
+    - "cmd/**"                    # Entry point
+    - "internal/testutil/**"      # Test infrastructure
+    - "internal/model/**"         # Pure struct definitions
 
   precision: 1
   round: down

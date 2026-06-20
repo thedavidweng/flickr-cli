@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -40,6 +41,14 @@ type FakeFailure struct {
 	Message string
 }
 
+// FakeSize represents a photo size in the fake server.
+type FakeSize struct {
+	Label  string
+	Source string
+	Width  int
+	Height int
+}
+
 // FakeFlickr is a test double for the Flickr API.
 type FakeFlickr struct {
 	Server      *httptest.Server
@@ -47,7 +56,8 @@ type FakeFlickr struct {
 	Calls       []Call
 	Photos      map[string]FakePhoto
 	Albums      map[string]FakeAlbum
-	AlbumPhotos map[string][]string // album ID -> ordered photo IDs
+	AlbumPhotos map[string][]string   // album ID -> ordered photo IDs
+	PhotoSizes  map[string][]FakeSize // photo ID -> custom sizes (nil = use defaults)
 	Failures    map[string]FakeFailure
 }
 
@@ -58,6 +68,7 @@ func NewFakeFlickr(t *testing.T) *FakeFlickr {
 		Photos:      make(map[string]FakePhoto),
 		Albums:      make(map[string]FakeAlbum),
 		AlbumPhotos: make(map[string][]string),
+		PhotoSizes:  make(map[string][]FakeSize),
 		Failures:    make(map[string]FakeFailure),
 	}
 
@@ -360,26 +371,64 @@ func (f *FakeFlickr) handleGetPhotoInfo(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Parse tags from the FakePhoto into the expected format.
+	var tags []map[string]any
+	if photo.Tags != "" {
+		for _, raw := range strings.Split(photo.Tags, ",") {
+			raw = strings.TrimSpace(raw)
+			if raw == "" {
+				continue
+			}
+			tags = append(tags, map[string]any{
+				"raw":     raw,
+				"machine": 0,
+			})
+		}
+	}
+
 	writeJSON(w, map[string]any{
 		"stat": "ok",
 		"photo": map[string]any{
 			"id":    photo.ID,
 			"title": map[string]string{"_content": photo.Title},
 			"owner": map[string]string{"nsid": photo.Owner},
-			"tags":  map[string]any{"tag": []any{}},
+			"tags":  map[string]any{"tag": tags},
 		},
 	})
 }
 
 func (f *FakeFlickr) handleGetPhotoSizes(w http.ResponseWriter, r *http.Request) {
+	photoID := r.FormValue("photo_id")
+	if photoID == "" {
+		photoID = r.URL.Query().Get("photo_id")
+	}
+
+	f.mu.Lock()
+	customSizes, hasCustom := f.PhotoSizes[photoID]
+	f.mu.Unlock()
+
+	var sizes []map[string]any
+	if hasCustom && len(customSizes) > 0 {
+		for _, s := range customSizes {
+			sizes = append(sizes, map[string]any{
+				"label":  s.Label,
+				"width":  s.Width,
+				"height": s.Height,
+				"source": s.Source,
+				"url":    s.Source,
+				"media":  "photo",
+			})
+		}
+	} else {
+		sizes = []map[string]any{
+			{"label": "Original", "width": 4000, "height": 3000, "source": "https://example.com/photo.jpg", "url": "https://example.com/photo.jpg", "media": "photo"},
+			{"label": "Large", "width": 1024, "height": 768, "source": "https://example.com/photo_l.jpg", "url": "https://example.com/photo_l.jpg", "media": "photo"},
+		}
+	}
+
 	writeJSON(w, map[string]any{
-		"stat": "ok",
-		"sizes": map[string]any{
-			"size": []map[string]any{
-				{"label": "Original", "width": 4000, "height": 3000, "source": "https://example.com/photo.jpg", "url": "https://example.com/photo.jpg", "media": "photo"},
-				{"label": "Large", "width": 1024, "height": 768, "source": "https://example.com/photo_l.jpg", "url": "https://example.com/photo_l.jpg", "media": "photo"},
-			},
-		},
+		"stat":  "ok",
+		"sizes": map[string]any{"size": sizes},
 	})
 }
 
