@@ -5,6 +5,7 @@
 ```bash
 git clone https://github.com/thedavidweng/flickr-cli.git
 cd flickr-cli
+mise install  # install tools pinned in mise.toml
 go build ./cmd/flickr
 go test ./...
 ```
