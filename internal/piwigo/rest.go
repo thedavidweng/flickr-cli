@@ -59,10 +59,10 @@ func (c *Client) Login(ctx context.Context) error {
 
 // Category represents a Piwigo category/album.
 type Category struct {
-	ID       string      `json:"id"`
-	Name     string      `json:"name"`
-	UpperID  interface{} `json:"id_uppercat"`
-	NbImages int         `json:"nb_images"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	UpperID  any    `json:"id_uppercat"`
+	NbImages int    `json:"nb_images"`
 }
 
 // GetCategories returns all categories.
@@ -197,7 +197,7 @@ func (c *Client) ImageExists(ctx context.Context, md5sums []string) (map[string]
 }
 
 // call makes a REST API call to Piwigo.
-func (c *Client) call(ctx context.Context, method string, params map[string]string, result interface{}) error {
+func (c *Client) call(ctx context.Context, method string, params map[string]string, result any) error {
 	endpoint := fmt.Sprintf("%s/ws.php?format=json", c.BaseURL)
 
 	form := url.Values{}
