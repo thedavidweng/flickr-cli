@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/output"
 )
@@ -528,5 +530,182 @@ func TestDownloadWithMetadataSidecarError(t *testing.T) {
 	}
 	if summary.Completed != 1 {
 		t.Errorf("expected 1 completed (sidecar error is non-fatal), got %d", summary.Completed)
+	}
+}
+
+func TestDownloadWithMetadataSidecarSuccess(t *testing.T) {
+	// When writeSidecars succeeds, both JSON and YAML sidecar files
+	// should be written alongside the downloaded photo.
+	photoServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("fake-photo-data"))
+	}))
+	defer photoServer.Close()
+
+	mock := &mockFlickrAPI{
+		sizes: []flickr.Size{
+			{Label: "Original", Width: 4000, Height: 3000, Source: photoServer.URL + "/photo.jpg", Media: "photo"},
+		},
+		callHandler: func(method string, _ map[string]string) (json.RawMessage, error) {
+			if method == "flickr.photos.getInfo" {
+				return json.RawMessage(`{"stat":"ok","photo":{"id":"p-ok","title":{"_content":"My Photo"}}}`), nil
+			}
+			return nil, nil
+		},
+		exifData: &flickr.ExifData{PhotoID: "p-ok", Tags: []flickr.ExifTag{{Tag: "Make", Raw: "Canon"}}},
+	}
+
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "photo.jpg")
+	downloader := &Downloader{
+		HTTP:        photoServer.Client(),
+		Client:      mock,
+		Concurrency: 1,
+		Events:      &output.EventWriter{},
+	}
+
+	items := []DownloadItem{
+		{
+			PhotoID:          "p-ok",
+			FilePath:         filePath,
+			MetadataPathJSON: filePath + ".json",
+			MetadataPathYAML: filePath + ".yaml",
+		},
+	}
+
+	summary, err := downloader.Download(context.Background(), items, DownloadOptions{Exif: true})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if summary.Completed != 1 {
+		t.Fatalf("expected 1 completed, got %d", summary.Completed)
+	}
+
+	// Verify JSON sidecar was written
+	jsonData, err := os.ReadFile(filePath + ".json")
+	if err != nil {
+		t.Fatalf("expected JSON sidecar to exist: %v", err)
+	}
+	var jsonMap map[string]any
+	if err := json.Unmarshal(jsonData, &jsonMap); err != nil {
+		t.Fatalf("JSON sidecar is invalid: %v", err)
+	}
+
+	// Verify YAML sidecar was written
+	yamlData, err := os.ReadFile(filePath + ".yaml")
+	if err != nil {
+		t.Fatalf("expected YAML sidecar to exist: %v", err)
+	}
+	var yamlMap map[string]any
+	if err := yaml.Unmarshal(yamlData, &yamlMap); err != nil {
+		t.Fatalf("YAML sidecar is invalid: %v", err)
+	}
+}
+
+func TestDownloadWithMetadataSidecarExifError(t *testing.T) {
+	// When GetExif fails but getInfo succeeds, the download should
+	// still succeed and sidecars should still be written (without exif).
+	photoServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("fake-photo-data"))
+	}))
+	defer photoServer.Close()
+
+	mock := &mockFlickrAPI{
+		sizes: []flickr.Size{
+			{Label: "Original", Width: 4000, Height: 3000, Source: photoServer.URL + "/photo.jpg", Media: "photo"},
+		},
+		callHandler: func(method string, _ map[string]string) (json.RawMessage, error) {
+			if method == "flickr.photos.getInfo" {
+				return json.RawMessage(`{"stat":"ok","photo":{"id":"p-exif-err","title":{"_content":"My Photo"}}}`), nil
+			}
+			return nil, nil
+		},
+		exifErr: fmt.Errorf("exif API unavailable"),
+	}
+
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "photo.jpg")
+	downloader := &Downloader{
+		HTTP:        photoServer.Client(),
+		Client:      mock,
+		Concurrency: 1,
+		Events:      &output.EventWriter{},
+	}
+
+	items := []DownloadItem{
+		{
+			PhotoID:          "p-exif-err",
+			FilePath:         filePath,
+			MetadataPathJSON: filePath + ".json",
+		},
+	}
+
+	summary, err := downloader.Download(context.Background(), items, DownloadOptions{Exif: true})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if summary.Completed != 1 {
+		t.Errorf("expected 1 completed, got %d", summary.Completed)
+	}
+	// JSON sidecar should still exist (without exif field)
+	if _, err := os.Stat(filePath + ".json"); err != nil {
+		t.Error("expected JSON sidecar to exist despite exif error")
+	}
+}
+
+func TestDownloadSelectSizeError(t *testing.T) {
+	// When SelectSize fails (empty sizes), the download should fail.
+	mock := &mockFlickrAPI{
+		sizes: []flickr.Size{}, // empty → SelectSize returns error
+	}
+
+	tmpDir := t.TempDir()
+	downloader := &Downloader{
+		HTTP:        http.DefaultClient,
+		Client:      mock,
+		Concurrency: 1,
+		Events:      &output.EventWriter{},
+	}
+
+	items := []DownloadItem{
+		{PhotoID: "p-size-err", FilePath: filepath.Join(tmpDir, "photo.jpg")},
+	}
+
+	summary, err := downloader.Download(context.Background(), items, DownloadOptions{Size: "original"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if summary.Failed != 1 {
+		t.Errorf("expected 1 failed, got %d", summary.Failed)
+	}
+}
+
+func TestDownloadHTTPNon200(t *testing.T) {
+	// When the download URL returns a non-200 status, the item should fail.
+	photoServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer photoServer.Close()
+
+	mock := &mockFlickrAPI{
+		sizes: []flickr.Size{
+			{Label: "Original", Width: 4000, Height: 3000, Source: photoServer.URL + "/photo.jpg", Media: "photo"},
+		},
+	}
+
+	tmpDir := t.TempDir()
+	downloader := &Downloader{
+		HTTP:        photoServer.Client(),
+		Client:      mock,
+		Concurrency: 1,
+		Events:      &output.EventWriter{},
+	}
+
+	items := []DownloadItem{
+		{PhotoID: "p-403", FilePath: filepath.Join(tmpDir, "photo.jpg")},
+	}
+
+	summary, _ := downloader.Download(context.Background(), items, DownloadOptions{})
+	if summary.Failed != 1 {
+		t.Errorf("expected 1 failed for HTTP 403, got %d", summary.Failed)
 	}
 }
