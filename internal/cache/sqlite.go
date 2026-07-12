@@ -49,19 +49,19 @@ func (db *DB) Stats() (*CacheStats, error) {
 	stats := &CacheStats{}
 
 	var err error
-	stats.Counts.Albums, err = db.count("albums")
+	stats.Counts.Albums, err = db.countAlbums()
 	if err != nil {
 		return nil, err
 	}
-	stats.Counts.Photos, err = db.count("photos")
+	stats.Counts.Photos, err = db.countPhotos()
 	if err != nil {
 		return nil, err
 	}
-	stats.Counts.Checksums, err = db.count("checksums")
+	stats.Counts.Checksums, err = db.countChecksums()
 	if err != nil {
 		return nil, err
 	}
-	stats.Counts.Jobs, err = db.count("jobs")
+	stats.Counts.Jobs, err = db.countJobs()
 	if err != nil {
 		return nil, err
 	}
@@ -69,9 +69,27 @@ func (db *DB) Stats() (*CacheStats, error) {
 	return stats, nil
 }
 
-func (db *DB) count(table string) (int, error) {
+func (db *DB) countAlbums() (int, error) {
 	var count int
-	err := db.conn.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE profile=?", table), db.profile).Scan(&count)
+	err := db.conn.QueryRow("SELECT COUNT(*) FROM albums WHERE profile=?", db.profile).Scan(&count)
+	return count, err
+}
+
+func (db *DB) countPhotos() (int, error) {
+	var count int
+	err := db.conn.QueryRow("SELECT COUNT(*) FROM photos WHERE profile=?", db.profile).Scan(&count)
+	return count, err
+}
+
+func (db *DB) countChecksums() (int, error) {
+	var count int
+	err := db.conn.QueryRow("SELECT COUNT(*) FROM checksums WHERE profile=?", db.profile).Scan(&count)
+	return count, err
+}
+
+func (db *DB) countJobs() (int, error) {
+	var count int
+	err := db.conn.QueryRow("SELECT COUNT(*) FROM jobs WHERE profile=?", db.profile).Scan(&count)
 	return count, err
 }
 
@@ -122,11 +140,14 @@ func (db *DB) Cleanup(olderThan time.Duration) (int, error) {
 		return 0, err
 	}
 
-	rows, _ := result.RowsAffected()
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("getting rows affected: %w", err)
+	}
 	return int(rows), nil
 }
 
-// StatFile returns the size of the cache file.
+// StatFile returns the size of the cache file at the given path.
 func StatFile(path string) (int64, error) {
 	info, err := os.Stat(path)
 	if err != nil {

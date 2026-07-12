@@ -170,6 +170,7 @@ func (c *Client) AddToAlbum(ctx context.Context, albumID, photoID string) error 
 	return c.Call(ctx, "flickr.photosets.addPhoto", params, nil)
 }
 
+// boolToNum converts a boolean to Flickr's "0"/"1" string representation.
 func boolToNum(b bool) string {
 	if b {
 		return "1"

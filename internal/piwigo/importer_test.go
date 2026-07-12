@@ -507,3 +507,59 @@ func TestImportUploadError(t *testing.T) {
 		t.Errorf("Succeeded = %d, want 0", summary.Succeeded)
 	}
 }
+
+func TestImportDedupeErrorProceedsWithUpload(t *testing.T) {
+	// When ImageExists returns an error, the importer should emit a warning
+	// event and proceed with the upload instead of silently skipping.
+	ts := &testServer{
+		loginOK:    true,
+		downloadOK: true,
+		categories: []Category{
+			{ID: "c1", Name: "Album1", NbImages: 1},
+		},
+		images: map[string][]ImageInfo{
+			"c1": {
+				{ID: "img1", File: "photo.jpg", Name: "Photo", MD5Sum: "abc123"},
+			},
+		},
+		// existingMD5 is nil — ImageExists will return ok=false for "abc123",
+		// but we need to simulate an error. We do this by making the server
+		// return a failure for pwg.images.exist.
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/ws.php" && r.FormValue("method") == "pwg.images.exist" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = fmt.Fprint(w, `{"stat":"fail","message":"server error"}`)
+			return
+		}
+		ts.handler().ServeHTTP(w, r)
+	}))
+	defer srv.Close()
+
+	mock := newMockFlickr()
+	imp := &Importer{Events: silentEvents(), Flickr: mock}
+
+	summary, err := imp.Import(context.Background(), &ImportOptions{
+		URL:    srv.URL,
+		Dedupe: "checksum",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// The image should still be uploaded despite the dedup check error.
+	if summary.Succeeded != 1 {
+		t.Errorf("Succeeded = %d, want 1 (should proceed despite dedup error)", summary.Succeeded)
+	}
+	if summary.Skipped != 0 {
+		t.Errorf("Skipped = %d, want 0", summary.Skipped)
+	}
+}
+
+func TestDownloadToTempInvalidURL(t *testing.T) {
+	// An invalid URL should produce a wrapped error, not a bare one.
+	_, err := downloadToTemp(context.Background(), "http://invalid.\x00host/photo.jpg")
+	if err == nil {
+		t.Fatal("expected error for invalid URL, got nil")
+	}
+}

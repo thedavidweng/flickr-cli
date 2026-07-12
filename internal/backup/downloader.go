@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -52,6 +53,7 @@ type downloadResult int
 const (
 	downloadCompleted downloadResult = iota
 	downloadSkipped
+	downloadFailed
 )
 
 // Downloader handles downloading photos.
@@ -127,9 +129,13 @@ func (d *Downloader) downloadItem(ctx context.Context, item *DownloadItem, opts 
 
 	if item.Media == "video" {
 		streams, err := d.Client.GetVideoStreams(ctx, item.PhotoID)
-		if err == nil && len(streams) > 0 {
+		if err != nil {
+			log.Printf("download %s: GetVideoStreams failed, falling back to getSizes: %v", item.PhotoID, err)
+		} else if len(streams) > 0 {
 			best, err := flickr.SelectBestStream(streams)
-			if err == nil {
+			if err != nil {
+				log.Printf("download %s: SelectBestStream failed, falling back to getSizes: %v", item.PhotoID, err)
+			} else {
 				downloadURL = best.Source
 				media = "video"
 			}
@@ -139,7 +145,7 @@ func (d *Downloader) downloadItem(ctx context.Context, item *DownloadItem, opts 
 	if downloadURL == "" {
 		sizes, err := d.Client.GetSizes(ctx, item.PhotoID)
 		if err != nil {
-			return downloadCompleted, fmt.Errorf("getting sizes: %w", err)
+			return downloadFailed, fmt.Errorf("getting sizes: %w", err)
 		}
 
 		var size flickr.Size
@@ -149,7 +155,7 @@ func (d *Downloader) downloadItem(ctx context.Context, item *DownloadItem, opts 
 			size, err = flickr.SelectSize(sizes, opts.Size)
 		}
 		if err != nil {
-			return downloadCompleted, fmt.Errorf("selecting size: %w", err)
+			return downloadFailed, fmt.Errorf("selecting size: %w", err)
 		}
 		downloadURL = size.Source
 		media = size.Media
@@ -167,23 +173,27 @@ func (d *Downloader) downloadItem(ctx context.Context, item *DownloadItem, opts 
 
 	dir := filepath.Dir(item.FilePath)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return downloadCompleted, fmt.Errorf("creating dir: %w", err)
+		return downloadFailed, fmt.Errorf("creating dir: %w", err)
 	}
 
-	resp, err := d.HTTP.Get(downloadURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, http.NoBody)
 	if err != nil {
-		return downloadCompleted, fmt.Errorf("downloading: %w", err)
+		return downloadFailed, fmt.Errorf("creating download request: %w", err)
+	}
+	resp, err := d.HTTP.Do(req)
+	if err != nil {
+		return downloadFailed, fmt.Errorf("downloading: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return downloadCompleted, fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
+		return downloadFailed, fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
 	}
 
 	tmpPath := item.FilePath + ".tmp"
 	f, err := os.Create(tmpPath)
 	if err != nil {
-		return downloadCompleted, fmt.Errorf("creating file: %w", err)
+		return downloadFailed, fmt.Errorf("creating file: %w", err)
 	}
 
 	h := md5.New()
@@ -192,16 +202,16 @@ func (d *Downloader) downloadItem(ctx context.Context, item *DownloadItem, opts 
 	if _, err := io.Copy(writer, resp.Body); err != nil {
 		_ = f.Close()
 		_ = os.Remove(tmpPath)
-		return downloadCompleted, fmt.Errorf("writing file: %w", err)
+		return downloadFailed, fmt.Errorf("writing file: %w", err)
 	}
 
 	if err := f.Close(); err != nil {
 		_ = os.Remove(tmpPath)
-		return downloadCompleted, err
+		return downloadFailed, err
 	}
 
 	if err := os.Rename(tmpPath, item.FilePath); err != nil {
-		return downloadCompleted, err
+		return downloadFailed, err
 	}
 
 	// Write metadata sidecars if requested.
@@ -225,12 +235,15 @@ func (d *Downloader) writeSidecars(ctx context.Context, item *DownloadItem, incl
 	params := map[string]string{"photo_id": item.PhotoID}
 	var info map[string]any
 	if err := d.Client.Call(ctx, "flickr.photos.getInfo", params, &info); err != nil {
+		log.Printf("download %s: writeSidecars getInfo failed: %v", item.PhotoID, err)
 		return
 	}
 
 	// Optionally fetch and include EXIF data
 	if includeExif {
-		if exifData, err := d.Client.GetExif(ctx, item.PhotoID); err == nil {
+		if exifData, err := d.Client.GetExif(ctx, item.PhotoID); err != nil {
+			log.Printf("download %s: writeSidecars GetExif failed: %v", item.PhotoID, err)
+		} else {
 			info["exif"] = exifData
 		}
 	}
@@ -241,13 +254,19 @@ func (d *Downloader) writeSidecars(ctx context.Context, item *DownloadItem, incl
 	}
 
 	if item.MetadataPathJSON != "" {
-		if data, err := json.MarshalIndent(info, "", "  "); err == nil {
-			_ = os.WriteFile(item.MetadataPathJSON, data, 0o644)
+		data, err := json.MarshalIndent(info, "", "  ")
+		if err != nil {
+			log.Printf("download %s: writeSidecars JSON marshal failed: %v", item.PhotoID, err)
+		} else if err := os.WriteFile(item.MetadataPathJSON, data, 0o644); err != nil {
+			log.Printf("download %s: writeSidecars JSON write failed: %v", item.PhotoID, err)
 		}
 	}
 	if item.MetadataPathYAML != "" {
-		if data, err := yaml.Marshal(info); err == nil {
-			_ = os.WriteFile(item.MetadataPathYAML, data, 0o644)
+		data, err := yaml.Marshal(info)
+		if err != nil {
+			log.Printf("download %s: writeSidecars YAML marshal failed: %v", item.PhotoID, err)
+		} else if err := os.WriteFile(item.MetadataPathYAML, data, 0o644); err != nil {
+			log.Printf("download %s: writeSidecars YAML write failed: %v", item.PhotoID, err)
 		}
 	}
 }

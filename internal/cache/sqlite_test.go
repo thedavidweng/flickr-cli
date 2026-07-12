@@ -92,6 +92,19 @@ func TestCleanup(t *testing.T) {
 	}
 }
 
+func TestCleanupOnClosedDB(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.sqlite")
+
+	db, _ := Open(path, "default")
+	_ = db.Close()
+
+	_, err := db.Cleanup(24 * time.Hour)
+	if err == nil {
+		t.Error("expected error on closed DB, got nil")
+	}
+}
+
 func TestStatFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.txt")

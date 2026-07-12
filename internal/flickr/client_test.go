@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -86,7 +87,7 @@ func TestAuthorizationURL(t *testing.T) {
 	if url == "" {
 		t.Error("expected non-empty URL")
 	}
-	if !contains(url, "oauth_token=test-token") {
+	if !strings.Contains(url, "oauth_token=test-token") {
 		t.Error("URL should contain oauth_token")
 	}
 }

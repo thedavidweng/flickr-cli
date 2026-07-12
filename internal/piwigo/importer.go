@@ -66,7 +66,13 @@ func (i *Importer) Import(ctx context.Context, opts *ImportOptions) (*ImportSumm
 				// Check deduplication
 				if opts.Dedupe == "checksum" && img.MD5Sum != "" {
 					exists, err := piwigo.ImageExists(ctx, []string{img.MD5Sum})
-					if err == nil && exists[img.MD5Sum] {
+					if err != nil {
+						i.Events.Emit(&model.Event{
+							Type:    "import_warning",
+							PhotoID: img.ID,
+							Message: fmt.Sprintf("dedup check failed, proceeding with upload: %v", err),
+						})
+					} else if exists[img.MD5Sum] {
 						summary.Skipped++
 						i.Events.Emit(&model.Event{
 							Type:    string(StateSkippedExist),
@@ -163,14 +169,14 @@ func (i *Importer) Import(ctx context.Context, opts *ImportOptions) (*ImportSumm
 
 // downloadToTemp downloads a URL to a temporary file.
 func downloadToTemp(ctx context.Context, url string) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("creating request: %w", err)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("downloading: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 

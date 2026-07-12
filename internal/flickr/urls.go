@@ -168,7 +168,7 @@ func SelectSize(sizes []Size, wanted string) (Size, error) {
 
 	case "medium":
 		for _, s := range sizes {
-			if contains(s.Label, "Medium") {
+			if strings.Contains(s.Label, "Medium") {
 				return s, nil
 			}
 		}
@@ -181,7 +181,7 @@ func SelectSize(sizes []Size, wanted string) (Size, error) {
 
 	case "small":
 		for _, s := range sizes {
-			if contains(s.Label, "Small") {
+			if strings.Contains(s.Label, "Small") {
 				return s, nil
 			}
 		}
@@ -205,7 +205,7 @@ func selectByCode(sizes []Size, code string, info struct {
 	// Try label match first
 	if info.labelContains != "" {
 		for _, s := range sizes {
-			if contains(s.Label, info.labelContains) {
+			if strings.Contains(s.Label, info.labelContains) {
 				return s, nil
 			}
 		}
@@ -284,21 +284,24 @@ func abs(x int) int {
 // Flickr short URL base-58 alphabet (excludes 0, I, O, l to avoid confusion).
 const base58Alphabet = "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ"
 
+// base58Index maps each character in base58Alphabet to its index.
+var base58Index = func() map[rune]uint64 {
+	m := make(map[rune]uint64, len(base58Alphabet))
+	for i, c := range base58Alphabet {
+		m[c] = uint64(i)
+	}
+	return m
+}()
+
 // base58Decode decodes a base-58 encoded string to a uint64.
 func base58Decode(s string) (uint64, error) {
 	var result uint64
 	for _, c := range s {
-		idx := -1
-		for i, a := range base58Alphabet {
-			if a == c {
-				idx = i
-				break
-			}
-		}
-		if idx < 0 {
+		idx, ok := base58Index[c]
+		if !ok {
 			return 0, fmt.Errorf("invalid base58 character: %c", c)
 		}
-		result = result*58 + uint64(idx)
+		result = result*58 + idx
 	}
 	return result, nil
 }
@@ -422,17 +425,4 @@ func BestSizeURL(p *PhotoListItem) string {
 		return p.URLS
 	}
 	return ""
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || s != "" && containsSubstr(s, substr))
-}
-
-func containsSubstr(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
