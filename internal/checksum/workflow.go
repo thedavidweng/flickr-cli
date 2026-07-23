@@ -177,7 +177,7 @@ type VerifyOptions struct {
 
 // VerifyReport is the aggregate result of a verify operation.
 type VerifyReport struct {
-	Summary VerifyResult       `json:"summary"`
+	Summary VerifyResult        `json:"summary"`
 	Results []PhotoVerifyResult `json:"results"`
 }
 

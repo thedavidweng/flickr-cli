@@ -57,7 +57,7 @@ func TestPrivacyLevelPermsParams(t *testing.T) {
 
 func TestPrivacyLevelUploadFlags(t *testing.T) {
 	tests := []struct {
-		level              PrivacyLevel
+		level                        PrivacyLevel
 		isPublic, isFriend, isFamily bool
 	}{
 		{PrivacyPublic, true, false, false},

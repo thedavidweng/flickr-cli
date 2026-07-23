@@ -9,10 +9,10 @@ import "fmt"
 type PrivacyLevel string
 
 const (
-	PrivacyPublic       PrivacyLevel = "public"
-	PrivacyPrivate      PrivacyLevel = "private"
-	PrivacyFriends      PrivacyLevel = "friends"
-	PrivacyFamily       PrivacyLevel = "family"
+	PrivacyPublic        PrivacyLevel = "public"
+	PrivacyPrivate       PrivacyLevel = "private"
+	PrivacyFriends       PrivacyLevel = "friends"
+	PrivacyFamily        PrivacyLevel = "family"
 	PrivacyFriendsFamily PrivacyLevel = "friends-family"
 )
 
