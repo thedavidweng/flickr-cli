@@ -161,7 +161,6 @@ func (d *Downloader) downloadItem(ctx context.Context, item *DownloadItem, opts 
 		media = size.Media
 	}
 
-	// Fix file extension based on actual download URL and media type
 	actualExt := flickr.DeriveExtension(downloadURL, media, item.OriginalFormat)
 	item.FilePath = replaceExt(item.FilePath, actualExt)
 	if item.MetadataPathJSON != "" {
@@ -214,7 +213,6 @@ func (d *Downloader) downloadItem(ctx context.Context, item *DownloadItem, opts 
 		return downloadFailed, err
 	}
 
-	// Write metadata sidecars if requested.
 	if item.MetadataPathJSON != "" || item.MetadataPathYAML != "" {
 		d.writeSidecars(ctx, item, opts.Exif)
 	}
@@ -239,7 +237,6 @@ func (d *Downloader) writeSidecars(ctx context.Context, item *DownloadItem, incl
 		return
 	}
 
-	// Optionally fetch and include EXIF data
 	if includeExif {
 		if exifData, err := d.Client.GetExif(ctx, item.PhotoID); err != nil {
 			log.Printf("download %s: writeSidecars GetExif failed: %v", item.PhotoID, err)

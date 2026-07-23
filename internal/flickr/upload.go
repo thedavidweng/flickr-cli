@@ -52,11 +52,9 @@ func (c *Client) Upload(ctx context.Context, filePath string, opts *UploadOption
 	}
 	defer func() { _ = f.Close() }()
 
-	// Build multipart body
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
 
-	// Add the photo file
 	part, err := writer.CreateFormFile("photo", filepath.Base(filePath))
 	if err != nil {
 		return nil, fmt.Errorf("creating form file: %w", err)
@@ -65,36 +63,37 @@ func (c *Client) Upload(ctx context.Context, filePath string, opts *UploadOption
 		return nil, fmt.Errorf("copying file: %w", err)
 	}
 
-	// Add text fields
+	// Add text fields. Errors from writer.WriteField/Close are ignored —
+	// the underlying writer is a bytes.Buffer, which never fails.
 	title := opts.Title
 	if title == "" {
 		title = strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath))
 	}
-	_ = writer.WriteField("title", title) // bytes.Buffer never errors
+	_ = writer.WriteField("title", title)
 
 	if opts.Description != "" {
-		_ = writer.WriteField("description", opts.Description) // bytes.Buffer never errors
+		_ = writer.WriteField("description", opts.Description)
 	}
 
 	if len(opts.Tags) > 0 {
-		_ = writer.WriteField("tags", strings.Join(opts.Tags, " ")) // bytes.Buffer never errors
+		_ = writer.WriteField("tags", strings.Join(opts.Tags, " "))
 	}
 
-	_ = writer.WriteField("is_public", boolToNum(opts.IsPublic)) // bytes.Buffer never errors
-	_ = writer.WriteField("is_friend", boolToNum(opts.IsFriend)) // bytes.Buffer never errors
-	_ = writer.WriteField("is_family", boolToNum(opts.IsFamily)) // bytes.Buffer never errors
+	_ = writer.WriteField("is_public", boolToNum(opts.IsPublic))
+	_ = writer.WriteField("is_friend", boolToNum(opts.IsFriend))
+	_ = writer.WriteField("is_family", boolToNum(opts.IsFamily))
 
 	if opts.SafetyLevel > 0 {
-		_ = writer.WriteField("safety_level", fmt.Sprintf("%d", opts.SafetyLevel)) // bytes.Buffer never errors
+		_ = writer.WriteField("safety_level", fmt.Sprintf("%d", opts.SafetyLevel))
 	}
 	if opts.ContentType > 0 {
-		_ = writer.WriteField("content_type", fmt.Sprintf("%d", opts.ContentType)) // bytes.Buffer never errors
+		_ = writer.WriteField("content_type", fmt.Sprintf("%d", opts.ContentType))
 	}
 	if opts.Hidden > 0 {
-		_ = writer.WriteField("hidden", fmt.Sprintf("%d", opts.Hidden)) // bytes.Buffer never errors
+		_ = writer.WriteField("hidden", fmt.Sprintf("%d", opts.Hidden))
 	}
 
-	_ = writer.Close() // bytes.Buffer never errors
+	_ = writer.Close()
 
 	// Build OAuth signature params (exclude the photo field)
 	sigParams := make(map[string][]string)

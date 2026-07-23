@@ -64,8 +64,7 @@ flickr piwigo import --dedupe checksum ...
 flickr piwigo import --dedupe none ...
 ```
 
-Note: The `--hash` flag shown in earlier versions is not implemented. The hash
-algorithm is hardcoded to MD5.
+The hash algorithm is hardcoded to MD5.
 
 ## Limit
 
@@ -83,8 +82,7 @@ flickr piwigo import --limit 100 \
 on Flickr and requires `--confirm`.
 
 - `--read-only` blocks the import entirely (exit code 6).
-- `--dry-run` is accepted but returns 0 planned items (full scan is not yet
-  implemented).
+- `--dry-run` is accepted but returns 0 planned items (full scan is not performed).
 
 ```bash
 # Requires --confirm
@@ -97,7 +95,7 @@ flickr piwigo import --read-only \
 # Error: read-only mode blocks mutation
 ```
 
-See [Safety](safety.md) for the full risk classification of all commands.
+See [COMMANDS.md](../COMMANDS.md) for the full risk classification of all commands.
 
 ## JSON Output
 

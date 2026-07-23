@@ -438,7 +438,6 @@ func getOriginalSourceURL(client *flickr.Client, cmd *cobra.Command, photoID str
 
 // verifyPhoto downloads a photo and verifies its checksum against the stored tag.
 func verifyPhoto(client *flickr.Client, cmd *cobra.Command, photoID, tmpDir string) checksum.PhotoVerifyResult {
-	// Get photo info to find checksum tag
 	infoParams := map[string]string{"photo_id": photoID}
 	var infoResult struct {
 		Photo struct {
@@ -458,7 +457,6 @@ func verifyPhoto(client *flickr.Client, cmd *cobra.Command, photoID, tmpDir stri
 		}
 	}
 
-	// Find checksum tag
 	var algorithm, expectedHash string
 	for _, tag := range infoResult.Photo.Tags.Tag {
 		algo, val := checksum.ParseMachineTag(tag.Raw)
@@ -476,7 +474,6 @@ func verifyPhoto(client *flickr.Client, cmd *cobra.Command, photoID, tmpDir stri
 		}
 	}
 
-	// Get download URL
 	sourceURL, err := getOriginalSourceURL(client, cmd, photoID)
 	if err != nil {
 		return checksum.PhotoVerifyResult{
@@ -487,7 +484,6 @@ func verifyPhoto(client *flickr.Client, cmd *cobra.Command, photoID, tmpDir stri
 		}
 	}
 
-	// Download and compute checksum
 	tmpFile := filepath.Join(tmpDir, fmt.Sprintf("flickr-verify-%s", photoID))
 	actualHash, dlErr := downloadAndHash(client.HTTP, sourceURL, tmpFile, algorithm)
 	_ = os.Remove(tmpFile)

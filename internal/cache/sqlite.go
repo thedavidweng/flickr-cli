@@ -18,7 +18,6 @@ type DB struct {
 
 // Open opens or creates the cache database.
 func Open(path, profile string) (*DB, error) {
-	// Create directory if needed
 	dir := filepath.Dir(path)
 	if dir != "" && dir != "." {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
