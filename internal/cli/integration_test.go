@@ -1026,7 +1026,7 @@ func TestRequireAuthWritesErrorCode(t *testing.T) {
 	}
 }
 
-// --- backupModeToPlanMode unit tests ---
+// --- PlanModeFromFlags unit tests ---
 
 func TestBackupModeToPlanMode(t *testing.T) {
 	tests := []struct {
@@ -1045,9 +1045,9 @@ func TestBackupModeToPlanMode(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := backupModeToPlanMode(tc.layout, tc.all, tc.hasAlbums)
+			got := backup.PlanModeFromFlags(tc.layout, tc.all, tc.hasAlbums)
 			if got != tc.wantMode {
-				t.Errorf("backupModeToPlanMode(%q, %v, %v) = %q, want %q",
+				t.Errorf("PlanModeFromFlags(%q, %v, %v) = %q, want %q",
 					tc.layout, tc.all, tc.hasAlbums, got, tc.wantMode)
 			}
 		})

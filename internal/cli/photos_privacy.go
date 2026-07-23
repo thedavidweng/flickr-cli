@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
 	"github.com/thedavidweng/flickr-cli/internal/safety"
@@ -31,28 +32,14 @@ var photosSetPrivacyCmd = &cobra.Command{
 		privacy, _ := ctx.Cmd.Flags().GetString("privacy")
 		hidden, _ := ctx.Cmd.Flags().GetString("hidden")
 
+		level, err := flickr.ParsePrivacyLevel(privacy)
+		if err != nil {
+			return ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrValidationFailed, "%v", err))
+		}
+
 		params := map[string]string{"photo_id": photoID}
-		switch privacy {
-		case "public":
-			params["is_public"] = "1"
-			params["is_friend"] = "0"
-			params["is_family"] = "0"
-		case "private":
-			params["is_public"] = "0"
-			params["is_friend"] = "0"
-			params["is_family"] = "0"
-		case "friends":
-			params["is_public"] = "0"
-			params["is_friend"] = "1"
-			params["is_family"] = "0"
-		case "family":
-			params["is_public"] = "0"
-			params["is_friend"] = "0"
-			params["is_family"] = "1"
-		case "friends-family":
-			params["is_public"] = "0"
-			params["is_friend"] = "1"
-			params["is_family"] = "1"
+		for k, v := range level.PermsParams() {
+			params[k] = v
 		}
 		switch hidden {
 		case "hidden":

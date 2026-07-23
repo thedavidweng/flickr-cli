@@ -5,9 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
-	"net/http"
-	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,44 +15,6 @@ import (
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/output"
 )
-
-// --- detectOutboundIP ---
-
-func TestDetectOutboundIP(t *testing.T) {
-	orig := netDial
-	defer func() { netDial = orig }()
-
-	netDial = func(network, addr string) (net.Conn, error) {
-		pc, err := net.ListenPacket("udp", "127.0.0.1:0")
-		if err != nil {
-			return nil, err
-		}
-		udpConn, ok := pc.(*net.UDPConn)
-		if !ok {
-			return nil, fmt.Errorf("expected *net.UDPConn, got %T", pc)
-		}
-		return udpConn, nil
-	}
-
-	ip := detectOutboundIP()
-	if ip == "" || ip == "localhost" {
-		t.Errorf("expected real IP, got %q", ip)
-	}
-}
-
-func TestDetectOutboundIPDialError(t *testing.T) {
-	orig := netDial
-	defer func() { netDial = orig }()
-
-	netDial = func(network, addr string) (net.Conn, error) {
-		return nil, fmt.Errorf("dial failed")
-	}
-
-	ip := detectOutboundIP()
-	if ip != "localhost" {
-		t.Errorf("expected localhost on dial error, got %q", ip)
-	}
-}
 
 // --- readInput ---
 
@@ -185,10 +145,7 @@ func TestOOBAuthorize(t *testing.T) {
 	defer func() { readInput = orig }()
 	readInput = func() string { return "my-verifier-code" }
 
-	fake := &flickr.Client{APIKey: "test"}
-	r := output.Renderer{Out: io.Discard, Err: io.Discard}
-
-	v, err := oobAuthorize(context.Background(), &r, fake, "tok", "read")
+	v, err := oobAuthorize("http://example.com/auth")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -202,10 +159,7 @@ func TestOOBAuthorizeEmptyVerifier(t *testing.T) {
 	defer func() { readInput = orig }()
 	readInput = func() string { return "" }
 
-	fake := &flickr.Client{APIKey: "test"}
-	r := output.Renderer{Out: io.Discard, Err: io.Discard}
-
-	_, err := oobAuthorize(context.Background(), &r, fake, "tok", "read")
+	_, err := oobAuthorize("http://example.com/auth")
 	if err == nil {
 		t.Fatal("expected error for empty verifier")
 	}
@@ -235,52 +189,6 @@ func TestHandleRequestTokenErrorGeneric(t *testing.T) {
 	}
 }
 
-// --- localhostFlow ---
-
-func TestLocalhostFlow(t *testing.T) {
-	origListen := netListen
-	defer func() { netListen = origListen }()
-	netListen = net.Listen
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/oauth/request_token":
-			_, _ = fmt.Fprint(w, "oauth_token=reqtok&oauth_token_secret=reqsecret&oauth_callback_confirmed=true")
-		default:
-			w.WriteHeader(404)
-		}
-	}))
-	defer server.Close()
-
-	client := &flickr.Client{
-		APIKey: "test-key",
-		HTTP:   server.Client(),
-		Endpoints: flickr.Endpoints{
-			REST:         server.URL + "/",
-			RequestToken: server.URL + "/oauth/request_token",
-			Authorize:    server.URL + "/oauth/authorize",
-		},
-	}
-
-	r := output.Renderer{Out: io.Discard, Err: io.Discard}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	// localhostFlow will bind to 127.0.0.1:0 and wait for a callback.
-	// With a 2s timeout, it will expire — we're testing that it gets through
-	// RequestToken and starts listening without error.
-	_, _, err := localhostFlow(ctx, &r, client, "read", 0)
-	if err == nil {
-		// If it somehow succeeded (callback arrived), that's fine too.
-		return
-	}
-	// Expected: context.DeadlineExceeded since no callback arrives.
-	if err != context.DeadlineExceeded {
-		t.Errorf("expected DeadlineExceeded, got %v", err)
-	}
-}
-
 // --- isTerminal seam ---
 
 func TestIsTerminalInNonTerminal(t *testing.T) {
@@ -298,3 +206,11 @@ func TestReadFromTrimmed(t *testing.T) {
 		t.Errorf("expected %q, got %q", "trimmed input", got)
 	}
 }
+
+// Ensure unused imports are referenced (these are used by other tests in the package).
+var (
+	_ = context.Background
+	_ = io.Discard
+	_ = strings.TrimSpace
+	_ = &flickr.Client{}
+)

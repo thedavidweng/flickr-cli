@@ -2,15 +2,10 @@ package cli
 
 import (
 	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 
 	"github.com/thedavidweng/flickr-cli/internal/checksum"
-	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
 )
@@ -56,135 +51,36 @@ var checksumsAddCmd = &cobra.Command{
 		page, _ := cmd.Flags().GetInt("page")
 		perPage, _ := cmd.Flags().GetInt("per-page")
 
-		if err := checksum.ValidateAlgorithm(hashAlgo); err != nil {
-			return r.Failure(meta, output.Errorf(model.ErrValidationFailed, "%v", err))
+		tagger := &checksum.Tagger{
+			API:  client,
+			HTTP: client.HTTP,
 		}
 
-		if tmpDir == "" {
-			tmpDir = os.TempDir()
-		}
-
-		// List photos
-		listParams := map[string]string{
-			"user_id":  userID,
-			"page":     fmt.Sprintf("%d", page),
-			"per_page": fmt.Sprintf("%d", perPage),
-		}
-
-		var listResult struct {
-			Photos struct {
-				Photo []struct {
-					ID    string `json:"id"`
-					Title string `json:"title"`
-				} `json:"photo"`
-				Page    int `json:"page"`
-				Pages   int `json:"pages"`
-				PerPage int `json:"perpage"`
-				Total   int `json:"total"`
-			} `json:"photos"`
-		}
-
-		if err := client.Call(cmd.Context(), "flickr.people.getPhotos", listParams, &listResult); err != nil {
+		result, err := tagger.Add(cmd.Context(), checksum.AddOptions{
+			HashAlgo: hashAlgo,
+			UserID:   userID,
+			Force:    force,
+			TmpDir:   tmpDir,
+			Page:     page,
+			PerPage:  perPage,
+			DryRun:   app.DryRun,
+		})
+		if err != nil {
+			if err := checksum.ValidateAlgorithm(hashAlgo); err != nil {
+				return r.Failure(meta, output.Errorf(model.ErrValidationFailed, "%v", err))
+			}
 			return r.Failure(meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
 		}
 
-		var added, skipped, failed int
-		var details []map[string]any
-
-		for _, photo := range listResult.Photos.Photo {
-			// Check if already has checksum tag (unless force)
-			if !force {
-				hasTag, err := photoHasChecksum(client, cmd, photo.ID, hashAlgo)
-				if err == nil && hasTag {
-					skipped++
-					details = append(details, map[string]any{
-						"photo_id": photo.ID,
-						"status":   "skipped",
-						"reason":   "checksum tag already exists",
-					})
-					continue
-				}
-			}
-
-			if app.DryRun {
-				details = append(details, map[string]any{
-					"photo_id": photo.ID,
-					"status":   "would_add",
-				})
-				continue
-			}
-
-			// Get sizes to find download URL
-			sourceURL, err := getOriginalSourceURL(client, cmd, photo.ID)
-			if err != nil {
-				failed++
-				details = append(details, map[string]any{
-					"photo_id": photo.ID,
-					"status":   "failed",
-					"error":    fmt.Sprintf("getSizes: %v", err),
-				})
-				continue
-			}
-
-			// Download and compute checksum
-			tmpFile := filepath.Join(tmpDir, fmt.Sprintf("flickr-checksum-%s", photo.ID))
-			hash, dlErr := downloadAndHash(client.HTTP, sourceURL, tmpFile, hashAlgo)
-			_ = os.Remove(tmpFile)
-
-			if dlErr != nil {
-				failed++
-				details = append(details, map[string]any{
-					"photo_id": photo.ID,
-					"status":   "failed",
-					"error":    fmt.Sprintf("checksum: %v", dlErr),
-				})
-				continue
-			}
-
-			// Add machine tag
-			machineTag := checksum.FormatMachineTag(hashAlgo, hash)
-			tagParams := map[string]string{
-				"photo_id": photo.ID,
-				"tags":     machineTag,
-			}
-			if err := client.Call(cmd.Context(), "flickr.photos.addTags", tagParams, nil); err != nil {
-				failed++
-				details = append(details, map[string]any{
-					"photo_id": photo.ID,
-					"status":   "failed",
-					"error":    fmt.Sprintf("addTags: %v", err),
-				})
-				continue
-			}
-
-			added++
-			details = append(details, map[string]any{
-				"photo_id": photo.ID,
-				"tag":      machineTag,
-				"status":   "added",
-			})
-		}
-
-		data := map[string]any{
-			"added":   added,
-			"skipped": skipped,
-			"failed":  failed,
-			"total":   listResult.Photos.Total,
-			"details": details,
-		}
-		if app.DryRun {
-			data["planned"] = true
-		}
-
 		var warnings []string
-		if skipped > 0 {
-			warnings = append(warnings, fmt.Sprintf("%d photo(s) already had checksum tags", skipped))
+		if result.Skipped > 0 {
+			warnings = append(warnings, fmt.Sprintf("%d photo(s) already had checksum tags", result.Skipped))
 		}
-		if failed > 0 {
-			warnings = append(warnings, fmt.Sprintf("%d photo(s) failed", failed))
+		if result.Failed > 0 {
+			warnings = append(warnings, fmt.Sprintf("%d photo(s) failed", result.Failed))
 		}
 
-		return r.Success(meta, data, warnings)
+		return r.Success(meta, result, warnings)
 	},
 }
 
@@ -213,65 +109,29 @@ var checksumsVerifyCmd = &cobra.Command{
 		page, _ := cmd.Flags().GetInt("page")
 		perPage, _ := cmd.Flags().GetInt("per-page")
 
-		if tmpDir == "" {
-			tmpDir = os.TempDir()
+		verifier := &checksum.Verifier{
+			API:  client,
+			HTTP: client.HTTP,
 		}
 
-		// Search for photos with checksum machine tags
-		searchParams := map[string]string{
-			"user_id":      "me",
-			"machine_tags": "checksum:*",
-			"page":         fmt.Sprintf("%d", page),
-			"per_page":     fmt.Sprintf("%d", perPage),
-		}
-
-		var searchResult struct {
-			Photos struct {
-				Photo []struct {
-					ID    string `json:"id"`
-					Title string `json:"title"`
-				} `json:"photo"`
-				Page    int `json:"page"`
-				Pages   int `json:"pages"`
-				PerPage int `json:"perpage"`
-				Total   int `json:"total"`
-			} `json:"photos"`
-		}
-
-		if err := client.Call(cmd.Context(), "flickr.photos.search", searchParams, &searchResult); err != nil {
+		report, err := verifier.Verify(cmd.Context(), checksum.VerifyOptions{
+			TmpDir:  tmpDir,
+			Page:    page,
+			PerPage: perPage,
+		})
+		if err != nil {
 			return r.Failure(meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
 		}
 
-		var results []checksum.PhotoVerifyResult
-		var summary checksum.VerifyResult
-
-		for _, photo := range searchResult.Photos.Photo {
-			pr := verifyPhoto(client, cmd, photo.ID, tmpDir)
-			results = append(results, pr)
-			switch pr.Status {
-			case checksum.VerifyValid:
-				summary.Valid++
-			case checksum.VerifyMissing:
-				summary.Missing++
-			case checksum.VerifyMismatch:
-				summary.Mismatch++
-			case checksum.VerifyFailed:
-				summary.Failed++
-			}
-		}
-
 		var warnings []string
-		if summary.Mismatch > 0 {
-			warnings = append(warnings, fmt.Sprintf("%d photo(s) have mismatched checksums", summary.Mismatch))
+		if report.Summary.Mismatch > 0 {
+			warnings = append(warnings, fmt.Sprintf("%d photo(s) have mismatched checksums", report.Summary.Mismatch))
 		}
-		if summary.Failed > 0 {
-			warnings = append(warnings, fmt.Sprintf("%d photo(s) could not be verified", summary.Failed))
+		if report.Summary.Failed > 0 {
+			warnings = append(warnings, fmt.Sprintf("%d photo(s) could not be verified", report.Summary.Failed))
 		}
 
-		return r.Success(meta, map[string]any{
-			"summary": summary,
-			"results": results,
-		}, warnings)
+		return r.Success(meta, report, warnings)
 	},
 }
 
@@ -355,163 +215,6 @@ var checksumsSearchCmd = &cobra.Command{
 		}
 		return tw.Flush()
 	},
-}
-
-// downloadAndHash downloads a file from url to tmpPath and computes its hash.
-func downloadAndHash(httpClient *http.Client, url, tmpPath, algorithm string) (string, error) {
-	resp, err := httpClient.Get(url)
-	if err != nil {
-		return "", fmt.Errorf("downloading: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
-	}
-
-	f, err := os.Create(tmpPath)
-	if err != nil {
-		return "", fmt.Errorf("creating temp file: %w", err)
-	}
-	defer func() { _ = f.Close() }()
-
-	if _, err := io.Copy(f, resp.Body); err != nil {
-		return "", fmt.Errorf("writing file: %w", err)
-	}
-	// Close before hashing so all data is flushed to disk.
-	_ = f.Close()
-
-	return checksum.FileHash(tmpPath, algorithm)
-}
-
-// photoHasChecksum checks whether a photo already has a checksum machine tag
-// for the given algorithm.
-func photoHasChecksum(client *flickr.Client, cmd *cobra.Command, photoID, algorithm string) (bool, error) {
-	infoParams := map[string]string{"photo_id": photoID}
-	var infoResult struct {
-		Photo struct {
-			Tags struct {
-				Tag []struct {
-					Raw     string `json:"raw"`
-					Machine int    `json:"machine"`
-				} `json:"tag"`
-			} `json:"tags"`
-		} `json:"photo"`
-	}
-	if err := client.Call(cmd.Context(), "flickr.photos.getInfo", infoParams, &infoResult); err != nil {
-		return false, err
-	}
-	for _, tag := range infoResult.Photo.Tags.Tag {
-		algo, _ := checksum.ParseMachineTag(tag.Raw)
-		if algo == algorithm {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// getOriginalSourceURL returns the source URL for the original size of a photo.
-func getOriginalSourceURL(client *flickr.Client, cmd *cobra.Command, photoID string) (string, error) {
-	sizeParams := map[string]string{"photo_id": photoID}
-	var sizeResult struct {
-		Sizes struct {
-			Size []struct {
-				Label  string `json:"label"`
-				Source string `json:"source"`
-			} `json:"size"`
-		} `json:"sizes"`
-	}
-	if err := client.Call(cmd.Context(), "flickr.photos.getSizes", sizeParams, &sizeResult); err != nil {
-		return "", err
-	}
-
-	for _, s := range sizeResult.Sizes.Size {
-		if s.Label == "Original" {
-			return s.Source, nil
-		}
-	}
-	if len(sizeResult.Sizes.Size) > 0 {
-		return sizeResult.Sizes.Size[len(sizeResult.Sizes.Size)-1].Source, nil
-	}
-	return "", fmt.Errorf("no download URL available")
-}
-
-// verifyPhoto downloads a photo and verifies its checksum against the stored tag.
-func verifyPhoto(client *flickr.Client, cmd *cobra.Command, photoID, tmpDir string) checksum.PhotoVerifyResult {
-	infoParams := map[string]string{"photo_id": photoID}
-	var infoResult struct {
-		Photo struct {
-			Tags struct {
-				Tag []struct {
-					Raw     string `json:"raw"`
-					Machine int    `json:"machine"`
-				} `json:"tag"`
-			} `json:"tags"`
-		} `json:"photo"`
-	}
-	if err := client.Call(cmd.Context(), "flickr.photos.getInfo", infoParams, &infoResult); err != nil {
-		return checksum.PhotoVerifyResult{
-			PhotoID: photoID,
-			Status:  checksum.VerifyFailed,
-			Error:   fmt.Sprintf("getInfo: %v", err),
-		}
-	}
-
-	var algorithm, expectedHash string
-	for _, tag := range infoResult.Photo.Tags.Tag {
-		algo, val := checksum.ParseMachineTag(tag.Raw)
-		if algo != "" {
-			algorithm = algo
-			expectedHash = val
-			break
-		}
-	}
-
-	if expectedHash == "" {
-		return checksum.PhotoVerifyResult{
-			PhotoID: photoID,
-			Status:  checksum.VerifyMissing,
-		}
-	}
-
-	sourceURL, err := getOriginalSourceURL(client, cmd, photoID)
-	if err != nil {
-		return checksum.PhotoVerifyResult{
-			PhotoID:  photoID,
-			Status:   checksum.VerifyFailed,
-			Expected: expectedHash,
-			Error:    fmt.Sprintf("getSizes: %v", err),
-		}
-	}
-
-	tmpFile := filepath.Join(tmpDir, fmt.Sprintf("flickr-verify-%s", photoID))
-	actualHash, dlErr := downloadAndHash(client.HTTP, sourceURL, tmpFile, algorithm)
-	_ = os.Remove(tmpFile)
-
-	if dlErr != nil {
-		return checksum.PhotoVerifyResult{
-			PhotoID:  photoID,
-			Status:   checksum.VerifyFailed,
-			Expected: expectedHash,
-			Error:    fmt.Sprintf("checksum: %v", dlErr),
-		}
-	}
-
-	if actualHash == expectedHash {
-		return checksum.PhotoVerifyResult{
-			PhotoID:  photoID,
-			Status:   checksum.VerifyValid,
-			Expected: expectedHash,
-			Actual:   actualHash,
-		}
-	}
-
-	return checksum.PhotoVerifyResult{
-		PhotoID:  photoID,
-		Status:   checksum.VerifyMismatch,
-		Expected: expectedHash,
-		Actual:   actualHash,
-	}
 }
 
 func init() {

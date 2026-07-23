@@ -2,11 +2,8 @@ package cli
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"io"
-	"net"
-	"net/http"
 	"os"
 	"strings"
 
@@ -21,8 +18,6 @@ import (
 // Package-level seams for testing.
 var (
 	readInput = func() string { return readFrom(os.Stdin) }
-	netListen = net.Listen
-	netDial   = net.Dial
 )
 
 var authCmd = &cobra.Command{
@@ -121,18 +116,32 @@ Free accounts cannot create API keys as of 2024.
 		var verifier string
 		var reqToken *flickr.RequestTokenResponse
 
+		flow := &flickr.OAuthFlow{Client: client}
+
 		if callbackType == "oob" {
-			reqToken, err = client.RequestToken(cmd.Context(), "oob")
+			authURL, rt, err := flow.OOBRequestToken(cmd.Context(), perms)
 			if err != nil {
 				return handleRequestTokenError(r, meta, err)
 			}
-			verifier, err = oobAuthorize(cmd.Context(), &r, client, reqToken.Token, perms)
+			reqToken = rt
+			verifier, err = oobAuthorize(authURL)
+			if err != nil {
+				return r.Failure(meta, output.Errorf(model.ErrAuthFailed, "authorization: %v", err))
+			}
 		} else {
 			port, _ := cmd.Flags().GetInt("callback-port")
-			reqToken, verifier, err = localhostFlow(cmd.Context(), &r, client, perms, port)
-		}
-		if err != nil {
-			return r.Failure(meta, output.Errorf(model.ErrAuthFailed, "authorization: %v", err))
+			rt, v, err := flow.LocalhostFlow(cmd.Context(), perms, port, func(authURL, callbackURL string) {
+				_, _ = fmt.Fprintln(os.Stderr)
+				_, _ = fmt.Fprintf(os.Stderr, "Open this URL to authorize:\n\n  %s\n\n", authURL)
+				if callbackURL != "" && !strings.HasPrefix(callbackURL, "http://localhost") && !strings.HasPrefix(callbackURL, "http://127.0.0.1") {
+					_, _ = fmt.Fprintf(os.Stderr, "Callback will be received on %s\n", callbackURL)
+				}
+			})
+			if err != nil {
+				return r.Failure(meta, output.Errorf(model.ErrAuthFailed, "authorization: %v", err))
+			}
+			reqToken = rt
+			verifier = v
 		}
 
 		// Exchange for access token
@@ -363,55 +372,9 @@ func readFrom(r io.Reader) string {
 	return strings.TrimSpace(scanner.Text())
 }
 
-// localhostFlow runs the full localhost-based OAuth authorization flow.
-// It starts the callback server first to determine the actual port, then
-// registers that port as the OAuth callback with Flickr. The server binds
-// to 0.0.0.0 so that browsers on other machines (reached via the server's
-// IP) can also complete the authorization.
-func localhostFlow(ctx context.Context, r *output.Renderer, client *flickr.Client, perms string, port int) (*flickr.RequestTokenResponse, string, error) {
-	serverIP := detectOutboundIP()
-	ln, err := netListen("tcp", fmt.Sprintf("%s:%d", serverIP, port))
-	if err != nil {
-		// Fallback to localhost if specific IP fails
-		serverIP = "127.0.0.1"
-		ln, err = netListen("tcp", fmt.Sprintf("%s:%d", serverIP, port))
-		if err != nil {
-			return nil, "", fmt.Errorf("listening on port %d: %w", port, err)
-		}
-	}
-	defer func() { _ = ln.Close() }()
-
-	addr, ok := ln.Addr().(*net.TCPAddr)
-	if !ok {
-		return nil, "", fmt.Errorf("unexpected listener address type")
-	}
-	callbackURL := fmt.Sprintf("http://%s:%d", serverIP, addr.Port)
-
-	reqToken, err := client.RequestToken(ctx, callbackURL)
-	if err != nil {
-		return nil, "", err
-	}
-
-	authURL := client.AuthorizationURL(reqToken.Token, perms)
-	_, _ = fmt.Fprintln(os.Stderr)
-	_, _ = fmt.Fprintf(os.Stderr, "Open this URL to authorize:\n\n  %s\n\n", authURL)
-	if serverIP != "localhost" && serverIP != "127.0.0.1" {
-		_, _ = fmt.Fprintf(os.Stderr, "Callback will be received on %s\n", callbackURL)
-	}
-
-	verifier, err := waitForCallback(ctx, ln)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return reqToken, verifier, nil
-}
-
-// oobAuthorize handles the out-of-band authorization flow for environments
-// where the callback server is not reachable (e.g., firewalled servers).
-func oobAuthorize(ctx context.Context, r *output.Renderer, client *flickr.Client, token, perms string) (string, error) {
-	authURL := client.AuthorizationURL(token, perms)
-
+// oobAuthorize handles the out-of-band authorization user interaction.
+// It displays the auth URL and reads the verifier code from stdin.
+func oobAuthorize(authURL string) (string, error) {
 	_, _ = fmt.Fprintln(os.Stderr)
 	_, _ = fmt.Fprintln(os.Stderr, "Open this URL to authorize:")
 	_, _ = fmt.Fprintln(os.Stderr)
@@ -432,51 +395,4 @@ func oobAuthorize(ctx context.Context, r *output.Renderer, client *flickr.Client
 	}
 
 	return verifier, nil
-}
-
-// waitForCallback starts an HTTP server on the given listener and waits
-// for an OAuth callback containing the verifier.
-func waitForCallback(ctx context.Context, ln net.Listener) (string, error) {
-	verifierCh := make(chan string, 1)
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		v := req.URL.Query().Get("oauth_verifier")
-		if v == "" {
-			// Browsers may request favicon.ico or other resources;
-			// respond with 200 instead of error to avoid deadlock.
-			_, _ = fmt.Fprintf(w, "Waiting for authorization...")
-			return
-		}
-		_, _ = fmt.Fprintf(w, "Authorization successful! You can close this window.")
-		verifierCh <- v
-	})
-
-	srv := &http.Server{Handler: mux}
-	go func() {
-		_ = srv.Serve(ln) // http.ErrServerClosed is expected
-	}()
-
-	select {
-	case verifier := <-verifierCh:
-		_ = srv.Shutdown(ctx)
-		return verifier, nil
-	case <-ctx.Done():
-		_ = srv.Shutdown(ctx)
-		return "", ctx.Err()
-	}
-}
-
-// detectOutboundIP returns the preferred outbound IP of this machine.
-func detectOutboundIP() string {
-	conn, err := netDial("udp", "8.8.8.8:80")
-	if err != nil {
-		return "localhost"
-	}
-	defer func() { _ = conn.Close() }()
-	udpAddr, ok := conn.LocalAddr().(*net.UDPAddr)
-	if !ok {
-		return "localhost"
-	}
-	return udpAddr.IP.String()
 }

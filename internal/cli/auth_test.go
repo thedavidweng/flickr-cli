@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -90,61 +88,6 @@ func TestReadFrom(t *testing.T) {
 	result := readFrom(input)
 	if result != "hello world" {
 		t.Errorf("expected 'hello world', got %q", result)
-	}
-}
-
-func TestLocalhostCallback(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("failed to find free port: %v", err)
-	}
-
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		addr, _ := ln.Addr().(*net.TCPAddr)
-		url := fmt.Sprintf("http://localhost:%d/?oauth_verifier=test-verifier", addr.Port)
-		resp, err := http.Get(url)
-		if err == nil {
-			_ = resp.Body.Close()
-		}
-	}()
-
-	verifier, err := waitForCallback(ctx, ln)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if verifier != "test-verifier" {
-		t.Errorf("expected test-verifier, got %s", verifier)
-	}
-}
-
-func TestLocalhostCallbackMissingVerifier(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("failed to find free port: %v", err)
-	}
-
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		addr, _ := ln.Addr().(*net.TCPAddr)
-		url := fmt.Sprintf("http://localhost:%d/", addr.Port)
-		resp, err := http.Get(url)
-		if err == nil {
-			_ = resp.Body.Close()
-		}
-		// Cancel context after the no-verifier request returns 200
-		cancel()
-	}()
-
-	_, err = waitForCallback(ctx, ln)
-	if err == nil {
-		t.Error("expected error for missing verifier")
 	}
 }
 
@@ -274,20 +217,5 @@ func TestAuthLogoutDryRun(t *testing.T) {
 	}
 	if !bytes.Equal(origContent, afterContent) {
 		t.Error("config file should not be modified during dry-run")
-	}
-}
-
-func TestLocalhostCallbackContextCanceled(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("failed to find free port: %v", err)
-	}
-
-	_, err = waitForCallback(ctx, ln)
-	if err == nil {
-		t.Error("expected error for canceled context")
 	}
 }
