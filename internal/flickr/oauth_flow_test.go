@@ -90,6 +90,103 @@ func TestLocalhostFlow(t *testing.T) {
 	}
 }
 
+func TestLocalhostFlowListenFallback(t *testing.T) {
+	origListen := oauthListen
+	defer func() { oauthListen = origListen }()
+
+	callCount := 0
+	oauthListen = func(network, addr string) (net.Listener, error) {
+		callCount++
+		if callCount == 1 {
+			// First listen fails (simulates binding to outbound IP failing)
+			return nil, fmt.Errorf("listen failed")
+		}
+		// Second listen (fallback to 127.0.0.1) succeeds
+		return net.Listen(network, addr)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/oauth/request_token":
+			_, _ = fmt.Fprint(w, "oauth_token=reqtok&oauth_token_secret=reqsecret&oauth_callback_confirmed=true")
+		default:
+			w.WriteHeader(404)
+		}
+	}))
+	defer server.Close()
+
+	client := &Client{
+		APIKey: "test-key",
+		HTTP:   server.Client(),
+		Endpoints: Endpoints{
+			REST:         server.URL + "/",
+			RequestToken: server.URL + "/oauth/request_token",
+			Authorize:    server.URL + "/oauth/authorize",
+		},
+	}
+
+	flow := &OAuthFlow{Client: client}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	_, _, err := flow.LocalhostFlow(ctx, "read", 0, nil)
+	if err == nil {
+		return
+	}
+	if err != context.DeadlineExceeded {
+		t.Errorf("expected DeadlineExceeded after fallback, got %v", err)
+	}
+	if callCount < 2 {
+		t.Errorf("expected fallback to second listen, got %d calls", callCount)
+	}
+}
+
+func TestLocalhostFlowBothListenFail(t *testing.T) {
+	origListen := oauthListen
+	defer func() { oauthListen = origListen }()
+
+	oauthListen = func(network, addr string) (net.Listener, error) {
+		return nil, fmt.Errorf("listen failed")
+	}
+
+	client := &Client{APIKey: "test-key", HTTP: http.DefaultClient}
+
+	flow := &OAuthFlow{Client: client}
+
+	_, _, err := flow.LocalhostFlow(context.Background(), "read", 9999, nil)
+	if err == nil {
+		t.Fatal("expected error when both listens fail")
+	}
+}
+
+func TestLocalhostFlowRequestTokenError(t *testing.T) {
+	origListen := oauthListen
+	defer func() { oauthListen = origListen }()
+	oauthListen = net.Listen
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(500)
+	}))
+	defer server.Close()
+
+	client := &Client{
+		APIKey: "test-key",
+		HTTP:   server.Client(),
+		Endpoints: Endpoints{
+			REST:         server.URL + "/",
+			RequestToken: server.URL + "/oauth/request_token",
+		},
+	}
+
+	flow := &OAuthFlow{Client: client}
+
+	_, _, err := flow.LocalhostFlow(context.Background(), "read", 0, nil)
+	if err == nil {
+		t.Fatal("expected error for RequestToken failure")
+	}
+}
+
 func TestOOBRequestToken(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprint(w, "oauth_token=reqtok&oauth_token_secret=reqsecret&oauth_callback_confirmed=true")

@@ -176,3 +176,29 @@ func TestVerifierVerifyMismatch(t *testing.T) {
 		t.Errorf("expected mismatch=1, got %d", report.Summary.Mismatch)
 	}
 }
+
+func TestOriginalSourceURLFallback(t *testing.T) {
+	fake := testutil.NewFakeFlickr(t)
+	fake.PhotoSizes["p1"] = []testutil.FakeSize{
+		{Label: "Large", Source: "http://example.com/large.jpg", Width: 800, Height: 600},
+		{Label: "Medium", Source: "http://example.com/medium.jpg", Width: 400, Height: 300},
+	}
+
+	url, err := originalSourceURL(context.Background(), fake.Client(), "p1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if url != "http://example.com/medium.jpg" {
+		t.Errorf("expected fallback to last size, got %s", url)
+	}
+}
+
+func TestOriginalSourceURLGetSizesError(t *testing.T) {
+	fake := testutil.NewFakeFlickr(t)
+	fake.Failures["flickr.photos.getSizes"] = testutil.FakeFailure{Code: 1, Message: "not found"}
+
+	_, err := originalSourceURL(context.Background(), fake.Client(), "p1")
+	if err == nil {
+		t.Fatal("expected error for getSizes failure")
+	}
+}
