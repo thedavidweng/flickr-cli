@@ -77,7 +77,12 @@ var photosDownloadCmd = &cobra.Command{
 			if summary.Total == 0 {
 				ctx.R.Human("No photos to download\n")
 			}
-			return ctx.R.Success(ctx.Meta, map[string]any{"summary": summary, "dest": dest}, nil)
+			if ctx.App.JSON {
+				return ctx.R.Success(ctx.Meta, map[string]any{"summary": summary, "dest": dest}, nil)
+			}
+			ctx.R.Human("\nSummary: %d total, %d completed, %d skipped, %d failed\n",
+				summary.Total, summary.Completed, summary.Skipped, summary.Failed)
+			return nil
 		}
 
 		if len(ctx.Args) == 0 {
