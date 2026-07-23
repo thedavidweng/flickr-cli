@@ -138,6 +138,93 @@ func TestExecutorExecuteUploadSuccess(t *testing.T) {
 	}
 }
 
+func TestExecutorExecuteUploadWithPrivacy(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/xml")
+		_, _ = w.Write([]byte(`<?xml version="1.0"?><rsp stat="ok"><photoid>12345</photoid></rsp>`))
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "test.jpg")
+	if err := os.WriteFile(tmpFile, []byte("fake-image-data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	client := &flickr.Client{
+		APIKey:    "test-key",
+		APISecret: "test-secret",
+		HTTP:      server.Client(),
+		Endpoints: flickr.Endpoints{Upload: server.URL + "/upload"},
+	}
+
+	executor := &Executor{
+		Client:  client,
+		Gate:    safety.GateInput{},
+		Events:  &output.EventWriter{},
+		Profile: "default",
+	}
+
+	// Test each privacy level maps correctly
+	for _, privacy := range []string{"public", "private", "friends", "family", "friends-family"} {
+		plan := Plan{
+			Planned: []PlannedUpload{
+				{LocalPath: tmpFile, SizeBytes: 100, Title: "Test", Privacy: privacy},
+			},
+		}
+
+		summary, err := executor.Execute(context.Background(), plan, &PlanOptions{})
+		if err != nil {
+			t.Fatalf("unexpected error for privacy=%s: %v", privacy, err)
+		}
+		if summary.Succeeded != 1 {
+			t.Errorf("expected 1 succeeded for privacy=%s, got %d", privacy, summary.Succeeded)
+		}
+	}
+}
+
+func TestExecutorExecuteUploadWithInvalidPrivacy(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/xml")
+		_, _ = w.Write([]byte(`<?xml version="1.0"?><rsp stat="ok"><photoid>12345</photoid></rsp>`))
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "test.jpg")
+	if err := os.WriteFile(tmpFile, []byte("fake-image-data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	client := &flickr.Client{
+		APIKey:    "test-key",
+		APISecret: "test-secret",
+		HTTP:      server.Client(),
+		Endpoints: flickr.Endpoints{Upload: server.URL + "/upload"},
+	}
+
+	executor := &Executor{
+		Client:  client,
+		Gate:    safety.GateInput{},
+		Events:  &output.EventWriter{},
+		Profile: "default",
+	}
+
+	plan := Plan{
+		Planned: []PlannedUpload{
+			{LocalPath: tmpFile, SizeBytes: 100, Title: "Test", Privacy: "invalid"},
+		},
+	}
+
+	summary, err := executor.Execute(context.Background(), plan, &PlanOptions{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if summary.Failed != 1 {
+		t.Errorf("expected 1 failed for invalid privacy, got %d", summary.Failed)
+	}
+}
+
 func TestExecutorExecuteUploadError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/xml")

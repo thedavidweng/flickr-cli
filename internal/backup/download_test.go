@@ -219,3 +219,37 @@ func TestDownloadByPlanEmpty(t *testing.T) {
 		t.Errorf("expected total 0 for empty plan, got %d", summary.Total)
 	}
 }
+
+func TestDownloadByPlanWithItems(t *testing.T) {
+	fake := testutil.NewFakeFlickr(t)
+	fake.Photos["p1"] = testutil.FakePhoto{ID: "p1", Title: "Test", Owner: "me"}
+
+	dlServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/jpeg")
+		_, _ = w.Write([]byte("fake-image"))
+	}))
+	defer dlServer.Close()
+
+	fake.PhotoSizes["p1"] = []testutil.FakeSize{
+		{Label: "Original", Source: dlServer.URL + "/p1.jpg", Width: 100, Height: 100},
+	}
+
+	cfg := &DownloadConfig{
+		Dest:        t.TempDir(),
+		Size:        "original",
+		Force:       true,
+		Concurrency: 1,
+	}
+	opts := &BackupPlanOptions{Mode: BackupUser, Dest: cfg.Dest, Force: true}
+
+	summary, err := DownloadByPlan(context.Background(), fake.Client(), dlServer.Client(), opts, cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if summary.Total != 1 {
+		t.Errorf("expected total 1, got %d", summary.Total)
+	}
+	if summary.Completed != 1 {
+		t.Errorf("expected completed 1, got %d", summary.Completed)
+	}
+}
