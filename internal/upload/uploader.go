@@ -70,6 +70,18 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts *PlanOptions) (*
 		return summary, nil
 	}
 
+	// Resolve album names to IDs before uploading. This keeps the plan
+	// complete and self-describing — callers don't need to fix it up.
+	if len(opts.Albums) > 0 {
+		resolvedIDs, err := e.resolveAlbumNames(ctx, opts.Albums, opts.AlbumIDs)
+		if err != nil {
+			return nil, err
+		}
+		for i := range plan.Planned {
+			plan.Planned[i].AlbumIDs = resolvedIDs
+		}
+	}
+
 	workers := e.Concurrency
 	if workers < 1 {
 		workers = 1
@@ -121,6 +133,28 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts *PlanOptions) (*
 	return summary, nil
 }
 
+// resolveAlbumNames resolves album name strings to Flickr album IDs,
+// merging with any explicitly provided IDs. Creates albums that don't exist.
+func (e *Executor) resolveAlbumNames(ctx context.Context, names, existingIDs []string) ([]string, error) {
+	resolver := NewAlbumResolver(e.Client)
+	if err := resolver.Load(ctx); err != nil {
+		return nil, fmt.Errorf("loading albums: %w", err)
+	}
+
+	ids := make([]string, 0, len(names)+len(existingIDs))
+	ids = append(ids, existingIDs...)
+
+	for _, name := range names {
+		albumID, _, err := resolver.ResolveOrCreate(ctx, name, "")
+		if err != nil {
+			return nil, fmt.Errorf("resolving album %q: %w", name, err)
+		}
+		ids = append(ids, albumID)
+	}
+
+	return ids, nil
+}
+
 func (e *Executor) uploadSingle(ctx context.Context, pu *PlannedUpload, opts *PlanOptions) (UploadResult, error) {
 	result := UploadResult{
 		LocalPath: pu.LocalPath,
@@ -154,16 +188,14 @@ func (e *Executor) uploadSingle(ctx context.Context, pu *PlannedUpload, opts *Pl
 	}
 
 	// Map privacy
-	switch pu.Privacy {
-	case "public":
-		uploadOpts.IsPublic = true
-	case "friends":
-		uploadOpts.IsFriend = true
-	case "family":
-		uploadOpts.IsFamily = true
-	case "friends-family":
-		uploadOpts.IsFriend = true
-		uploadOpts.IsFamily = true
+	if pu.Privacy != "" {
+		level, err := flickr.ParsePrivacyLevel(pu.Privacy)
+		if err != nil {
+			result.Status = "failed"
+			result.Error = fmt.Sprintf("invalid privacy: %v", err)
+			return result, nil
+		}
+		uploadOpts.IsPublic, uploadOpts.IsFriend, uploadOpts.IsFamily = level.UploadFlags()
 	}
 
 	// Map safety

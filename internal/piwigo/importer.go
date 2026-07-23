@@ -23,15 +23,12 @@ type Importer struct {
 
 // Import runs the Piwigo import.
 func (i *Importer) Import(ctx context.Context, opts *ImportOptions) (*ImportSummary, error) {
-	// Create Piwigo client
 	piwigo := NewClient(opts.URL, opts.Username, opts.Password)
 
-	// Login to Piwigo
 	if err := piwigo.Login(ctx); err != nil {
 		return nil, fmt.Errorf("piwigo login: %w", err)
 	}
 
-	// Get categories
 	categories, err := piwigo.GetCategories(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting categories: %w", err)
@@ -39,7 +36,6 @@ func (i *Importer) Import(ctx context.Context, opts *ImportOptions) (*ImportSumm
 
 	summary := &ImportSummary{}
 
-	// Process each category
 	for _, cat := range categories {
 		if cat.NbImages == 0 {
 			continue
@@ -184,11 +180,9 @@ func downloadToTemp(ctx context.Context, url string) (string, error) {
 		return "", fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
 
-	// Calculate MD5 while downloading
 	h := md5.New()
 	reader := io.TeeReader(resp.Body, h)
 
-	// Write to temp file
 	tmpFile, err := os.CreateTemp("", "piwigo-*.jpg")
 	if err != nil {
 		return "", err

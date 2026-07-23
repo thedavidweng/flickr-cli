@@ -28,13 +28,11 @@ func Append(path string, ev *AuditEvent) error {
 		ev.TS = time.Now().UTC().Format(time.RFC3339)
 	}
 
-	// Create parent directory with 0700
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("creating audit dir: %w", err)
 	}
 
-	// Open file in append/create mode
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		return fmt.Errorf("opening audit log: %w", err)

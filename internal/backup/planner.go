@@ -120,7 +120,6 @@ func buildAlbumPlan(ctx context.Context, client flickr.FlickrAPI, opts *BackupPl
 		page++
 	}
 
-	// For each matched album, enumerate the photos inside it.
 	for _, album := range albums {
 		photos, err := getAlbumPhotos(ctx, client, album.id, album.title)
 		if err != nil {

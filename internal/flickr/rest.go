@@ -56,7 +56,6 @@ func (c *Client) callRawOnce(ctx context.Context, method string, params map[stri
 		return nil, err, false
 	}
 
-	// Build form values
 	form := url.Values{}
 	form.Set("method", method)
 	form.Set("api_key", c.APIKey)
@@ -139,7 +138,6 @@ func (c *Client) callRawOnce(ctx context.Context, method string, params map[stri
 		return nil, flickrErr, retryable
 	}
 
-	// Check for Flickr API error
 	var fr flickrResponse
 	if err := json.Unmarshal(body, &fr); err != nil {
 		return nil, fmt.Errorf("parsing response: %w", err), false

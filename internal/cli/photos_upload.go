@@ -87,23 +87,6 @@ var photosUploadCmd = &cobra.Command{
 			}, nil)
 		}
 
-		if len(albumNames) > 0 {
-			resolver := upload.NewAlbumResolver(ctx.Client)
-			if err := resolver.Load(ctx.Cmd.Context()); err != nil {
-				return ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrFlickrAPI, "loading albums: %v", err))
-			}
-			for _, name := range albumNames {
-				albumID, _, err := resolver.ResolveOrCreate(ctx.Cmd.Context(), name, "")
-				if err != nil {
-					return ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrFlickrAPI, "resolving album %q: %v", name, err))
-				}
-				planOpts.AlbumIDs = append(planOpts.AlbumIDs, albumID)
-			}
-			for i := range plan.Planned {
-				plan.Planned[i].AlbumIDs = planOpts.AlbumIDs
-			}
-		}
-
 		auditPath := config.DefaultAuditLogPath(ctx.App.Profile)
 		executor := &upload.Executor{
 			Client:      ctx.Client,

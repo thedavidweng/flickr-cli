@@ -2,77 +2,71 @@ package upload
 
 import (
 	"context"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/thedavidweng/flickr-cli/internal/flickr"
+	"github.com/thedavidweng/flickr-cli/internal/testutil"
 )
 
-func TestAlbumResolverCreation(t *testing.T) {
-	resolver := NewAlbumResolver(&flickr.Client{})
-	if resolver == nil {
-		t.Fatal("expected non-nil resolver")
-	}
-	if resolver.cache == nil {
-		t.Error("expected non-nil cache")
-	}
-}
+func TestResolveAlbumNamesExisting(t *testing.T) {
+	fake := testutil.NewFakeFlickr(t)
+	fake.Albums["album-1"] = testutil.FakeAlbum{ID: "album-1", Title: "Vacation", PhotoCount: 5}
 
-func TestAlbumResolverLoad(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"stat":"ok","photosets":{"photoset":[{"id":"album-1","title":{"_content":"Test Album"},"photos":10}]}}`))
-	}))
-	defer server.Close()
+	executor := &Executor{Client: fake.Client()}
 
-	client := &flickr.Client{
-		APIKey:    "test-key",
-		HTTP:      server.Client(),
-		Endpoints: flickr.Endpoints{REST: server.URL + "/"},
-	}
-
-	resolver := NewAlbumResolver(client)
-	err := resolver.Load(context.Background())
+	ids, err := executor.resolveAlbumNames(context.Background(), []string{"Vacation"}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-
-	if len(resolver.cache) != 1 {
-		t.Errorf("expected 1 album in cache, got %d", len(resolver.cache))
+	if len(ids) != 1 {
+		t.Fatalf("expected 1 id, got %d", len(ids))
+	}
+	if ids[0] != "album-1" {
+		t.Errorf("expected album-1, got %s", ids[0])
 	}
 }
 
-func TestAlbumResolverResolveOrCreate(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"stat":"ok","photoset":{"id":"new-album-123"}}`))
-	}))
-	defer server.Close()
+func TestResolveAlbumNamesWithExistingIDs(t *testing.T) {
+	fake := testutil.NewFakeFlickr(t)
+	fake.Albums["album-1"] = testutil.FakeAlbum{ID: "album-1", Title: "Vacation", PhotoCount: 5}
 
-	client := &flickr.Client{
-		APIKey:    "test-key",
-		HTTP:      server.Client(),
-		Endpoints: flickr.Endpoints{REST: server.URL + "/"},
-	}
+	executor := &Executor{Client: fake.Client()}
 
-	resolver := NewAlbumResolver(client)
-	id, created, err := resolver.ResolveOrCreate(context.Background(), "New Album", "photo-123")
+	ids, err := executor.resolveAlbumNames(context.Background(), []string{"Vacation"}, []string{"existing-id-1"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if id != "new-album-123" {
-		t.Errorf("expected new-album-123, got %s", id)
+	if len(ids) != 2 {
+		t.Fatalf("expected 2 ids, got %d", len(ids))
 	}
-	if !created {
-		t.Error("expected created=true")
+	if ids[0] != "existing-id-1" {
+		t.Errorf("expected existing-id-1 first, got %s", ids[0])
+	}
+	if ids[1] != "album-1" {
+		t.Errorf("expected album-1 second, got %s", ids[1])
 	}
 }
 
-func TestAlbumResolverResolveOrCreateEmptyTitle(t *testing.T) {
-	resolver := NewAlbumResolver(&flickr.Client{})
-	_, _, err := resolver.ResolveOrCreate(context.Background(), "", "photo-123")
+func TestResolveAlbumNamesEmpty(t *testing.T) {
+	fake := testutil.NewFakeFlickr(t)
+	executor := &Executor{Client: fake.Client()}
+
+	ids, err := executor.resolveAlbumNames(context.Background(), nil, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(ids) != 0 {
+		t.Errorf("expected 0 ids, got %d", len(ids))
+	}
+}
+
+func TestResolveAlbumNamesLoadError(t *testing.T) {
+	fake := testutil.NewFakeFlickr(t)
+	fake.Failures["flickr.photosets.getList"] = testutil.FakeFailure{Code: 99, Message: "load failed"}
+
+	executor := &Executor{Client: fake.Client()}
+
+	_, err := executor.resolveAlbumNames(context.Background(), []string{"New Album"}, nil)
 	if err == nil {
-		t.Error("expected error for empty title")
+		t.Fatal("expected error for load failure")
 	}
 }
