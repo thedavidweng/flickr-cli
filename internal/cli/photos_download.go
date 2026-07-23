@@ -35,7 +35,7 @@ var photosDownloadCmd = &cobra.Command{
 
 		backupMode := allAlbums || len(albumTitles) > 0 || len(albumIDs) > 0 || layout != ""
 
-		dlCfg := backup.DownloadConfig{
+		dlCfg := &backup.DownloadConfig{
 			Dest:        dest,
 			Size:        size,
 			SizeMax:     sizeMax,

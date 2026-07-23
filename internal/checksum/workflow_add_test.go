@@ -22,7 +22,7 @@ func TestTaggerAddDryRun(t *testing.T) {
 
 	tagger := &Tagger{API: fake.Client(), HTTP: http.DefaultClient}
 
-	result, err := tagger.Add(context.Background(), AddOptions{
+	result, err := tagger.Add(context.Background(), &AddOptions{
 		HashAlgo: "md5",
 		UserID:   "me",
 		DryRun:   true,
@@ -48,7 +48,7 @@ func TestTaggerAddInvalidAlgorithm(t *testing.T) {
 	fake := testutil.NewFakeFlickr(t)
 	tagger := &Tagger{API: fake.Client(), HTTP: http.DefaultClient}
 
-	_, err := tagger.Add(context.Background(), AddOptions{
+	_, err := tagger.Add(context.Background(), &AddOptions{
 		HashAlgo: "invalid",
 		UserID:   "me",
 	})
@@ -68,7 +68,7 @@ func TestTaggerAddSkipExisting(t *testing.T) {
 
 	tagger := &Tagger{API: fake.Client(), HTTP: http.DefaultClient}
 
-	result, err := tagger.Add(context.Background(), AddOptions{
+	result, err := tagger.Add(context.Background(), &AddOptions{
 		HashAlgo: "md5",
 		UserID:   "me",
 		PerPage:  50,
@@ -96,7 +96,7 @@ func TestTaggerAddSuccess(t *testing.T) {
 
 	tagger := &Tagger{API: fake.Client(), HTTP: dlServer.Client()}
 
-	result, err := tagger.Add(context.Background(), AddOptions{
+	result, err := tagger.Add(context.Background(), &AddOptions{
 		HashAlgo: "md5",
 		UserID:   "me",
 		PerPage:  50,

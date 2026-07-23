@@ -98,7 +98,7 @@ func TestPlanToItemsMetadata(t *testing.T) {
 }
 
 func TestIDsToItems(t *testing.T) {
-	cfg := DownloadConfig{Dest: "/tmp/backup", Size: "original"}
+	cfg := &DownloadConfig{Dest: "/tmp/backup", Size: "original"}
 	ids := []string{"p1", "p2"}
 
 	items := idsToItems(ids, cfg)
@@ -114,7 +114,7 @@ func TestIDsToItems(t *testing.T) {
 }
 
 func TestIDsToItemsMetadata(t *testing.T) {
-	cfg := DownloadConfig{Dest: "/tmp/backup", Metadata: "both"}
+	cfg := &DownloadConfig{Dest: "/tmp/backup", Metadata: "both"}
 	items := idsToItems([]string{"p1"}, cfg)
 	if items[0].MetadataPathJSON == "" || items[0].MetadataPathYAML == "" {
 		t.Error("expected both metadata paths")
@@ -146,7 +146,7 @@ func TestDownloadByIDs(t *testing.T) {
 		{Label: "Original", Source: dlServer.URL + "/p1.jpg", Width: 100, Height: 100},
 	}
 
-	cfg := DownloadConfig{
+	cfg := &DownloadConfig{
 		Dest:        t.TempDir(),
 		Size:        "original",
 		Force:       true,
@@ -179,7 +179,7 @@ func TestDownloadByIDsSkipExisting(t *testing.T) {
 	}
 
 	dest := t.TempDir()
-	cfg := DownloadConfig{
+	cfg := &DownloadConfig{
 		Dest:        dest,
 		Size:        "original",
 		Force:       false, // don't force — should skip
@@ -208,7 +208,7 @@ func TestDownloadByIDsSkipExisting(t *testing.T) {
 func TestDownloadByPlanEmpty(t *testing.T) {
 	fake := testutil.NewFakeFlickr(t)
 
-	cfg := DownloadConfig{Dest: t.TempDir(), Concurrency: 1}
+	cfg := &DownloadConfig{Dest: t.TempDir(), Concurrency: 1}
 	opts := &BackupPlanOptions{Mode: BackupUser, Dest: cfg.Dest}
 
 	summary, err := DownloadByPlan(context.Background(), fake.Client(), http.DefaultClient, opts, cfg)

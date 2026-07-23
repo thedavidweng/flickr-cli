@@ -56,7 +56,7 @@ var checksumsAddCmd = &cobra.Command{
 			HTTP: client.HTTP,
 		}
 
-		result, err := tagger.Add(cmd.Context(), checksum.AddOptions{
+		result, err := tagger.Add(cmd.Context(), &checksum.AddOptions{
 			HashAlgo: hashAlgo,
 			UserID:   userID,
 			Force:    force,

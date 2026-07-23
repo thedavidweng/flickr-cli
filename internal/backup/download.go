@@ -28,7 +28,7 @@ type DownloadConfig struct {
 // DownloadByPlan builds a plan from opts, constructs download items with
 // layout-appropriate paths, and runs the downloader. This is the deep
 // entry point for backup-mode downloads (album, all, id-dirs, user).
-func DownloadByPlan(ctx context.Context, client flickr.FlickrAPI, httpClient *http.Client, planOpts *BackupPlanOptions, cfg DownloadConfig) (*DownloadSummary, error) {
+func DownloadByPlan(ctx context.Context, client flickr.FlickrAPI, httpClient *http.Client, planOpts *BackupPlanOptions, cfg *DownloadConfig) (*DownloadSummary, error) {
 	plan, err := BuildPlan(ctx, client, planOpts)
 	if err != nil {
 		return nil, fmt.Errorf("building plan: %w", err)
@@ -44,7 +44,7 @@ func DownloadByPlan(ctx context.Context, client flickr.FlickrAPI, httpClient *ht
 
 // DownloadByIDs constructs download items from explicit photo IDs and runs
 // the downloader. This is the deep entry point for direct-ID downloads.
-func DownloadByIDs(ctx context.Context, client flickr.FlickrAPI, httpClient *http.Client, photoIDs []string, cfg DownloadConfig) (*DownloadSummary, error) {
+func DownloadByIDs(ctx context.Context, client flickr.FlickrAPI, httpClient *http.Client, photoIDs []string, cfg *DownloadConfig) (*DownloadSummary, error) {
 	items := idsToItems(photoIDs, cfg)
 	return runDownload(ctx, client, httpClient, items, cfg)
 }
@@ -103,7 +103,7 @@ func planToItems(plan *BackupPlan, opts *BackupPlanOptions) []DownloadItem {
 }
 
 // idsToItems constructs download items from explicit photo IDs.
-func idsToItems(photoIDs []string, cfg DownloadConfig) []DownloadItem {
+func idsToItems(photoIDs []string, cfg *DownloadConfig) []DownloadItem {
 	items := make([]DownloadItem, len(photoIDs))
 	for i, photoID := range photoIDs {
 		filePath := filepath.Join(cfg.Dest, photoID+".jpg")
@@ -124,7 +124,7 @@ func idsToItems(photoIDs []string, cfg DownloadConfig) []DownloadItem {
 }
 
 // runDownload wires a Downloader and executes the download.
-func runDownload(ctx context.Context, client flickr.FlickrAPI, httpClient *http.Client, items []DownloadItem, cfg DownloadConfig) (*DownloadSummary, error) {
+func runDownload(ctx context.Context, client flickr.FlickrAPI, httpClient *http.Client, items []DownloadItem, cfg *DownloadConfig) (*DownloadSummary, error) {
 	dl := &Downloader{
 		HTTP:        httpClient,
 		Client:      client,

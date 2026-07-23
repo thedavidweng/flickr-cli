@@ -50,7 +50,7 @@ type AddResult struct {
 }
 
 // Add runs the full checksum-add workflow over the user's photos.
-func (t *Tagger) Add(ctx context.Context, opts AddOptions) (*AddResult, error) {
+func (t *Tagger) Add(ctx context.Context, opts *AddOptions) (*AddResult, error) {
 	if err := ValidateAlgorithm(opts.HashAlgo); err != nil {
 		return nil, err
 	}
