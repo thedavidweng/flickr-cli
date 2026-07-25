@@ -1,6 +1,10 @@
 package config
 
-import "os"
+import (
+	"fmt"
+	"os"
+	"strings"
+)
 
 // Credentials holds the resolved API and OAuth credentials.
 type Credentials struct {
@@ -11,8 +15,10 @@ type Credentials struct {
 }
 
 // CredentialsFromProfileAndEnv resolves credentials from profile and environment overrides.
-// Environment variables take precedence over profile values.
-func CredentialsFromProfileAndEnv(p *Profile) Credentials {
+// Environment variables take precedence over profile values. Any resolved value of the
+// form "env:NAME" is an indirection: it is replaced with the value of $NAME, and it is an
+// error if $NAME is unset. Indirection keeps secrets out of the 0600 config file.
+func CredentialsFromProfileAndEnv(p *Profile) (Credentials, error) {
 	creds := Credentials{
 		APIKey:           p.APIKey,
 		APISecret:        p.APISecret,
@@ -33,7 +39,36 @@ func CredentialsFromProfileAndEnv(p *Profile) Credentials {
 		creds.OAuthTokenSecret = v
 	}
 
-	return creds
+	var err error
+	if creds.APIKey, err = resolveEnvIndirection("api_key", creds.APIKey); err != nil {
+		return Credentials{}, err
+	}
+	if creds.APISecret, err = resolveEnvIndirection("api_secret", creds.APISecret); err != nil {
+		return Credentials{}, err
+	}
+	if creds.OAuthToken, err = resolveEnvIndirection("oauth_token", creds.OAuthToken); err != nil {
+		return Credentials{}, err
+	}
+	if creds.OAuthTokenSecret, err = resolveEnvIndirection("oauth_token_secret", creds.OAuthTokenSecret); err != nil {
+		return Credentials{}, err
+	}
+
+	return creds, nil
+}
+
+// resolveEnvIndirection expands an "env:NAME" indirection to the value of $NAME.
+// Non-indirection values pass through unchanged. An unset $NAME is an error.
+func resolveEnvIndirection(field, value string) (string, error) {
+	const prefix = "env:"
+	if !strings.HasPrefix(value, prefix) {
+		return value, nil
+	}
+	name := strings.TrimPrefix(value, prefix)
+	resolved := os.Getenv(name)
+	if resolved == "" {
+		return "", fmt.Errorf("%s references env var %q which is not set", field, name)
+	}
+	return resolved, nil
 }
 
 // IsAuthenticated returns true if the credentials have an OAuth token.

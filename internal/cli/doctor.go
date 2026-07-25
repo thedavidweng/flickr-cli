@@ -98,7 +98,15 @@ func doctorRun(ctx context.Context, app *AppContext) []doctorCheck {
 	})
 
 	// 3. Check if API key is configured
-	creds := config.CredentialsFromProfileAndEnv(profile)
+	creds, err := config.CredentialsFromProfileAndEnv(profile)
+	if err != nil {
+		checks = append(checks, doctorCheck{
+			Name:    "credentials",
+			OK:      false,
+			Message: err.Error(),
+		})
+		return checks
+	}
 	if !creds.HasAPIKey() {
 		checks = append(checks, doctorCheck{
 			Name:    "api_key",

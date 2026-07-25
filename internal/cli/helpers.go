@@ -154,7 +154,10 @@ func getClient(app *AppContext) (*flickr.Client, *config.Config, error) {
 		return nil, cfg, fmt.Errorf("not authenticated. Run 'flickr auth login' to get started")
 	}
 
-	creds := config.CredentialsFromProfileAndEnv(profile)
+	creds, err := config.CredentialsFromProfileAndEnv(profile)
+	if err != nil {
+		return nil, cfg, err
+	}
 	client := flickr.NewClient(creds.APIKey, creds.APISecret, creds.OAuthToken, creds.OAuthTokenSecret)
 	client.Retries = app.Retries
 	client.RequestInterval = app.RequestInterval

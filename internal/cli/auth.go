@@ -65,7 +65,10 @@ Free accounts cannot create API keys as of 2024.
 
 		// Check if already authenticated (unless --force)
 		force, _ := cmd.Flags().GetBool("force")
-		creds := config.CredentialsFromProfileAndEnv(profile)
+		creds, err := config.CredentialsFromProfileAndEnv(profile)
+		if err != nil {
+			return r.Failure(meta, output.Errorf(model.ErrConfig, "%v", err))
+		}
 		if creds.IsAuthenticated() && !force {
 			client := flickr.NewClient(creds.APIKey, creds.APISecret, creds.OAuthToken, creds.OAuthTokenSecret)
 			loginInfo, err := client.TestLogin(cmd.Context())
@@ -260,7 +263,10 @@ var authStatusCmd = &cobra.Command{
 			))
 		}
 
-		creds := config.CredentialsFromProfileAndEnv(profile)
+		creds, err := config.CredentialsFromProfileAndEnv(profile)
+		if err != nil {
+			return r.Failure(meta, output.Errorf(model.ErrConfig, "%v", err))
+		}
 		if !creds.HasAPIKey() {
 			return r.Failure(meta, output.Errorf(model.ErrAuthRequired, "no API key configured"))
 		}

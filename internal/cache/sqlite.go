@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	_ "modernc.org/sqlite"
+	_ "github.com/ncruces/go-sqlite3/driver"
 )
 
 // DB is the cache database.
@@ -25,7 +25,7 @@ func Open(path, profile string) (*DB, error) {
 		}
 	}
 
-	conn, err := sql.Open("sqlite", path)
+	conn, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, fmt.Errorf("opening cache: %w", err)
 	}

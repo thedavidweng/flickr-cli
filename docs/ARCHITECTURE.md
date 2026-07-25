@@ -84,7 +84,7 @@ Config is stored as YAML at `~/.config/flickr-cli/config.yaml` (XDG-compliant).
 current_profile: default
 profiles:
   default:
-    api_key: "..."
+    api_key: "..."            # literal, or "env:FLICKR_API_KEY" to read from $FLICKR_API_KEY
     api_secret: "..."
     oauth_token: "..."
     oauth_token_secret: "..."
@@ -117,6 +117,16 @@ Credential resolution priority:
 2. Environment variables (`FLICKR_API_KEY`, etc.)
 3. Profile config
 4. Interactive prompt
+
+### Secret indirection (`env:NAME`)
+
+Any secret-bearing profile value (`api_key`, `api_secret`, `oauth_token`,
+`oauth_token_secret`) may be stored as the string `env:NAME` instead of the
+literal secret. At credential resolution the value is replaced with the
+contents of the `$NAME` environment variable; an unset `$NAME` is a fatal
+config error. The stored config keeps the `env:NAME` string — the expanded
+secret is never written back to disk. This keeps secrets out of the plaintext
+config for CI and secret-manager workflows. See ADR 0008.
 
 ## Safety System (`internal/safety/`)
 
@@ -153,7 +163,7 @@ Every command produces output through the `Renderer`:
 | `github.com/spf13/cobra` | CLI framework |
 | `gopkg.in/yaml.v3` | Config file parsing |
 | `github.com/google/uuid` | Request IDs |
-| `modernc.org/sqlite` | Cache database (pure Go, no CGO) |
+| `github.com/ncruces/go-sqlite3` | Cache database (pure Go via WASM, no CGO) |
 
-Indirect dependencies (transitive): `go-humanize`, `go-isatty`, `go-strftime`,
-`bigfft`, `pflag`, `mousetrap`, and `modernc.org/{libc,mathutil,memory}`.
+Indirect dependencies (transitive): `pflag`, `mousetrap`, `julianday`, and the
+embedded SQLite WebAssembly module `go-sqlite3-wasm/v2`.

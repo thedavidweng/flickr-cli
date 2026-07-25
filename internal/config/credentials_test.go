@@ -13,7 +13,10 @@ func TestCredentialsFromProfileAndEnv(t *testing.T) {
 		OAuthTokenSecret: "profile-token-secret",
 	}
 
-	creds := CredentialsFromProfileAndEnv(p)
+	creds, err := CredentialsFromProfileAndEnv(p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if creds.APIKey != "profile-key" {
 		t.Errorf("expected profile-key, got %s", creds.APIKey)
 	}
@@ -43,7 +46,10 @@ func TestCredentialsEnvOverride(t *testing.T) {
 		APISecret: "profile-secret",
 	}
 
-	creds := CredentialsFromProfileAndEnv(p)
+	creds, err := CredentialsFromProfileAndEnv(p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if creds.APIKey != "env-key" {
 		t.Errorf("expected env-key, got %s", creds.APIKey)
 	}
@@ -55,6 +61,35 @@ func TestCredentialsEnvOverride(t *testing.T) {
 	}
 	if creds.OAuthTokenSecret != "env-token-secret" {
 		t.Errorf("expected env-token-secret, got %s", creds.OAuthTokenSecret)
+	}
+}
+
+func TestCredentialsEnvIndirection(t *testing.T) {
+	_ = os.Setenv("FLICKR_TEST_KEY", "resolved-key")
+	defer func() { _ = os.Unsetenv("FLICKR_TEST_KEY") }()
+
+	p := &Profile{
+		APIKey:    "env:FLICKR_TEST_KEY",
+		APISecret: "literal-secret",
+	}
+
+	creds, err := CredentialsFromProfileAndEnv(p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if creds.APIKey != "resolved-key" {
+		t.Errorf("expected resolved-key, got %s", creds.APIKey)
+	}
+	if creds.APISecret != "literal-secret" {
+		t.Errorf("expected literal-secret unchanged, got %s", creds.APISecret)
+	}
+}
+
+func TestCredentialsEnvIndirectionUnset(t *testing.T) {
+	p := &Profile{APIKey: "env:FLICKR_DEFINITELY_UNSET"}
+
+	if _, err := CredentialsFromProfileAndEnv(p); err == nil {
+		t.Error("expected error when referenced env var is unset")
 	}
 }
 
