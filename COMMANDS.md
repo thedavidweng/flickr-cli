@@ -349,11 +349,20 @@ Piwigo migration tools.
 ```bash
 flickr piwigo import --url https://photos.example.com --user admin --password secret
 flickr piwigo import --url https://photos.example.com --user admin --password secret --json
+flickr piwigo import --dry-run --url https://photos.example.com --user admin --password secret
 ```
+
+**Dry-run planning:** `--dry-run` walks the Piwigo category/image tree read-only
+and reports what would be imported without any Flickr mutation. The `--json`
+envelope adds these fields under `data`:
+
+- `planned_photos` — photos that would be uploaded
+- `planned_albums` — distinct albums that would be created
+- `skipped` — photos skipped by checksum deduplication
 
 **Safety gates:**
 
-- `piwigo import` — requires `--confirm`; blocked by `--read-only`; supports `--dry-run`
+- `piwigo import` — requires `--confirm`; blocked by `--read-only`; supports `--dry-run` (read-only Piwigo scan, no Flickr mutation)
 
 ## Global Flags
 

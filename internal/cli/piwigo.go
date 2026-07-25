@@ -37,27 +37,40 @@ var piwigoImportCmd = &cobra.Command{
 			return ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrValidationFailed, "--password is required"))
 		}
 
+		opts := piwigo.ImportOptions{
+			URL:         piwigoURL,
+			Username:    piwigoUser,
+			Password:    piwigoPassword,
+			AlbumPrefix: albumPrefix,
+			ImportAlbum: importAlbum,
+			Dedupe:      dedupe,
+			Limit:       limit,
+		}
+		imp := &piwigo.Importer{
+			Events:    &output.EventWriter{Enabled: ctx.App.Events, Err: ctx.Cmd.ErrOrStderr()},
+			Profile:   ctx.App.Profile,
+			RequestID: ctx.App.RequestID,
+			Flickr:    ctx.Client,
+		}
+
 		return ctx.runMutation(mutationSpec{
 			Command:  "piwigo.import",
 			Method:   "flickr.upload",
 			Resource: map[string]any{"url": piwigoURL},
 			PlanMsg:  fmt.Sprintf("Dry run: piwigo import would connect to %s\n", piwigoURL),
+			PlanFunc: func() (map[string]any, error) {
+				plan, err := imp.Plan(ctx.Cmd.Context(), &opts)
+				if err != nil {
+					return nil, ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
+				}
+				ctx.R.Human("Dry run: %d photos, %d albums would be created, %d skipped\n", plan.PlannedPhotos, plan.PlannedAlbums, plan.Skipped)
+				return map[string]any{
+					"planned_photos": plan.PlannedPhotos,
+					"planned_albums": plan.PlannedAlbums,
+					"skipped":        plan.Skipped,
+				}, nil
+			},
 		}, func() (any, error) {
-			opts := piwigo.ImportOptions{
-				URL:         piwigoURL,
-				Username:    piwigoUser,
-				Password:    piwigoPassword,
-				AlbumPrefix: albumPrefix,
-				ImportAlbum: importAlbum,
-				Dedupe:      dedupe,
-				Limit:       limit,
-			}
-			imp := &piwigo.Importer{
-				Events:    &output.EventWriter{Enabled: ctx.App.Events, Err: ctx.Cmd.ErrOrStderr()},
-				Profile:   ctx.App.Profile,
-				RequestID: ctx.App.RequestID,
-				Flickr:    ctx.Client,
-			}
 			summary, err := imp.Import(ctx.Cmd.Context(), &opts)
 			if err != nil {
 				return nil, ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrFlickrAPI, "%v", err))

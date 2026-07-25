@@ -18,3 +18,10 @@ type ImportSummary struct {
 	Skipped   int `json:"skipped"`
 	Failed    int `json:"failed"`
 }
+
+// ImportPlan is the read-only preview produced in dry-run mode.
+type ImportPlan struct {
+	PlannedPhotos int `json:"planned_photos"`
+	PlannedAlbums int `json:"planned_albums"`
+	Skipped       int `json:"skipped"`
+}

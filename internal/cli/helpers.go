@@ -70,6 +70,7 @@ type mutationSpec struct {
 	Resource map[string]any
 	PlanMsg  string
 	PlanData map[string]any
+	PlanFunc func() (map[string]any, error)
 }
 
 // runMutation centralizes the safety gate, dry-run/planned rendering, and
@@ -99,6 +100,15 @@ func (ctx *CmdContext) runMutation(spec mutationSpec, run func() (any, error)) e
 		data := map[string]any{"planned": true}
 		for k, v := range spec.PlanData {
 			data[k] = v
+		}
+		if spec.PlanFunc != nil {
+			extra, err := spec.PlanFunc()
+			if err != nil {
+				return err
+			}
+			for k, v := range extra {
+				data[k] = v
+			}
 		}
 		return ctx.R.Success(ctx.Meta, data, nil)
 	}

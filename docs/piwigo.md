@@ -82,7 +82,9 @@ flickr piwigo import --limit 100 \
 on Flickr and requires `--confirm`.
 
 - `--read-only` blocks the import entirely (exit code 6).
-- `--dry-run` is accepted but returns 0 planned items (full scan is not performed).
+- `--dry-run` walks the Piwigo category/image tree read-only and reports the
+  photos and albums that would be created. No Flickr mutation occurs; only
+  Piwigo reads are performed.
 
 ```bash
 # Requires --confirm
@@ -103,4 +105,17 @@ See [COMMANDS.md](../COMMANDS.md) for the full risk classification of all comman
 flickr piwigo import --json --confirm ...
 ```
 
-Returns counts of imported, skipped, and failed photos with details.
+A committed import returns counts of imported, skipped, and failed photos.
+
+A dry run reports the plan without mutating Flickr. The `data` object adds:
+
+| Field | Description |
+|-------|-------------|
+| `planned_photos` | Photos that would be uploaded |
+| `planned_albums` | Distinct albums that would be created |
+| `skipped` | Photos skipped by checksum deduplication |
+
+```bash
+flickr piwigo import --dry-run --json \
+  --url https://photos.example.com --user admin --password secret
+```

@@ -163,6 +163,67 @@ func (i *Importer) Import(ctx context.Context, opts *ImportOptions) (*ImportSumm
 	return summary, nil
 }
 
+// Plan walks the Piwigo tree read-only and reports the imports that would run.
+func (i *Importer) Plan(ctx context.Context, opts *ImportOptions) (*ImportPlan, error) {
+	client := NewClient(opts.URL, opts.Username, opts.Password)
+
+	if err := client.Login(ctx); err != nil {
+		return nil, fmt.Errorf("piwigo login: %w", err)
+	}
+
+	categories, err := client.GetCategories(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting categories: %w", err)
+	}
+
+	plan := &ImportPlan{}
+	albums := map[string]bool{}
+
+	for _, cat := range categories {
+		if cat.NbImages == 0 {
+			continue
+		}
+
+		page := 1
+		perPage := 100
+		for {
+			images, totalPages, err := client.GetCategoryImages(ctx, cat.ID, page, perPage)
+			if err != nil {
+				return nil, fmt.Errorf("getting images for category %s: %w", cat.ID, err)
+			}
+
+			for idx := range images {
+				img := &images[idx]
+
+				if opts.Limit > 0 && plan.PlannedPhotos >= opts.Limit {
+					plan.PlannedAlbums = len(albums)
+					return plan, nil
+				}
+
+				if opts.Dedupe == "checksum" && img.MD5Sum != "" {
+					if exists, err := client.ImageExists(ctx, []string{img.MD5Sum}); err == nil && exists[img.MD5Sum] {
+						plan.Skipped++
+						continue
+					}
+				}
+
+				plan.PlannedPhotos++
+				for _, name := range Albums(img, categories, opts.AlbumPrefix, opts.ImportAlbum) {
+					albums[name] = true
+				}
+			}
+
+			if page >= totalPages {
+				break
+			}
+			page++
+		}
+	}
+
+	plan.PlannedAlbums = len(albums)
+	return plan, nil
+}
+
 // downloadToTemp downloads a URL to a temporary file.
 func downloadToTemp(ctx context.Context, url string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
