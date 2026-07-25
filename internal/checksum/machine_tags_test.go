@@ -36,25 +36,3 @@ func TestFormatMachineTag(t *testing.T) {
 		t.Errorf("FormatMachineTag = %q, want %q", got, want)
 	}
 }
-
-func TestContainsChecksum(t *testing.T) {
-	tags := []string{"nature", "checksum:md5=abc123", "sunset"}
-
-	hash, ok := ContainsChecksum(tags, "md5")
-	if !ok {
-		t.Error("expected to find md5 checksum")
-	}
-	if hash != "abc123" {
-		t.Errorf("expected abc123, got %s", hash)
-	}
-
-	_, ok = ContainsChecksum(tags, "sha1")
-	if ok {
-		t.Error("should not find sha1 checksum")
-	}
-
-	_, ok = ContainsChecksum([]string{}, "md5")
-	if ok {
-		t.Error("should not find checksum in empty tags")
-	}
-}

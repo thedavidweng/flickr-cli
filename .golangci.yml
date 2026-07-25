@@ -12,7 +12,10 @@ linters:
     - misspell
     - unconvert
     - prealloc
-
+    - unparam
+    - godox
+    - whitespace
+    - nolintlint
   settings:
     errcheck:
       check-type-assertions: true
@@ -23,6 +26,12 @@ linters:
         - style
     misspell:
       locale: US
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+  exclusions:
+    presets:
+      - std-error-handling
 
 formatters:
   enable:

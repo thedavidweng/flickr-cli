@@ -1,11 +1,12 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
-	"github.com/thedavidweng/flickr-cli/internal/safety"
 )
 
 var commentsCmd = &cobra.Command{
@@ -71,113 +72,48 @@ var commentsAddCmd = &cobra.Command{
 	Use:   "add [photo-id] [text]",
 	Short: "Add a comment to a photo",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		app := GetAppContext(cmd.Context())
-		r := newRenderer(app, cmd)
-		meta := output.RuntimeMetaInput{
-			Command:   "comments.add",
-			Profile:   app.Profile,
-			RequestID: app.RequestID,
-			StartedAt: app.StartedAt,
-		}
-
-		client, _, err := getClient(app)
-		if err != nil {
-			return r.Failure(meta, output.Errorf(model.ErrConfig, "%v", err))
-		}
-		if err := requireAuth(&r, meta, client); err != nil {
-			return err
-		}
-
-		// Safety gate
-		gate := safety.Check(safety.GateInput{
-			ReadOnly: app.ReadOnly,
-			DryRun:   app.DryRun,
-			Confirm:  app.Confirm,
-		}, safety.Mutation{
-			Command: "comments.add",
-			Method:  "flickr.photos.comments.addComment",
-			Risk:    safety.ClassifyRisk("comments.add"),
+	RunE: withAuth("comments.add", func(ctx *CmdContext) error {
+		photoID, text := ctx.Args[0], ctx.Args[1]
+		return ctx.runMutation(mutationSpec{
+			Command:  "comments.add",
+			Method:   "flickr.photos.comments.addComment",
+			Resource: map[string]any{"photo_id": photoID},
+			PlanMsg:  fmt.Sprintf("Would add comment to photo %s\n", photoID),
+		}, func() (any, error) {
+			params := map[string]string{"photo_id": photoID, "comment_text": text}
+			var result struct {
+				Comment struct {
+					ID string `json:"id"`
+				} `json:"comment"`
+			}
+			if err := ctx.Client.Call(ctx.Cmd.Context(), "flickr.photos.comments.addComment", params, &result); err != nil {
+				return nil, ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
+			}
+			ctx.R.Human("Added comment %s to photo %s\n", result.Comment.ID, photoID)
+			return map[string]any{"comment_id": result.Comment.ID}, nil
 		})
-		if gate.Error != nil {
-			return r.Failure(meta, *gate.Error)
-		}
-		if gate.Planned {
-			r.Human("Would add comment to photo %s\n", args[0])
-			return r.Success(meta, map[string]any{"planned": true}, nil)
-		}
-
-		params := map[string]string{
-			"photo_id":     args[0],
-			"comment_text": args[1],
-		}
-
-		var result struct {
-			Comment struct {
-				ID string `json:"id"`
-			} `json:"comment"`
-		}
-
-		if err := client.Call(cmd.Context(), "flickr.photos.comments.addComment", params, &result); err != nil {
-			return r.Failure(meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
-		}
-
-		r.Human("Added comment %s to photo %s\n", result.Comment.ID, args[0])
-		return r.Success(meta, map[string]any{"comment_id": result.Comment.ID}, nil)
-	},
+	}),
 }
 
 var commentsDeleteCmd = &cobra.Command{
 	Use:   "delete [comment-id]",
 	Short: "Delete a comment",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		app := GetAppContext(cmd.Context())
-		r := newRenderer(app, cmd)
-		meta := output.RuntimeMetaInput{
-			Command:   "comments.delete",
-			Profile:   app.Profile,
-			RequestID: app.RequestID,
-			StartedAt: app.StartedAt,
-		}
-
-		client, _, err := getClient(app)
-		if err != nil {
-			return r.Failure(meta, output.Errorf(model.ErrConfig, "%v", err))
-		}
-		if err := requireAuth(&r, meta, client); err != nil {
-			return err
-		}
-
-		// Safety gate
-		gate := safety.Check(safety.GateInput{
-			ReadOnly: app.ReadOnly,
-			DryRun:   app.DryRun,
-			Confirm:  app.Confirm,
-		}, safety.Mutation{
-			Command: "comments.delete",
-			Method:  "flickr.photos.comments.deleteComment",
-			Risk:    safety.ClassifyRisk("comments.delete"),
+	RunE: withAuth("comments.delete", func(ctx *CmdContext) error {
+		commentID := ctx.Args[0]
+		return ctx.runMutation(mutationSpec{
+			Command:  "comments.delete",
+			Method:   "flickr.photos.comments.deleteComment",
+			Resource: map[string]any{"comment_id": commentID},
+			PlanMsg:  fmt.Sprintf("Would delete comment %s\n", commentID),
+		}, func() (any, error) {
+			if err := ctx.Client.Call(ctx.Cmd.Context(), "flickr.photos.comments.deleteComment", map[string]string{"comment_id": commentID}, nil); err != nil {
+				return nil, ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
+			}
+			ctx.R.Human("Deleted comment %s\n", commentID)
+			return map[string]any{"comment_id": commentID}, nil
 		})
-		if gate.Error != nil {
-			return r.Failure(meta, *gate.Error)
-		}
-		if gate.Planned {
-			r.Human("Would delete comment %s\n", args[0])
-			return r.Success(meta, map[string]any{"planned": true}, nil)
-		}
-
-		params := map[string]string{
-			"comment_id": args[0],
-		}
-
-		if err := client.Call(cmd.Context(), "flickr.photos.comments.deleteComment", params, nil); err != nil {
-			return r.Failure(meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
-		}
-
-		r.Human("Deleted comment %s\n", args[0])
-		return r.Success(meta, map[string]any{"comment_id": args[0]}, nil)
-	},
+	}),
 }
 
 func init() {

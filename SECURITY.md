@@ -22,6 +22,6 @@ If you discover a security vulnerability in `flickr-cli`, please report it respo
 
 - **Credential storage.** API keys and OAuth tokens are stored in the OS config dir (`flickr-cli/config.yaml`) with `0600` permissions.
 - **OAuth flow.** Authentication uses Flickr's standard OAuth flow. Tokens are exchanged locally and never sent to any third party.
-- **Secret redaction.** Debug output and error messages redact tokens and credentials.
+- **No secret output.** Tokens and credentials are never written to diagnostics, error messages, or JSON output — they are only ever sent to Flickr in signed API requests, never rendered.
 - **Safety gates.** `--read-only` blocks all write operations. `--dry-run` previews mutations without sending requests. `--confirm` is required for destructive operations.
 - **No telemetry.** `flickr-cli` does not phone home, embed analytics, or send data to any server other than Flickr's API.

@@ -1,18 +1,5 @@
 package piwigo
 
-// PrivacyFromLevel maps Piwigo privacy levels to Flickr privacy strings.
-// Currently only used in tests; kept as a utility for future use.
-func PrivacyFromLevel(level int) string {
-	switch {
-	case level == 0:
-		return "public"
-	case level >= 1 && level <= 4:
-		return "friends-family"
-	default:
-		return "private"
-	}
-}
-
 // Tags builds the tag list for an image.
 func Tags(image *ImageInfo) []string {
 	tags := make([]string, 0, len(image.Tags))

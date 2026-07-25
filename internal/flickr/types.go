@@ -1,8 +1,7 @@
 package flickr
 
-// CleanContent recursively unwraps Flickr's {"_content": "value"} pattern.
-// Single-key objects with only "_content" are replaced by the inner value.
-// This mirrors the Python library's clean_content() helper.
+// CleanContent recursively unwraps Flickr's {"_content": "value"} pattern:
+// single-key objects with only "_content" become the inner value.
 func CleanContent(v any) any {
 	switch val := v.(type) {
 	case map[string]any:
@@ -25,14 +24,12 @@ func CleanContent(v any) any {
 	}
 }
 
-// RequestTokenResponse holds the response from the OAuth request_token endpoint.
 type RequestTokenResponse struct {
 	Token             string
 	TokenSecret       string
 	CallbackConfirmed bool
 }
 
-// AccessTokenResponse holds the response from the OAuth access_token endpoint.
 type AccessTokenResponse struct {
 	Token       string
 	TokenSecret string
@@ -41,18 +38,15 @@ type AccessTokenResponse struct {
 	FullName    string
 }
 
-// LoginInfo holds the authenticated user's information returned by flickr.test.login.
 type LoginInfo struct {
 	UserNSID string `json:"user_nsid"`
 	Username string `json:"username"`
 }
 
-// FlickrText is a localized text field used in many Flickr API responses.
 type FlickrText struct {
 	Content string `json:"_content"`
 }
 
-// PhotosetListItem is a single photoset entry from flickr.photosets.getList.
 type PhotosetListItem struct {
 	ID             string     `json:"id"`
 	Title          FlickrText `json:"title"`
@@ -63,7 +57,6 @@ type PhotosetListItem struct {
 	DateUpdate     string     `json:"date_update"`
 }
 
-// PhotosetListResponse is the response for flickr.photosets.getList.
 type PhotosetListResponse struct {
 	Photosets struct {
 		Photoset []PhotosetListItem `json:"photoset"`
@@ -74,12 +67,10 @@ type PhotosetListResponse struct {
 	} `json:"photosets"`
 }
 
-// DefaultExtras is the standard set of extra fields requested in pagination calls.
-// This avoids per-photo API calls by fetching metadata inline.
+// DefaultExtras fetches metadata inline to avoid per-photo API calls.
 const DefaultExtras = "description,date_upload,views,media,path_alias,owner_name,license,date_taken,geo,machine_tags,o_dims,original_format,url_o,url_k,url_l,url_m,url_s,secret,server,farm"
 
-// PhotoListItem is a single photo entry from flickr.people.getPhotos or flickr.photos.search.
-// Fields beyond ID/Title/Owner/Tags are populated when the `extras` parameter is used.
+// PhotoListItem fields beyond ID/Title/Owner/Tags require the `extras` parameter.
 type PhotoListItem struct {
 	ID             string  `json:"id"`
 	Title          string  `json:"title"`
@@ -119,7 +110,6 @@ type PhotoListItem struct {
 	Farm           int     `json:"farm,omitempty"`
 }
 
-// PhotoListResponse is the response for flickr.people.getPhotos.
 type PhotoListResponse struct {
 	Photos struct {
 		Photo   []PhotoListItem `json:"photo"`
@@ -130,7 +120,6 @@ type PhotoListResponse struct {
 	} `json:"photos"`
 }
 
-// PhotosetGetPhotosResponse is the response for flickr.photosets.getPhotos.
 type PhotosetGetPhotosResponse struct {
 	Photoset struct {
 		ID      string          `json:"id"`
@@ -142,13 +131,11 @@ type PhotosetGetPhotosResponse struct {
 	} `json:"photoset"`
 }
 
-// ExifData holds EXIF metadata for a photo.
 type ExifData struct {
 	PhotoID string    `json:"id"`
 	Tags    []ExifTag `json:"tag"`
 }
 
-// ExifTag is a single EXIF tag.
 type ExifTag struct {
 	Tagspace   string `json:"tagspace"`
 	TagspaceID int    `json:"tagspaceid"`
@@ -158,13 +145,11 @@ type ExifTag struct {
 	Clean      string `json:"_content"`
 }
 
-// ExifResponse is the response for flickr.photos.getExif.
 type ExifResponse struct {
 	Photo ExifData `json:"photo"`
 	Stat  string   `json:"stat"`
 }
 
-// PhotoSearchResponse is the response for flickr.photos.search.
 type PhotoSearchResponse struct {
 	Photos struct {
 		Photo   []PhotoListItem `json:"photo"`

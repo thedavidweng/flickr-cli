@@ -1,3 +1,2 @@
-// Package testutil provides test doubles for flickr-cli, including an
-// in-memory FakeFlickr server and golden-file comparison helpers.
+// Package testutil provides a FakeFlickr server and golden-file helpers for tests.
 package testutil

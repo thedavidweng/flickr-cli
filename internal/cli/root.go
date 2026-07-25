@@ -20,9 +20,8 @@ func newRootCmd() *cobra.Command {
 		Use:   "flickr",
 		Short: "Agent-friendly Flickr CLI",
 		Long:  `A single-binary CLI tool for Flickr photo management, backup, upload, and API access.`,
-		// Renderer.Failure already writes the error envelope (JSON) or human-readable
-		// message.  Silence Cobra's default "Error: …\n<usage>" so it doesn't
-		// corrupt stdout or duplicate stderr output.
+		// Renderer.Failure already emits the error; silence Cobra's default
+		// "Error: …\n<usage>" so it doesn't corrupt stdout or duplicate stderr.
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -31,7 +30,6 @@ func newRootCmd() *cobra.Command {
 				RequestID: uuid.New().String(),
 			}
 
-			// Read flags into AppContext
 			app.ConfigFile, _ = cmd.Flags().GetString("config")
 			app.Profile, _ = cmd.Flags().GetString("profile")
 			app.JSON, _ = cmd.Flags().GetBool("json")
@@ -51,7 +49,6 @@ func newRootCmd() *cobra.Command {
 			app.Verbose, _ = cmd.Flags().GetBool("verbose")
 			app.Debug, _ = cmd.Flags().GetBool("debug")
 
-			// Environment variable overrides (checked after flags)
 			if app.ConfigFile == "" {
 				if env := os.Getenv("FLICKR_CONFIG"); env != "" {
 					app.ConfigFile = env
@@ -105,7 +102,6 @@ func newRootCmd() *cobra.Command {
 				}
 			}
 
-			// Validation
 			if app.Concurrency < 1 {
 				return fmt.Errorf("--concurrency must be >= 1")
 			}
@@ -116,12 +112,10 @@ func newRootCmd() *cobra.Command {
 				return fmt.Errorf("--timeout must be positive")
 			}
 
-			// Full wins over compact
 			if app.Full {
 				app.Compact = false
 			}
 
-			// Store in command context
 			ctx := WithAppContext(cmd.Context(), app)
 			cmd.SetContext(ctx)
 			return nil
@@ -145,12 +139,11 @@ func newRootCmd() *cobra.Command {
 	root.PersistentFlags().Duration("request-interval", 0, "minimum interval between API calls (e.g. 1s, 500ms)")
 	root.PersistentFlags().Bool("no-color", false, "disable ANSI color")
 	root.PersistentFlags().Bool("verbose", false, "diagnostics to stderr")
-	root.PersistentFlags().Bool("debug", false, "debug diagnostics to stderr with secrets redacted")
+	root.PersistentFlags().Bool("debug", false, "debug diagnostics to stderr")
 
 	return root
 }
 
-// Execute runs the root command with signal handling.
 func Execute() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -159,13 +152,9 @@ func Execute() error {
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		sig := <-sigCh
-		_ = sig // first signal: cancel context
+		<-sigCh
 		cancel()
-
-		// Second signal: force exit
-		sig = <-sigCh
-		_ = sig
+		<-sigCh
 		fmt.Fprintf(os.Stderr, "\ninterrupted\n")
 		os.Exit(130)
 	}()
@@ -175,9 +164,8 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
-// silenceAllCommands recursively propagates SilenceUsage and SilenceErrors
-// to every command in the tree.  Cobra checks the *subcommand*'s flag, not
-// the root's, so we must set it on each one.
+// silenceAllCommands sets SilenceUsage/SilenceErrors on every command: Cobra
+// checks the matched subcommand's flag, not the root's.
 func silenceAllCommands(cmd *cobra.Command) {
 	cmd.SilenceUsage = true
 	cmd.SilenceErrors = true
@@ -190,7 +178,6 @@ func init() {
 	registerSubcommands(rootCmd)
 }
 
-// registerSubcommands attaches all subcommands to the given root.
 func registerSubcommands(root *cobra.Command) {
 	root.AddCommand(versionCmd)
 	root.AddCommand(authCmd)

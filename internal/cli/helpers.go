@@ -9,10 +9,9 @@ import (
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
+	"github.com/thedavidweng/flickr-cli/internal/safety"
 )
 
-// newRenderer creates a Renderer from AppContext and cobra.Command,
-// propagating all output-related flags (Quiet, NoColor, etc.).
 func newRenderer(app *AppContext, cmd *cobra.Command) output.Renderer {
 	return output.Renderer{
 		Out:     cmd.OutOrStdout(),
@@ -38,7 +37,6 @@ type CmdContext struct {
 	Meta   output.RuntimeMetaInput
 }
 
-// CmdFunc is a command handler that receives a ready-to-use context.
 type CmdFunc func(ctx *CmdContext) error
 
 // withAuth wraps a CmdFunc: loads config, creates client, checks auth.
@@ -64,7 +62,83 @@ func withAuth(command string, fn CmdFunc) func(cmd *cobra.Command, args []string
 	}
 }
 
-// getClient creates a Flickr client from the current app context and config.
+// mutationSpec parameterizes runMutation: safety classification for the gate
+// plus the --dry-run rendering for one remote mutation.
+type mutationSpec struct {
+	Command  string
+	Method   string
+	Resource map[string]any
+	PlanMsg  string
+	PlanData map[string]any
+}
+
+// runMutation centralizes the safety gate, dry-run/planned rendering, and
+// audit logging shared by every remote mutation. run performs the API call(s),
+// renders its own success/failure human output, and returns the success
+// payload (or a rendered error). A committed write is always recorded to the
+// audit log; a failed audit write is fatal.
+func (ctx *CmdContext) runMutation(spec mutationSpec, run func() (any, error)) error {
+	mutation := safety.Mutation{
+		Command:  spec.Command,
+		Method:   spec.Method,
+		Risk:     safety.ClassifyRisk(spec.Command),
+		Resource: spec.Resource,
+	}
+	gate := safety.Check(safety.GateInput{
+		ReadOnly: ctx.App.ReadOnly,
+		DryRun:   ctx.App.DryRun,
+		Confirm:  ctx.App.Confirm,
+	}, mutation)
+	if gate.Error != nil {
+		return ctx.R.Failure(ctx.Meta, *gate.Error)
+	}
+	if gate.Planned {
+		if spec.PlanMsg != "" {
+			ctx.R.Human("%s", spec.PlanMsg)
+		}
+		data := map[string]any{"planned": true}
+		for k, v := range spec.PlanData {
+			data[k] = v
+		}
+		return ctx.R.Success(ctx.Meta, data, nil)
+	}
+
+	data, runErr := run()
+	if runErr != nil {
+		_ = ctx.appendAudit(mutation, "error", runErr)
+		return runErr
+	}
+	if err := ctx.appendAudit(mutation, "success", nil); err != nil {
+		return ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrFilesystem, "audit write failed: %v", err))
+	}
+	return ctx.R.Success(ctx.Meta, data, nil)
+}
+
+func (ctx *CmdContext) appendAudit(m safety.Mutation, result string, opErr error) error {
+	ev := &safety.AuditEvent{
+		RequestID: ctx.App.RequestID,
+		Profile:   ctx.App.Profile,
+		Command:   m.Command,
+		Method:    m.Method,
+		Resource:  m.Resource,
+		Confirmed: ctx.App.Confirm,
+		Result:    result,
+	}
+	if opErr != nil {
+		ev.Error = opErr.Error()
+	}
+	return safety.Append(ctx.auditLogPath(), ev)
+}
+
+func (ctx *CmdContext) auditLogPath() string {
+	if ctx.Config != nil {
+		if p, err := ctx.Config.GetProfile(ctx.App.Profile); err == nil && p.AuditLogPath != "" {
+			return p.AuditLogPath
+		}
+	}
+	return config.DefaultAuditLogPath(ctx.App.Profile)
+}
+
 func getClient(app *AppContext) (*flickr.Client, *config.Config, error) {
 	cfgPath := app.ConfigFile
 	if cfgPath == "" {
@@ -84,28 +158,30 @@ func getClient(app *AppContext) (*flickr.Client, *config.Config, error) {
 	client := flickr.NewClient(creds.APIKey, creds.APISecret, creds.OAuthToken, creds.OAuthTokenSecret)
 	client.Retries = app.Retries
 	client.RequestInterval = app.RequestInterval
-
-	// Apply endpoint overrides from config (used for testing)
-	if profile.Endpoints.REST != "" {
-		client.Endpoints.REST = profile.Endpoints.REST
-	}
-	if profile.Endpoints.Upload != "" {
-		client.Endpoints.Upload = profile.Endpoints.Upload
-	}
-	if profile.Endpoints.RequestToken != "" {
-		client.Endpoints.RequestToken = profile.Endpoints.RequestToken
-	}
-	if profile.Endpoints.Authorize != "" {
-		client.Endpoints.Authorize = profile.Endpoints.Authorize
-	}
-	if profile.Endpoints.AccessToken != "" {
-		client.Endpoints.AccessToken = profile.Endpoints.AccessToken
-	}
+	applyEndpointOverrides(client, &profile.Endpoints)
 
 	return client, cfg, nil
 }
 
-// requireAuth checks that the client is authenticated.
+// applyEndpointOverrides copies any non-empty endpoint override from the
+// profile onto the client (used for testing and self-hosted instances).
+func applyEndpointOverrides(client *flickr.Client, e *config.Endpoints) {
+	for _, o := range []struct {
+		src string
+		dst *string
+	}{
+		{e.REST, &client.Endpoints.REST},
+		{e.Upload, &client.Endpoints.Upload},
+		{e.RequestToken, &client.Endpoints.RequestToken},
+		{e.Authorize, &client.Endpoints.Authorize},
+		{e.AccessToken, &client.Endpoints.AccessToken},
+	} {
+		if o.src != "" {
+			*o.dst = o.src
+		}
+	}
+}
+
 func requireAuth(r *output.Renderer, meta output.RuntimeMetaInput, client *flickr.Client) error {
 	if !client.IsAuthenticated() {
 		return r.Failure(meta, output.ErrorWithDetails(

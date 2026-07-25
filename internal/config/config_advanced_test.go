@@ -147,36 +147,3 @@ func TestPendingOAuthPurgeExpired(t *testing.T) {
 		t.Error("valid entry should not have been purged")
 	}
 }
-
-func TestSensitiveFieldsCoveredByRedactor(t *testing.T) {
-	secrets := []string{"api_secret", "oauth_token_secret", "request_secret"}
-	for _, field := range secrets {
-		found := false
-		for _, sf := range SensitiveFields {
-			if sf == field {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("SensitiveFields should include %q", field)
-		}
-	}
-
-	m := map[string]any{
-		"api_key":            "visible",
-		"api_secret":         "should-be-hidden",
-		"oauth_token":        "also-visible",
-		"oauth_token_secret": "should-be-hidden-too",
-	}
-	redacted := RedactMap(m)
-	if redacted["api_key"] != "visible" {
-		t.Error("api_key should not be redacted")
-	}
-	if redacted["api_secret"] == "should-be-hidden" {
-		t.Error("api_secret should be redacted")
-	}
-	if redacted["oauth_token_secret"] == "should-be-hidden-too" {
-		t.Error("oauth_token_secret should be redacted")
-	}
-}

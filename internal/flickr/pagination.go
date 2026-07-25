@@ -23,33 +23,6 @@ type PageResult[T any] struct {
 // PageFetcher is a function that fetches a single page of results.
 type PageFetcher[T any] func(ctx context.Context, page, perPage int) (PageResult[T], error)
 
-// FetchAll fetches all pages of results using the provided fetcher.
-// Currently only used in tests; kept as a utility for future use.
-func FetchAll[T any](ctx context.Context, perPage int, fetch PageFetcher[T], onPage func(PageInfo)) ([]T, error) {
-	var allItems []T
-	page := 1
-
-	for {
-		result, err := fetch(ctx, page, perPage)
-		if err != nil {
-			return allItems, fmt.Errorf("fetching page %d: %w", page, err)
-		}
-
-		allItems = append(allItems, result.Items...)
-
-		if onPage != nil {
-			onPage(result.Info)
-		}
-
-		if result.Info.Pages == 0 || page >= result.Info.Pages {
-			break
-		}
-		page++
-	}
-
-	return allItems, nil
-}
-
 // Walker lazily iterates through paginated Flickr API results.
 // It fetches pages on demand as items are consumed, similar to
 // the Python library's Walker pattern. This is memory-efficient

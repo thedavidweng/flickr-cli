@@ -237,7 +237,7 @@ func (f *FakeFlickr) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirectURI, http.StatusFound)
 }
 
-func (f *FakeFlickr) handleGetAlbums(w http.ResponseWriter, r *http.Request) {
+func (f *FakeFlickr) handleGetAlbums(w http.ResponseWriter, _ *http.Request) {
 	f.mu.Lock()
 	albums := make([]map[string]any, 0, len(f.Albums))
 	for _, a := range f.Albums {
@@ -327,7 +327,7 @@ func (f *FakeFlickr) handleGetAlbumPhotos(w http.ResponseWriter, r *http.Request
 	})
 }
 
-func (f *FakeFlickr) handlePhotoSearch(w http.ResponseWriter, r *http.Request) {
+func (f *FakeFlickr) handlePhotoSearch(w http.ResponseWriter, _ *http.Request) {
 	f.mu.Lock()
 	photos := make([]map[string]any, 0, len(f.Photos))
 	for _, p := range f.Photos {
@@ -445,7 +445,7 @@ func (f *FakeFlickr) handleGetExif(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (f *FakeFlickr) handleGetVideoStreams(w http.ResponseWriter, r *http.Request) {
+func (f *FakeFlickr) handleGetVideoStreams(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, map[string]any{
 		"stat": "ok",
 		"streams": map[string]any{
@@ -457,7 +457,7 @@ func (f *FakeFlickr) handleGetVideoStreams(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-func (f *FakeFlickr) handleGetFavorites(w http.ResponseWriter, r *http.Request) {
+func (f *FakeFlickr) handleGetFavorites(w http.ResponseWriter, _ *http.Request) {
 	f.mu.Lock()
 	photos := make([]map[string]any, 0, len(f.Photos))
 	for _, p := range f.Photos {
@@ -480,7 +480,7 @@ func (f *FakeFlickr) handleGetFavorites(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-func (f *FakeFlickr) handleGetGalleries(w http.ResponseWriter, r *http.Request) {
+func (f *FakeFlickr) handleGetGalleries(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, map[string]any{
 		"stat": "ok",
 		"galleries": map[string]any{
@@ -495,7 +495,7 @@ func (f *FakeFlickr) handleGetGalleries(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-func (f *FakeFlickr) handleGetGalleryPhotos(w http.ResponseWriter, r *http.Request) {
+func (f *FakeFlickr) handleGetGalleryPhotos(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, map[string]any{
 		"stat": "ok",
 		"gallery": map[string]any{
@@ -512,7 +512,7 @@ func (f *FakeFlickr) handleGetGalleryPhotos(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-func (f *FakeFlickr) handleGetGroups(w http.ResponseWriter, r *http.Request) {
+func (f *FakeFlickr) handleGetGroups(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, map[string]any{
 		"stat": "ok",
 		"groups": map[string]any{
@@ -531,7 +531,7 @@ func (f *FakeFlickr) handleSearchGroups(w http.ResponseWriter, r *http.Request) 
 	f.handleGetGroups(w, r)
 }
 
-func (f *FakeFlickr) handleGetContacts(w http.ResponseWriter, r *http.Request) {
+func (f *FakeFlickr) handleGetContacts(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, map[string]any{
 		"stat": "ok",
 		"contacts": map[string]any{
@@ -546,7 +546,7 @@ func (f *FakeFlickr) handleGetContacts(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (f *FakeFlickr) handleGetPopularPhotos(w http.ResponseWriter, r *http.Request) {
+func (f *FakeFlickr) handleGetPopularPhotos(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, map[string]any{
 		"stat": "ok",
 		"photos": map[string]any{
@@ -561,7 +561,7 @@ func (f *FakeFlickr) handleGetPopularPhotos(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-func (f *FakeFlickr) handleLookupUser(w http.ResponseWriter, r *http.Request) {
+func (f *FakeFlickr) handleLookupUser(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, map[string]any{
 		"stat": "ok",
 		"user": map[string]any{
@@ -571,7 +571,7 @@ func (f *FakeFlickr) handleLookupUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (f *FakeFlickr) handleGetComments(w http.ResponseWriter, r *http.Request) {
+func (f *FakeFlickr) handleGetComments(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, map[string]any{
 		"stat": "ok",
 		"comments": map[string]any{

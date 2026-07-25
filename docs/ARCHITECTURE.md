@@ -62,7 +62,7 @@ The client is built in-house (see [ADR-0001](adr/0001-own-flickr-client.md)).
 | `oauth1.go` | OAuth 1.0a signing (HMAC-SHA1), token exchange |
 | `rest.go` | `Call()` and `CallRaw()` — signed REST requests with retry |
 | `upload.go` | Multipart upload with file streaming |
-| `pagination.go` | `FetchAll()` generic pagination helper |
+| `pagination.go` | `Walker[T]` lazy pagination |
 | `reflection.go` | `GetMethods()` and `GetMethodInfo()` wrappers |
 | `endpoints.go` | Default and custom endpoint URLs |
 | `api.go` | `FlickrAPI` interface for testability |

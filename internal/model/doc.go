@@ -1,3 +1,2 @@
-// Package model defines shared domain types: the JSON response envelope,
-// error codes, exit-code mapping, progress events, and photo/album models.
+// Package model defines the JSON envelope, error/exit codes, events, and domain types.
 package model

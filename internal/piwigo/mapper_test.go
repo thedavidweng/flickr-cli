@@ -2,29 +2,6 @@ package piwigo
 
 import "testing"
 
-func TestPrivacyFromLevel(t *testing.T) {
-	tests := []struct {
-		level    int
-		expected string
-	}{
-		{0, "public"},
-		{1, "friends-family"},
-		{2, "friends-family"},
-		{4, "friends-family"},
-		{8, "private"},
-		{100, "private"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.expected, func(t *testing.T) {
-			got := PrivacyFromLevel(tt.level)
-			if got != tt.expected {
-				t.Errorf("PrivacyFromLevel(%d) = %q, want %q", tt.level, got, tt.expected)
-			}
-		})
-	}
-}
-
 func TestTags(t *testing.T) {
 	image := &ImageInfo{
 		Tags: []struct {

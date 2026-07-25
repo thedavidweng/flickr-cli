@@ -87,3 +87,4 @@ config.yaml
 flickr-backup/
 testdata/tmp/
 *.log
+.scratch/

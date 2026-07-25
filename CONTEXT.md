@@ -74,7 +74,7 @@
 
 **OAuth 1.0a** — 认证协议。三步流程：request token → 用户授权 → access token。支持 OOB（headless 环境）。
 
-**分页** — Flickr 端点返回 `page`/`pages`/`perpage`/`total` 字段。`FetchAll` 自动遍历所有页。
+**分页** — Flickr 端点返回 `page`/`pages`/`perpage`/`total` 字段。`Walker` 惰性遍历所有页。
 
 **Endpoint** — Flickr API 操作的 URL（REST、Upload、RequestToken、Authorize、AccessToken）。每个 profile 可覆盖，用于测试。
 

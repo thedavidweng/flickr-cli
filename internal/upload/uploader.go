@@ -49,7 +49,6 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts *PlanOptions) (*
 		Results: make([]UploadResult, len(plan.Planned)),
 	}
 
-	// Check safety gate for upload mutation
 	gateResult := safety.Check(e.Gate, safety.Mutation{
 		Command: "photos.upload",
 		Method:  "flickr.upload",
@@ -70,8 +69,6 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts *PlanOptions) (*
 		return summary, nil
 	}
 
-	// Resolve album names to IDs before uploading. This keeps the plan
-	// complete and self-describing — callers don't need to fix it up.
 	if len(opts.Albums) > 0 {
 		resolvedIDs, err := e.resolveAlbumNames(ctx, opts.Albums, opts.AlbumIDs)
 		if err != nil {
@@ -106,7 +103,7 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts *PlanOptions) (*
 		go func() {
 			defer wg.Done()
 			for item := range ch {
-				result, err := e.uploadSingle(ctx, item.plan, opts)
+				result, err := e.uploadSingle(ctx, item.plan)
 				summary.Results[item.index] = result
 				if err != nil {
 					mu.Lock()
@@ -155,12 +152,11 @@ func (e *Executor) resolveAlbumNames(ctx context.Context, names, existingIDs []s
 	return ids, nil
 }
 
-func (e *Executor) uploadSingle(ctx context.Context, pu *PlannedUpload, opts *PlanOptions) (UploadResult, error) {
+func (e *Executor) uploadSingle(ctx context.Context, pu *PlannedUpload) (UploadResult, error) {
 	result := UploadResult{
 		LocalPath: pu.LocalPath,
 	}
 
-	// Check for existing by checksum
 	if pu.Hash != nil {
 		dedup := &Deduplicator{
 			Client:    e.Client,
@@ -180,14 +176,12 @@ func (e *Executor) uploadSingle(ctx context.Context, pu *PlannedUpload, opts *Pl
 		}
 	}
 
-	// Upload the file
 	uploadOpts := flickr.UploadOptions{
 		Title:       pu.Title,
 		Description: pu.Desc,
 		Tags:        pu.Tags,
 	}
 
-	// Map privacy
 	if pu.Privacy != "" {
 		level, err := flickr.ParsePrivacyLevel(pu.Privacy)
 		if err != nil {
@@ -198,7 +192,6 @@ func (e *Executor) uploadSingle(ctx context.Context, pu *PlannedUpload, opts *Pl
 		uploadOpts.IsPublic, uploadOpts.IsFriend, uploadOpts.IsFamily = level.UploadFlags()
 	}
 
-	// Map safety
 	switch pu.Safety {
 	case "safe":
 		uploadOpts.SafetyLevel = 1
@@ -208,7 +201,6 @@ func (e *Executor) uploadSingle(ctx context.Context, pu *PlannedUpload, opts *Pl
 		uploadOpts.SafetyLevel = 3
 	}
 
-	// Map content type
 	switch pu.ContentType {
 	case "photo":
 		uploadOpts.ContentType = 1
@@ -218,7 +210,6 @@ func (e *Executor) uploadSingle(ctx context.Context, pu *PlannedUpload, opts *Pl
 		uploadOpts.ContentType = 3
 	}
 
-	// Map hidden
 	switch pu.Hidden {
 	case "hidden":
 		uploadOpts.Hidden = 2
@@ -231,7 +222,6 @@ func (e *Executor) uploadSingle(ctx context.Context, pu *PlannedUpload, opts *Pl
 		result.Status = "failed"
 		result.Error = fmt.Sprintf("upload failed: %v", err)
 
-		// Audit the failure
 		if e.AuditPath != "" {
 			if auditErr := safety.Append(e.AuditPath, &safety.AuditEvent{
 				RequestID: e.RequestID,
@@ -251,7 +241,6 @@ func (e *Executor) uploadSingle(ctx context.Context, pu *PlannedUpload, opts *Pl
 	result.Status = "uploaded"
 	result.PhotoID = uploadResult.PhotoID
 
-	// Move file after successful upload
 	if e.MoveAfter != "" {
 		if err := os.MkdirAll(e.MoveAfter, 0o755); err != nil {
 			e.Events.Emit(&model.Event{
@@ -271,7 +260,6 @@ func (e *Executor) uploadSingle(ctx context.Context, pu *PlannedUpload, opts *Pl
 		}
 	}
 
-	// Audit the success
 	if e.AuditPath != "" {
 		if auditErr := safety.Append(e.AuditPath, &safety.AuditEvent{
 			RequestID: e.RequestID,
@@ -285,7 +273,6 @@ func (e *Executor) uploadSingle(ctx context.Context, pu *PlannedUpload, opts *Pl
 		}
 	}
 
-	// Add to albums
 	if len(pu.AlbumIDs) > 0 {
 		for _, albumID := range pu.AlbumIDs {
 			if err := e.Client.AddToAlbum(ctx, albumID, uploadResult.PhotoID); err != nil {

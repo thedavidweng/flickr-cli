@@ -7,7 +7,6 @@ import (
 
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/output"
-	"github.com/thedavidweng/flickr-cli/internal/safety"
 )
 
 var favoritesCmd = &cobra.Command{
@@ -87,106 +86,42 @@ var favoritesAddCmd = &cobra.Command{
 	Use:   "add [photo-id]",
 	Short: "Add a photo to favorites",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		app := GetAppContext(cmd.Context())
-		r := newRenderer(app, cmd)
-		meta := output.RuntimeMetaInput{
-			Command:   "favorites.add",
-			Profile:   app.Profile,
-			RequestID: app.RequestID,
-			StartedAt: app.StartedAt,
-		}
-
-		client, _, err := getClient(app)
-		if err != nil {
-			return r.Failure(meta, output.Errorf(model.ErrConfig, "%v", err))
-		}
-		if err := requireAuth(&r, meta, client); err != nil {
-			return err
-		}
-
-		// Safety gate
-		gate := safety.Check(safety.GateInput{
-			ReadOnly: app.ReadOnly,
-			DryRun:   app.DryRun,
-			Confirm:  app.Confirm,
-		}, safety.Mutation{
-			Command: "favorites.add",
-			Method:  "flickr.favorites.add",
-			Risk:    safety.ClassifyRisk("favorites.add"),
+	RunE: withAuth("favorites.add", func(ctx *CmdContext) error {
+		photoID := ctx.Args[0]
+		return ctx.runMutation(mutationSpec{
+			Command:  "favorites.add",
+			Method:   "flickr.favorites.add",
+			Resource: map[string]any{"photo_id": photoID},
+			PlanMsg:  fmt.Sprintf("Would add %s to favorites\n", photoID),
+		}, func() (any, error) {
+			if err := ctx.Client.Call(ctx.Cmd.Context(), "flickr.favorites.add", map[string]string{"photo_id": photoID}, nil); err != nil {
+				return nil, ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
+			}
+			ctx.R.Human("Added %s to favorites\n", photoID)
+			return map[string]any{"photo_id": photoID}, nil
 		})
-		if gate.Error != nil {
-			return r.Failure(meta, *gate.Error)
-		}
-		if gate.Planned {
-			r.Human("Would add %s to favorites\n", args[0])
-			return r.Success(meta, map[string]any{"planned": true}, nil)
-		}
-
-		params := map[string]string{
-			"photo_id": args[0],
-		}
-
-		if err := client.Call(cmd.Context(), "flickr.favorites.add", params, nil); err != nil {
-			return r.Failure(meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
-		}
-
-		r.Human("Added %s to favorites\n", args[0])
-		return r.Success(meta, map[string]any{"photo_id": args[0]}, nil)
-	},
+	}),
 }
 
 var favoritesRemoveCmd = &cobra.Command{
 	Use:   "remove [photo-id]",
 	Short: "Remove a photo from favorites",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		app := GetAppContext(cmd.Context())
-		r := newRenderer(app, cmd)
-		meta := output.RuntimeMetaInput{
-			Command:   "favorites.remove",
-			Profile:   app.Profile,
-			RequestID: app.RequestID,
-			StartedAt: app.StartedAt,
-		}
-
-		client, _, err := getClient(app)
-		if err != nil {
-			return r.Failure(meta, output.Errorf(model.ErrConfig, "%v", err))
-		}
-		if err := requireAuth(&r, meta, client); err != nil {
-			return err
-		}
-
-		// Safety gate
-		gate := safety.Check(safety.GateInput{
-			ReadOnly: app.ReadOnly,
-			DryRun:   app.DryRun,
-			Confirm:  app.Confirm,
-		}, safety.Mutation{
-			Command: "favorites.remove",
-			Method:  "flickr.favorites.remove",
-			Risk:    safety.ClassifyRisk("favorites.remove"),
+	RunE: withAuth("favorites.remove", func(ctx *CmdContext) error {
+		photoID := ctx.Args[0]
+		return ctx.runMutation(mutationSpec{
+			Command:  "favorites.remove",
+			Method:   "flickr.favorites.remove",
+			Resource: map[string]any{"photo_id": photoID},
+			PlanMsg:  fmt.Sprintf("Would remove %s from favorites\n", photoID),
+		}, func() (any, error) {
+			if err := ctx.Client.Call(ctx.Cmd.Context(), "flickr.favorites.remove", map[string]string{"photo_id": photoID}, nil); err != nil {
+				return nil, ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
+			}
+			ctx.R.Human("Removed %s from favorites\n", photoID)
+			return map[string]any{"photo_id": photoID}, nil
 		})
-		if gate.Error != nil {
-			return r.Failure(meta, *gate.Error)
-		}
-		if gate.Planned {
-			r.Human("Would remove %s from favorites\n", args[0])
-			return r.Success(meta, map[string]any{"planned": true}, nil)
-		}
-
-		params := map[string]string{
-			"photo_id": args[0],
-		}
-
-		if err := client.Call(cmd.Context(), "flickr.favorites.remove", params, nil); err != nil {
-			return r.Failure(meta, output.Errorf(model.ErrFlickrAPI, "%v", err))
-		}
-
-		r.Human("Removed %s from favorites\n", args[0])
-		return r.Success(meta, map[string]any{"photo_id": args[0]}, nil)
-	},
+	}),
 }
 
 func init() {

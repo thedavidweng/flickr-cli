@@ -376,7 +376,7 @@ These flags are available on every command:
 | `--concurrency` | `4` | Concurrent upload/download workers |
 | `--no-color` | `false` | Disable ANSI color |
 | `--verbose` | `false` | Diagnostics to stderr |
-| `--debug` | `false` | Debug diagnostics with secrets redacted |
+| `--debug` | `false` | Debug diagnostics to stderr |
 | `--quiet` | `false` | Suppress progress output |
 
 ## Environment Variables

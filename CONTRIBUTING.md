@@ -10,25 +10,16 @@ go build ./cmd/flickr
 go test ./...
 ```
 
-Requires Go 1.26.3 or later.
+Requires Go 1.26.4 or later.
 
 ## Development
 
 ```bash
-# Build
-make build
-
-# Run tests
-make test
-
-# Format, vet, and test
-make lint
-
-# Format only
-make fmt
-
-# Vet only
-make vet
+mise run build   # build
+mise run test    # run tests
+mise run fmt     # format
+mise run lint    # lint
+mise run check   # fmt + build + test + lint + conventions
 ```
 
 ## Project Structure

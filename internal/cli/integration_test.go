@@ -29,6 +29,7 @@ func setupFakeCLI(t *testing.T) (fake *testutil.FakeFlickr, cfgPath string) {
 
 	cfgDir := t.TempDir()
 	cfgPath = filepath.Join(cfgDir, "config.yaml")
+	auditPath := filepath.Join(cfgDir, "audit.jsonl")
 	cfgContent := fmt.Sprintf(`schema_version: "2026-06-02"
 default_profile: default
 profiles:
@@ -39,13 +40,14 @@ profiles:
     oauth_token_secret: test-secret
     user_id: test-user-123
     username: testuser
+    audit_log_path: %s
     endpoints:
       rest: %s/services/rest/
       upload: %s/services/upload/
       request_token: %s/oauth/request_token
       authorize: %s/oauth/authorize
       access_token: %s/oauth/access_token
-`, fake.Server.URL, fake.Server.URL, fake.Server.URL, fake.Server.URL, fake.Server.URL)
+`, auditPath, fake.Server.URL, fake.Server.URL, fake.Server.URL, fake.Server.URL, fake.Server.URL)
 
 	if err := os.WriteFile(cfgPath, []byte(cfgContent), 0o600); err != nil {
 		t.Fatalf("writing config: %v", err)
@@ -767,6 +769,49 @@ func TestFavoritesReadOnly(t *testing.T) {
 	}
 	if env.Error.Code != model.ErrReadOnlyViolation {
 		t.Errorf("expected READ_ONLY_VIOLATION, got %s", env.Error.Code)
+	}
+}
+
+// --- Audit logging tests ---
+
+func TestMutationWritesAuditLog(t *testing.T) {
+	fake, cfg := setupFakeCLI(t)
+	fake.Photos["p1"] = testutil.FakePhoto{ID: "p1", Title: "Fav", Owner: "test-user-123"}
+
+	cmd, _ := cmdContext(t, cfg, true)
+	if err := favoritesAddCmd.RunE(cmd, []string{"p1"}); err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	auditPath := filepath.Join(filepath.Dir(cfg), "audit.jsonl")
+	data, err := os.ReadFile(auditPath)
+	if err != nil {
+		t.Fatalf("expected audit log at %s: %v", auditPath, err)
+	}
+	line := bytes.TrimSpace(bytes.SplitN(data, []byte("\n"), 2)[0])
+	var ev map[string]any
+	if err := json.Unmarshal(line, &ev); err != nil {
+		t.Fatalf("audit line not valid JSON: %v\n%s", err, data)
+	}
+	if ev["command"] != "favorites.add" {
+		t.Errorf("expected command favorites.add, got %v", ev["command"])
+	}
+	if ev["result"] != "success" {
+		t.Errorf("expected result success, got %v", ev["result"])
+	}
+}
+
+func TestDryRunDoesNotWriteAuditLog(t *testing.T) {
+	_, cfg := setupFakeCLI(t)
+
+	cmd, _ := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	if err := favoritesAddCmd.RunE(cmd, []string{"p1"}); err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+
+	auditPath := filepath.Join(filepath.Dir(cfg), "audit.jsonl")
+	if _, err := os.Stat(auditPath); !os.IsNotExist(err) {
+		t.Errorf("expected no audit log for dry-run, but stat returned err=%v", err)
 	}
 }
 

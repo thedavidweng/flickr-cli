@@ -1,3 +1,2 @@
-// Package cache provides a local SQLite-backed metadata cache for Flickr
-// albums, photos, and checksums, used for deduplication and query acceleration.
+// Package cache is a local SQLite metadata cache for dedupe and query acceleration.
 package cache

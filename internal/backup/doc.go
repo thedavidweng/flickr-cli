@@ -1,4 +1,2 @@
-// Package backup implements photo download planning and concurrent
-// downloading from Flickr, including album enumeration, file path layout,
-// metadata sidecar writing, and checksum computation.
+// Package backup plans and runs concurrent photo downloads with metadata sidecars.
 package backup

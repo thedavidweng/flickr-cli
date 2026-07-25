@@ -6,7 +6,7 @@ coverage:
         threshold: 2%
     patch:
       default:
-        target: 70%
+        target: 80%
   ignore:
     - "cmd/**"                    # Entry point
     - "internal/testutil/**"      # Test infrastructure
