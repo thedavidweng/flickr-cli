@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.1](https://github.com/thedavidweng/flickr-cli/compare/v0.3.0...v0.3.1) (2026-07-26)
+
+
+### Bug Fixes
+
+* let release-please create tags and releases ([b0f41fd](https://github.com/thedavidweng/flickr-cli/commit/b0f41fda0ae33289b77f81b473299d54acede1b0))
+
 ## [0.3.0](https://github.com/thedavidweng/flickr-cli/compare/v0.2.0...v0.3.0) (2026-07-25)
 
 
