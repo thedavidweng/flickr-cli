@@ -360,7 +360,9 @@ func init() {
 	authCmd.AddCommand(authLogoutCmd)
 }
 
-func isTerminal() bool {
+// isTerminal is a package-level seam for testing.
+// Override in tests to control interactive/non-interactive behavior.
+var isTerminal = func() bool {
 	fi, err := os.Stdin.Stat()
 	if err != nil {
 		return false
@@ -368,7 +370,8 @@ func isTerminal() bool {
 	return fi.Mode()&os.ModeCharDevice != 0
 }
 
-func readLine() string {
+// readLine is a package-level seam for testing.
+var readLine = func() string {
 	return readFrom(os.Stdin)
 }
 
