@@ -54,7 +54,7 @@ Cobra command (internal/cli/)
 
 ## Flickr Client (`internal/flickr/`)
 
-The client is built in-house (see [ADR-0001](adr/0001-own-flickr-client.md)).
+The client is built in-house (see [ADR-0001](../adr/0001-own-flickr-client.md)).
 
 | File | Responsibility |
 |------|---------------|
@@ -143,7 +143,7 @@ All write/delete operations append to an audit log (JSONL, `0600` permissions).
 
 Every command produces output through the `Renderer`:
 
-- **JSON mode** (`--json`): writes a standard envelope to stdout (see [JSON_SCHEMA.md](../JSON_SCHEMA.md))
+- **JSON mode** (`--json`): writes a standard envelope to stdout (see [JSON_SCHEMA.md](../../JSON_SCHEMA.md))
 - **Human mode**: writes formatted text to stdout
 - **Events** (`--events`): writes NDJSON progress events to stderr
 - **Errors**: always written to stderr in human mode; included in JSON envelope

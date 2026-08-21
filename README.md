@@ -107,12 +107,30 @@ Remove config if desired: `rm -rf ~/.config/flickr-cli`
 
 ## Documentation
 
-- [Command Reference](COMMANDS.md) — all commands with flags, examples, and safety gates
-- [Common Workflows](docs/workflows.md) — inspect, upload, backup, raw API, and safe scripting examples
-- [JSON Schema](JSON_SCHEMA.md) — envelope format, error codes, exit codes
-- [Architecture](docs/ARCHITECTURE.md) — package layout and design decisions
-- [Agent Guide](docs/agent-guide.md) — scripting, JSON mode, exit codes
-- [Piwigo Import](docs/piwigo.md) — migrate from Piwigo galleries
+Docs are organized by the [Diátaxis](https://diataxis.fr/) taxonomy — see [docs/README.md](docs/README.md) for the map and writing conventions.
+
+**Tutorials** — a guided first session:
+
+- [Your first library session](docs/tutorials/first-library.md) — install to first upload, with previews at every step
+
+**How-to guides** — recipes for concrete goals:
+
+- [Back up your library](docs/how-to/back-up-your-library.md) — full and incremental downloads of everything
+- [Upload without duplicates](docs/how-to/upload-without-duplicates.md) — checksum dedupe for imports and re-runs
+- [Organize albums](docs/how-to/organize-albums.md) — create, fill, rename, and delete albums safely
+- [Automate with JSON](docs/how-to/automate-with-json.md) — scripting, agents, exit codes, NDJSON events
+- [Call any API method](docs/how-to/call-any-api-method.md) — raw `flickr.*` escape hatch
+- [Migrate from Piwigo](docs/how-to/migrate-from-piwigo.md) — import a self-hosted gallery
+
+**Reference** — exact facts, lookup-oriented:
+
+- [Command Reference](COMMANDS.md) — all commands with flags and safety gates
+- [JSON Schema](JSON_SCHEMA.md) — envelope format, error codes, exit-code mapping
+
+**Explanation** — why it works this way:
+
+- [Safety gates](docs/explanation/safety-gates.md) — `--read-only`, `--dry-run`, `--confirm`, audit log
+- [Architecture](docs/explanation/architecture.md) — package layout and design decisions
 
 ## Infrastructure
 

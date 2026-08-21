@@ -354,11 +354,11 @@ flickr piwigo import --dry-run --url https://photos.example.com --user admin --p
 
 **Dry-run planning:** `--dry-run` walks the Piwigo category/image tree read-only
 and reports what would be imported without any Flickr mutation. The `--json`
-envelope adds these fields under `data`:
+envelope adds these count fields under `data`:
 
-- `planned_photos` — photos that would be uploaded
-- `planned_albums` — distinct albums that would be created
-- `skipped` — photos skipped by checksum deduplication
+- `planned_photos` — number of photos that would be uploaded
+- `planned_albums` — number of distinct albums that would be created
+- `skipped` — number of photos skipped by checksum deduplication
 
 **Safety gates:**
 

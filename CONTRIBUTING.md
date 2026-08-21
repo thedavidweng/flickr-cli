@@ -42,7 +42,7 @@ internal/
 docs/                 Documentation
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed architecture.
+See [docs/explanation/architecture.md](docs/explanation/architecture.md) for detailed architecture.
 
 ## Code Style
 
