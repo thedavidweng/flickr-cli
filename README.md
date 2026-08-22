@@ -13,7 +13,6 @@
   <a href="https://github.com/thedavidweng/flickr-cli/releases"><img src="https://img.shields.io/github/v/release/thedavidweng/flickr-cli?style=flat-square" alt="Release"></a>
   <a href="https://github.com/thedavidweng/flickr-cli/blob/main/LICENSE"><img src="https://img.shields.io/github/license/thedavidweng/flickr-cli?style=flat-square" alt="License"></a>
   <img src="https://img.shields.io/badge/go-%3E%3D1.26-blue?style=flat-square" alt="Go">
-  <a href="https://goreportcard.com/report/github.com/thedavidweng/flickr-cli"><img src="https://goreportcard.com/badge/github.com/thedavidweng/flickr-cli?style=flat-square" alt="Go Report"></a>
 </p>
 
 `flickr-cli` is a single-binary toolkit for maintaining a Flickr library: inspect metadata, upload folders, back up originals, manage albums, use checksum dedupe, migrate from Piwigo, and call raw Flickr API methods when needed.
