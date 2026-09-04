@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.2](https://github.com/thedavidweng/flickr-cli/compare/v0.3.1...v0.3.2) (2026-09-04)
+
+
+### Documentation
+
+* organize user guides by Diataxis taxonomy ([8d49e2a](https://github.com/thedavidweng/flickr-cli/commit/8d49e2a538a47255192e8999e237ae11c1c72da2))
+* remove retired Go Report Card badge ([0a9ce10](https://github.com/thedavidweng/flickr-cli/commit/0a9ce1018fccb9bf72fe23410d67e44b73961ee9))
+
 ## [0.3.1](https://github.com/thedavidweng/flickr-cli/compare/v0.3.0...v0.3.1) (2026-07-26)
 
 
