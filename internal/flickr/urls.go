@@ -190,7 +190,8 @@ func SelectSize(sizes []Size, wanted string) (Size, error) {
 func selectByCode(sizes []Size, code string, info struct {
 	labelContains string
 	maxDim        int
-}) (Size, error) {
+},
+) (Size, error) {
 	if info.labelContains != "" {
 		for _, s := range sizes {
 			if strings.Contains(s.Label, info.labelContains) {

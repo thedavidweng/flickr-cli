@@ -62,27 +62,51 @@ func (m *mockFlickr) Call(_ context.Context, method string, params map[string]st
 	}
 	return nil
 }
+
 func (m *mockFlickr) CallRaw(_ context.Context, _ string, _ map[string]string) (json.RawMessage, error) {
 	return nil, nil
 }
+
 func (m *mockFlickr) TestLogin(_ context.Context) (*flickr.LoginInfo, error) {
 	return &flickr.LoginInfo{}, nil
 }
-func (m *mockFlickr) TestEcho(_ context.Context) error                            { return nil }
-func (m *mockFlickr) GetSizes(_ context.Context, _ string) ([]flickr.Size, error) { return nil, nil }
+
+func (m *mockFlickr) TestEcho(_ context.Context) error {
+	return nil
+}
+
+func (m *mockFlickr) GetSizes(_ context.Context, _ string) ([]flickr.Size, error) {
+	return nil, nil
+}
+
 func (m *mockFlickr) GetVideoStreams(_ context.Context, _ string) ([]flickr.VideoStream, error) {
 	return nil, nil
 }
-func (m *mockFlickr) GetExif(_ context.Context, _ string) (*flickr.ExifData, error) { return nil, nil }
-func (m *mockFlickr) IsAuthenticated() bool                                         { return true }
+
+func (m *mockFlickr) GetExif(_ context.Context, _ string) (*flickr.ExifData, error) {
+	return nil, nil
+}
+
+func (m *mockFlickr) IsAuthenticated() bool {
+	return true
+}
+
 func (m *mockFlickr) RequestToken(_ context.Context, _ string) (*flickr.RequestTokenResponse, error) {
 	return nil, nil
 }
-func (m *mockFlickr) AuthorizationURL(_, _ string) string { return "" }
+
+func (m *mockFlickr) AuthorizationURL(_, _ string) string {
+	return ""
+}
+
 func (m *mockFlickr) AccessToken(_ context.Context, _, _, _ string) (*flickr.AccessTokenResponse, error) {
 	return nil, nil
 }
-func (m *mockFlickr) GetMethods(_ context.Context) (json.RawMessage, error) { return nil, nil }
+
+func (m *mockFlickr) GetMethods(_ context.Context) (json.RawMessage, error) {
+	return nil, nil
+}
+
 func (m *mockFlickr) GetMethodInfo(_ context.Context, _ string) (json.RawMessage, error) {
 	return nil, nil
 }

@@ -46,7 +46,7 @@ See [docs/explanation/architecture.md](docs/explanation/architecture.md) for det
 
 ## Code Style
 
-- Standard Go formatting (`gofmt`)
+- Standard Go formatting (`gofumpt`)
 - Table-driven tests
 - No CGO dependencies
 - Errors wrapped with `fmt.Errorf("context: %w", err)`
@@ -75,7 +75,7 @@ The fake Flickr server (`internal/testutil/`) provides a complete mock for integ
 1. Fork the repository
 2. Create a feature branch
 3. Write tests for new functionality
-4. Run `gofmt -w ./cmd ./internal` before committing
+4. Run `mise run fmt` before committing
 5. Ensure `make lint` passes
 6. Submit a pull request
 

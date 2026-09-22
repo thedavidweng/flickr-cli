@@ -47,9 +47,11 @@ func (m *mockFlickrAPI) Call(_ context.Context, method string, params map[string
 	}
 	return nil
 }
+
 func (m *mockFlickrAPI) CallRaw(_ context.Context, _ string, _ map[string]string) (json.RawMessage, error) {
 	return nil, nil
 }
+
 func (m *mockFlickrAPI) TestLogin(_ context.Context) (*flickr.LoginInfo, error) {
 	return nil, nil
 }
@@ -57,12 +59,15 @@ func (m *mockFlickrAPI) TestEcho(_ context.Context) error { return nil }
 func (m *mockFlickrAPI) GetSizes(_ context.Context, _ string) ([]flickr.Size, error) {
 	return m.sizes, m.sizesErr
 }
+
 func (m *mockFlickrAPI) GetVideoStreams(_ context.Context, _ string) ([]flickr.VideoStream, error) {
 	return m.videoStreams, m.videoErr
 }
+
 func (m *mockFlickrAPI) GetExif(_ context.Context, _ string) (*flickr.ExifData, error) {
 	return m.exifData, m.exifErr
 }
+
 func (m *mockFlickrAPI) Upload(_ context.Context, _ string, _ *flickr.UploadOptions) (*flickr.UploadResult, error) {
 	return nil, nil
 }
