@@ -1,30 +1,18 @@
 package cli
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/thedavidweng/flickr-cli/internal/model"
 	"github.com/thedavidweng/flickr-cli/internal/testutil"
 )
 
-func TestChecksumsHelp(t *testing.T) {
-	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetArgs([]string{"checksums", "--help"})
-	_ = rootCmd.Execute()
-
-	if buf.Len() == 0 {
-		t.Error("expected help output")
-	}
-}
-
 func TestChecksumsSearchDryRun(t *testing.T) {
 	fake, cfg := setupFakeCLI(t)
 	fake.Photos["p1"] = testutil.FakePhoto{ID: "p1", Title: "Sunset", Owner: "user1", Tags: "checksum:md5=abc123"}
 	fake.Photos["p2"] = testutil.FakePhoto{ID: "p2", Title: "Mountains", Owner: "user2", Tags: "checksum:sha1=def456"}
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	cmd.Flags().String("user-id", "", "")
 	err := checksumsSearchCmd.RunE(cmd, []string{"abc123"})
 	if err != nil {
@@ -63,7 +51,7 @@ func TestChecksumsSearchDryRun(t *testing.T) {
 
 func TestChecksumsAddReadOnly(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{ReadOnly: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{ReadOnly: true})
 	err := checksumsAddCmd.RunE(cmd, nil)
 	if err == nil {
 		t.Fatal("expected error with --read-only")

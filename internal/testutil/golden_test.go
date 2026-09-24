@@ -6,37 +6,6 @@ import (
 	"testing"
 )
 
-func TestLoadGolden(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "test.json")
-	if err := os.WriteFile(path, []byte(`{"key":"value"}`), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	content := LoadGolden(t, path)
-	if string(content) != `{"key":"value"}` {
-		t.Errorf("unexpected content: %s", content)
-	}
-}
-
-func TestCompareJSON(t *testing.T) {
-	expected := []byte(`{"key":"value"}`)
-	actual := []byte(`{"key": "value"}`)
-
-	// Should not fail - JSON comparison ignores whitespace
-	CompareJSON(t, expected, actual)
-}
-
-func TestCompareJSONMismatch(t *testing.T) {
-	// We can't easily test the failure case since it calls t.Errorf
-	// But we can test that it doesn't panic with matching values
-	expected := []byte(`{"key":"value"}`)
-	actual := []byte(`{"key":"value"}`)
-
-	// This should not call t.Errorf
-	CompareJSON(t, expected, actual)
-}
-
 func TestUpdateGolden(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.json")

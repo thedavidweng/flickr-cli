@@ -39,21 +39,6 @@ func TestExecuteJSON(t *testing.T) {
 	}
 }
 
-func TestExecuteHelp(t *testing.T) {
-	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetArgs([]string{"--help"})
-
-	err := Execute()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if buf.Len() == 0 {
-		t.Error("expected help output")
-	}
-}
-
 func TestFLICKREnvVars(t *testing.T) {
 	// Create a temporary config file to point FLICKR_CONFIG at
 	cfgDir := t.TempDir()

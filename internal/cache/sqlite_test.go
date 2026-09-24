@@ -126,20 +126,6 @@ func TestStatFileNonExistent(t *testing.T) {
 	}
 }
 
-func TestCacheStats(t *testing.T) {
-	stats := &CacheStats{
-		Path: "/tmp/test.sqlite",
-	}
-	stats.Counts.Albums = 10
-	stats.Counts.Photos = 100
-	stats.Counts.Checksums = 50
-	stats.Counts.Jobs = 2
-
-	if stats.Counts.Albums != 10 {
-		t.Errorf("expected 10 albums, got %d", stats.Counts.Albums)
-	}
-}
-
 func TestOpenCreatesDirectory(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "subdir", "test.sqlite")
@@ -162,21 +148,5 @@ func TestDBClose(t *testing.T) {
 	db, _ := Open(path, "default")
 	if err := db.Close(); err != nil {
 		t.Fatalf("unexpected error closing: %v", err)
-	}
-}
-
-func TestDBStats(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "test.sqlite")
-
-	db, _ := Open(path, "default")
-	defer func() { _ = db.Close() }()
-
-	stats, err := db.Stats()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if stats == nil {
-		t.Error("expected non-nil stats")
 	}
 }

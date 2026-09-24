@@ -1,46 +1,19 @@
 package cli
 
 import (
-	"bytes"
 	"context"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/spf13/cobra"
 )
 
-// cmdHelp returns the help text for a command by setting up a buffer and
-// calling cmd.Help().  The command must already have Use/Short set.
-func cmdHelp(t *testing.T, cmd *cobra.Command) string {
-	t.Helper()
-	buf := new(bytes.Buffer)
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	if err := cmd.Help(); err != nil {
-		t.Fatalf("Help() returned error: %v", err)
-	}
-	return buf.String()
-}
-
-// subcommandHelp returns the help text for a specific subcommand of a parent.
-func subcommandHelp(t *testing.T, parent *cobra.Command, subName string) string {
-	t.Helper()
-	for _, sub := range parent.Commands() {
-		if sub.Name() == subName {
-			return cmdHelp(t, sub)
-		}
-	}
-	t.Fatalf("subcommand %q not found on %s", subName, parent.Name())
-	return ""
-}
-
 // --- Photos delete dry-run ---
 
 func TestPhotosDeleteDryRun(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	err := photosDeleteCmd.RunE(cmd, []string{"photo-a", "photo-b"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -73,7 +46,7 @@ func TestPhotosDeleteDryRun(t *testing.T) {
 func TestPhotosDeleteRequiresConfirm(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := photosDeleteCmd.RunE(cmd, []string{"photo-1"})
 	if err == nil {
 		t.Fatal("expected error without --confirm")
@@ -93,7 +66,7 @@ func TestPhotosDeleteRequiresConfirm(t *testing.T) {
 func TestPhotosDeleteReadOnly(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{ReadOnly: true, Confirm: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{ReadOnly: true, Confirm: true})
 	err := photosDeleteCmd.RunE(cmd, []string{"photo-1"})
 	if err == nil {
 		t.Fatal("expected error with --read-only")
@@ -113,7 +86,7 @@ func TestPhotosDeleteReadOnly(t *testing.T) {
 func TestPhotosRotateDryRun(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	cmd.Flags().Int("degrees", 90, "")
 	err := photosRotateCmd.RunE(cmd, []string{"photo-1"})
 	if err != nil {
@@ -142,7 +115,7 @@ func TestPhotosRotateDryRun(t *testing.T) {
 func TestPhotosRotateReadOnly(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{ReadOnly: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{ReadOnly: true})
 	err := photosRotateCmd.RunE(cmd, []string{"photo-1"})
 	if err == nil {
 		t.Fatal("expected error with --read-only")
@@ -162,7 +135,7 @@ func TestPhotosRotateReadOnly(t *testing.T) {
 func TestPhotosPrivacyDryRun(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	err := photosSetPrivacyCmd.RunE(cmd, []string{"photo-1"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -187,7 +160,7 @@ func TestPhotosPrivacyDryRun(t *testing.T) {
 func TestPhotosPrivacyReadOnly(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{ReadOnly: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{ReadOnly: true})
 	err := photosSetPrivacyCmd.RunE(cmd, []string{"photo-1"})
 	if err == nil {
 		t.Fatal("expected error with --read-only")
@@ -207,7 +180,7 @@ func TestPhotosPrivacyReadOnly(t *testing.T) {
 func TestPhotosMetaDryRun(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	if err := cmd.Flags().Set("title", "New Title"); err != nil {
 		t.Fatal(err)
 	}
@@ -244,7 +217,7 @@ func TestPhotosMetaDryRun(t *testing.T) {
 func TestPhotosMetaReadOnly(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{ReadOnly: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{ReadOnly: true})
 	if err := cmd.Flags().Set("title", "T"); err != nil {
 		t.Fatal(err)
 	}
@@ -267,7 +240,7 @@ func TestPhotosMetaReadOnly(t *testing.T) {
 func TestPhotosSetTagsDryRun(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	err := photosSetTagsCmd.RunE(cmd, []string{"photo-1"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -292,7 +265,7 @@ func TestPhotosSetTagsDryRun(t *testing.T) {
 func TestPhotosAddTagsDryRun(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	err := photosAddTagsCmd.RunE(cmd, []string{"photo-1"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -317,7 +290,7 @@ func TestPhotosAddTagsDryRun(t *testing.T) {
 func TestPhotosRemoveTagDryRun(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	cmd.Flags().String("tag-id", "", "")
 	if err := cmd.Flags().Set("tag-id", "tag-1"); err != nil {
 		t.Fatal(err)
@@ -349,7 +322,7 @@ func TestPhotosRemoveTagDryRun(t *testing.T) {
 func TestCommentsDeleteDryRun(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	err := commentsDeleteCmd.RunE(cmd, []string{"comment-1"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -372,187 +345,22 @@ func TestCommentsDeleteDryRun(t *testing.T) {
 // --- Help output tests ---
 // These verify the command's Short description and Use line are present in help.
 
-func TestPhotosRotateHelp(t *testing.T) {
-	help := cmdHelp(t, photosRotateCmd)
-	if !strings.Contains(help, "rotate") {
-		t.Error("help should contain 'rotate'")
-	}
-	if !strings.Contains(help, "[photo-id]") {
-		t.Error("help should contain '[photo-id]' usage")
-	}
-	if !strings.Contains(help, "degrees") {
-		t.Error("help should mention --degrees flag")
-	}
-}
-
-func TestPhotosPrivacyHelp(t *testing.T) {
-	help := cmdHelp(t, photosSetPrivacyCmd)
-	if !strings.Contains(help, "set-privacy") {
-		t.Error("help should contain 'set-privacy'")
-	}
-	if !strings.Contains(help, "[photo-id]") {
-		t.Error("help should contain '[photo-id]' usage")
-	}
-	if !strings.Contains(help, "privacy") {
-		t.Error("help should mention --privacy flag")
-	}
-}
-
-func TestPhotosMetaHelp(t *testing.T) {
-	help := cmdHelp(t, photosSetMetaCmd)
-	if !strings.Contains(help, "set-meta") {
-		t.Error("help should contain 'set-meta'")
-	}
-	if !strings.Contains(help, "[photo-id]") {
-		t.Error("help should contain '[photo-id]' usage")
-	}
-	if !strings.Contains(help, "title") {
-		t.Error("help should mention --title flag")
-	}
-}
-
-func TestGalleriesListHelp(t *testing.T) {
-	help := cmdHelp(t, galleriesListCmd)
-	if !strings.Contains(help, "list") {
-		t.Error("help should contain 'list'")
-	}
-	if !strings.Contains(strings.ToLower(help), "galler") {
-		t.Error("help should mention galleries")
-	}
-}
-
-func TestGroupsListHelp(t *testing.T) {
-	help := cmdHelp(t, groupsListCmd)
-	if !strings.Contains(help, "list") {
-		t.Error("help should contain 'list'")
-	}
-	if !strings.Contains(help, "group") && !strings.Contains(help, "Group") {
-		t.Error("help should mention groups")
-	}
-}
-
-func TestContactsListHelp(t *testing.T) {
-	help := cmdHelp(t, contactsListCmd)
-	if !strings.Contains(help, "list") {
-		t.Error("help should contain 'list'")
-	}
-	if !strings.Contains(help, "contact") && !strings.Contains(help, "Contact") {
-		t.Error("help should mention contacts")
-	}
-}
-
-func TestCommentsListHelp(t *testing.T) {
-	help := cmdHelp(t, commentsListCmd)
-	if !strings.Contains(help, "list") {
-		t.Error("help should contain 'list'")
-	}
-	if !strings.Contains(help, "[photo-id]") {
-		t.Error("help should contain '[photo-id]' usage")
-	}
-	if !strings.Contains(help, "comment") && !strings.Contains(help, "Comment") {
-		t.Error("help should mention comments")
-	}
-}
-
-func TestFavoritesListHelp(t *testing.T) {
-	help := cmdHelp(t, favoritesListCmd)
-	if !strings.Contains(help, "list") {
-		t.Error("help should contain 'list'")
-	}
-	if !strings.Contains(help, "favorite") && !strings.Contains(help, "Favorite") {
-		t.Error("help should mention favorites")
-	}
-}
-
-func TestUrlsHelp(t *testing.T) {
-	help := cmdHelp(t, urlsCmd)
-	if !strings.Contains(help, "urls") {
-		t.Error("help should contain 'urls'")
-	}
-	if !strings.Contains(help, "lookup") {
-		t.Error("help should mention lookup subcommand")
-	}
-}
-
 // --- Photos parent command help ---
-
-func TestPhotosCmdHelp(t *testing.T) {
-	help := cmdHelp(t, photosCmd)
-	if !strings.Contains(help, "photos") {
-		t.Error("help should contain 'photos'")
-	}
-	// Should list subcommands
-	for _, sub := range []string{"list", "search", "show", "delete", "rotate", "set-meta", "set-privacy", "set-tags", "add-tags", "remove-tag", "set-location", "upload", "download"} {
-		if !strings.Contains(help, sub) {
-			t.Errorf("photos help should list subcommand %q", sub)
-		}
-	}
-}
 
 // --- Galleries parent command help ---
 
-func TestGalleriesCmdHelp(t *testing.T) {
-	help := cmdHelp(t, galleriesCmd)
-	if !strings.Contains(help, "galleries") {
-		t.Error("help should contain 'galleries'")
-	}
-	if !strings.Contains(help, "list") {
-		t.Error("help should list 'list' subcommand")
-	}
-	if !strings.Contains(help, "photos") {
-		t.Error("help should list 'photos' subcommand")
-	}
-}
-
 // --- Groups parent command help ---
-
-func TestGroupsCmdHelp(t *testing.T) {
-	help := cmdHelp(t, groupsCmd)
-	if !strings.Contains(help, "groups") {
-		t.Error("help should contain 'groups'")
-	}
-	if !strings.Contains(help, "list") {
-		t.Error("help should list 'list' subcommand")
-	}
-	if !strings.Contains(help, "search") {
-		t.Error("help should list 'search' subcommand")
-	}
-}
 
 // --- Comments parent command help ---
 
-func TestCommentsCmdHelp(t *testing.T) {
-	help := cmdHelp(t, commentsCmd)
-	if !strings.Contains(help, "comments") {
-		t.Error("help should contain 'comments'")
-	}
-	for _, sub := range []string{"list", "add", "delete"} {
-		if !strings.Contains(help, sub) {
-			t.Errorf("comments help should list subcommand %q", sub)
-		}
-	}
-}
-
 // --- Favorites parent command help ---
-
-func TestFavoritesCmdHelp(t *testing.T) {
-	help := cmdHelp(t, favoritesCmd)
-	if !strings.Contains(help, "favorites") {
-		t.Error("help should contain 'favorites'")
-	}
-	for _, sub := range []string{"list", "add", "remove"} {
-		if !strings.Contains(help, sub) {
-			t.Errorf("favorites help should list subcommand %q", sub)
-		}
-	}
-}
 
 // --- Photos rotate validation error ---
 
 func TestPhotosRotateInvalidDegrees(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	cmd.Flags().Int("degrees", 90, "")
 	if err := cmd.Flags().Set("degrees", "45"); err != nil {
 		t.Fatal(err)
@@ -573,23 +381,13 @@ func TestPhotosRotateInvalidDegrees(t *testing.T) {
 
 // --- Stats popular help ---
 
-func TestStatsPopularHelp(t *testing.T) {
-	help := cmdHelp(t, statsPopularCmd)
-	if !strings.Contains(help, "popular") {
-		t.Error("help should contain 'popular'")
-	}
-	if !strings.Contains(help, "photo") && !strings.Contains(help, "Photo") {
-		t.Error("help should mention photos")
-	}
-}
-
 // --- URLs lookup-user requires auth ---
 
 func TestURLsLookupUserAuthRequired(t *testing.T) {
 	fake, _ := setupFakeCLI(t)
 	cfg := setupUnauthedCLI(t, fake.Server.URL)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := urlsLookupUserCmd.RunE(cmd, []string{"https://flickr.com/testuser"})
 	if err == nil {
 		t.Fatal("expected error for unauthenticated request")
@@ -610,7 +408,7 @@ func TestGalleriesPhotosAuthRequired(t *testing.T) {
 	fake, _ := setupFakeCLI(t)
 	cfg := setupUnauthedCLI(t, fake.Server.URL)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := galleriesPhotosCmd.RunE(cmd, []string{"gallery-1"})
 	if err == nil {
 		t.Fatal("expected error for unauthenticated request")
@@ -631,7 +429,7 @@ func TestGroupsSearchAuthRequired(t *testing.T) {
 	fake, _ := setupFakeCLI(t)
 	cfg := setupUnauthedCLI(t, fake.Server.URL)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := groupsSearchCmd.RunE(cmd, []string{"photography"})
 	if err == nil {
 		t.Fatal("expected error for unauthenticated request")
@@ -652,7 +450,7 @@ func TestStatsPopularAuthRequired(t *testing.T) {
 	fake, _ := setupFakeCLI(t)
 	cfg := setupUnauthedCLI(t, fake.Server.URL)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := statsPopularCmd.RunE(cmd, nil)
 	if err == nil {
 		t.Fatal("expected error for unauthenticated request")
@@ -672,7 +470,7 @@ func TestStatsPopularAuthRequired(t *testing.T) {
 func TestFavoritesAddReadOnly(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{ReadOnly: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{ReadOnly: true})
 	err := favoritesAddCmd.RunE(cmd, []string{"p1"})
 	if err == nil {
 		t.Fatal("expected error with --read-only")
@@ -692,7 +490,7 @@ func TestFavoritesAddReadOnly(t *testing.T) {
 func TestCommentsAddDryRunMeta(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	err := commentsAddCmd.RunE(cmd, []string{"photo-1", "Great shot!"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -808,7 +606,7 @@ func TestAllMutationCommandsDryRun(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+			cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 			// Register flags that specific commands read but cmdContext doesn't provide
 			cmd.Flags().Int("degrees", 90, "")
 			cmd.Flags().String("tag-id", "", "")

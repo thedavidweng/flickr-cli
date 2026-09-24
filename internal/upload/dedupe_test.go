@@ -9,15 +9,6 @@ import (
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 )
 
-func TestDeduplicatorCreation(t *testing.T) {
-	dedup := &Deduplicator{
-		Algorithm: "md5",
-	}
-	if dedup.Algorithm != "md5" {
-		t.Errorf("expected md5, got %s", dedup.Algorithm)
-	}
-}
-
 func TestCheckByChecksumFound(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

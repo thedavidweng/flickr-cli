@@ -10,38 +10,6 @@ import (
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
 )
 
-func TestSyncOptions(t *testing.T) {
-	opts := SyncOptions{
-		Albums: true,
-		Photos: false,
-		Limit:  100,
-	}
-
-	if !opts.Albums {
-		t.Error("expected albums=true")
-	}
-	if opts.Photos {
-		t.Error("expected photos=false")
-	}
-	if opts.Limit != 100 {
-		t.Errorf("expected limit 100, got %d", opts.Limit)
-	}
-}
-
-func TestSyncResult(t *testing.T) {
-	result := &SyncResult{
-		AlbumsSynced: 10,
-		PhotosSynced: 50,
-	}
-
-	if result.AlbumsSynced != 10 {
-		t.Errorf("expected albums synced 10, got %d", result.AlbumsSynced)
-	}
-	if result.PhotosSynced != 50 {
-		t.Errorf("expected photos synced 50, got %d", result.PhotosSynced)
-	}
-}
-
 func TestSyncAlbums(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

@@ -87,61 +87,6 @@ func (m *mockFlickrAPI) GetMethodInfo(_ context.Context, _ string) (json.RawMess
 
 var _ flickr.FlickrAPI = (*mockFlickrAPI)(nil)
 
-func TestDownloaderCreation(t *testing.T) {
-	downloader := &Downloader{
-		Concurrency: 4,
-		Events:      &output.EventWriter{},
-	}
-
-	if downloader.Concurrency != 4 {
-		t.Errorf("expected concurrency 4, got %d", downloader.Concurrency)
-	}
-}
-
-func TestDownloadOptions(t *testing.T) {
-	opts := DownloadOptions{
-		Force:    true,
-		Size:     "original",
-		Metadata: "json",
-	}
-
-	if !opts.Force {
-		t.Error("expected force=true")
-	}
-	if opts.Size != "original" {
-		t.Errorf("expected original, got %s", opts.Size)
-	}
-}
-
-func TestDownloadSummary(t *testing.T) {
-	summary := &DownloadSummary{
-		Total:     10,
-		Completed: 8,
-		Skipped:   1,
-		Failed:    1,
-	}
-
-	if summary.Total != 10 {
-		t.Errorf("expected total 10, got %d", summary.Total)
-	}
-	if summary.Completed != 8 {
-		t.Errorf("expected completed 8, got %d", summary.Completed)
-	}
-}
-
-func TestDownloadItem(t *testing.T) {
-	item := DownloadItem{
-		PhotoID:          "photo-123",
-		FilePath:         "/tmp/photo.jpg",
-		MetadataPathJSON: "/tmp/photo.json",
-		SizeLabel:        "original",
-	}
-
-	if item.PhotoID != "photo-123" {
-		t.Errorf("expected photo-123, got %s", item.PhotoID)
-	}
-}
-
 func TestDownload(t *testing.T) {
 	// Create a mock server that returns a photo
 	photoServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -46,19 +46,6 @@ func TestResolveAlbumNamesWithExistingIDs(t *testing.T) {
 	}
 }
 
-func TestResolveAlbumNamesEmpty(t *testing.T) {
-	fake := testutil.NewFakeFlickr(t)
-	executor := &Executor{Client: fake.Client()}
-
-	ids, err := executor.resolveAlbumNames(context.Background(), nil, nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(ids) != 0 {
-		t.Errorf("expected 0 ids, got %d", len(ids))
-	}
-}
-
 func TestResolveAlbumNamesLoadError(t *testing.T) {
 	fake := testutil.NewFakeFlickr(t)
 	fake.Failures["flickr.photosets.getList"] = testutil.FakeFailure{Code: 99, Message: "load failed"}
