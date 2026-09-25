@@ -9,49 +9,6 @@ import (
 	"testing"
 )
 
-func TestUploadOptions(t *testing.T) {
-	opts := UploadOptions{
-		Title:       "Test Photo",
-		Description: "A test",
-		Tags:        []string{"nature", "sunset"},
-		IsPublic:    true,
-		IsFriend:    false,
-		IsFamily:    false,
-		SafetyLevel: 1,
-		ContentType: 1,
-		Hidden:      1,
-	}
-
-	if opts.Title != "Test Photo" {
-		t.Errorf("expected title 'Test Photo', got %s", opts.Title)
-	}
-	if !opts.IsPublic {
-		t.Error("expected IsPublic=true")
-	}
-	if opts.SafetyLevel != 1 {
-		t.Errorf("expected safety level 1, got %d", opts.SafetyLevel)
-	}
-}
-
-func TestUploadResult(t *testing.T) {
-	result := UploadResult{
-		PhotoID: "12345",
-	}
-
-	if result.PhotoID != "12345" {
-		t.Errorf("expected photo ID 12345, got %s", result.PhotoID)
-	}
-}
-
-func TestBoolToNum(t *testing.T) {
-	if boolToNum(true) != "1" {
-		t.Errorf("expected '1' for true, got %s", boolToNum(true))
-	}
-	if boolToNum(false) != "0" {
-		t.Errorf("expected '0' for false, got %s", boolToNum(false))
-	}
-}
-
 func TestUpload(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/xml")

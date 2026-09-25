@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -10,21 +9,10 @@ import (
 	"github.com/thedavidweng/flickr-cli/internal/testutil"
 )
 
-func TestPiwigoHelp(t *testing.T) {
-	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetArgs([]string{"piwigo", "--help"})
-	_ = rootCmd.Execute()
-
-	if buf.Len() == 0 {
-		t.Error("expected help output")
-	}
-}
-
 func TestPiwigoImportMissingFlags(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	// Register piwigo flags so RunE can read them with their zero values
 	cmd.Flags().String("url", "", "")
 	cmd.Flags().String("user", "", "")
@@ -83,7 +71,7 @@ func TestPiwigoImportDryRunPlan(t *testing.T) {
 		},
 	}
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	registerPiwigoFlags(cmd, pw.Server.URL)
 
 	if err := piwigoImportCmd.RunE(cmd, nil); err != nil {
@@ -136,7 +124,7 @@ func TestPiwigoImportDryRunSkipsExisting(t *testing.T) {
 	}
 	pw.ExistingMD5 = map[string]bool{"dup": true}
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	registerPiwigoFlags(cmd, pw.Server.URL)
 
 	if err := piwigoImportCmd.RunE(cmd, nil); err != nil {

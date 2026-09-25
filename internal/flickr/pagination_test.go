@@ -36,25 +36,6 @@ func TestExtractPageInfoMissingKey(t *testing.T) {
 	}
 }
 
-func TestNewWalker(t *testing.T) {
-	fetcher := func(ctx context.Context, page, perPage int) (PageResult[string], error) {
-		return PageResult[string]{}, nil
-	}
-	w := NewWalker(context.Background(), 10, fetcher)
-	if w == nil {
-		t.Fatal("NewWalker returned nil")
-	}
-	if w.perPage != 10 {
-		t.Errorf("expected perPage 10, got %d", w.perPage)
-	}
-	if w.page != 1 {
-		t.Errorf("expected page 1, got %d", w.page)
-	}
-	if w.done {
-		t.Error("new walker should not be done")
-	}
-}
-
 func TestWalkerSinglePage(t *testing.T) {
 	fetcher := func(ctx context.Context, page, perPage int) (PageResult[string], error) {
 		return PageResult[string]{

@@ -80,7 +80,7 @@ profiles:
 // command's RunE from the package-level var directly.
 // Optional AppContext fields can be overridden by passing a partially filled
 // app; nil means use defaults.
-func cmdContext(t *testing.T, cfgPath string, jsonMode bool, appOverrides ...*AppContext) (*cobra.Command, *bytes.Buffer) {
+func cmdContext(t *testing.T, cfgPath string, appOverrides ...*AppContext) (*cobra.Command, *bytes.Buffer) {
 	t.Helper()
 	buf := new(bytes.Buffer)
 	cmd := &cobra.Command{}
@@ -88,7 +88,7 @@ func cmdContext(t *testing.T, cfgPath string, jsonMode bool, appOverrides ...*Ap
 	app := &AppContext{
 		ConfigFile:  cfgPath,
 		Profile:     "default",
-		JSON:        jsonMode,
+		JSON:        true,
 		Timeout:     30 * time.Second,
 		Retries:     3,
 		Concurrency: 4,
@@ -103,7 +103,7 @@ func cmdContext(t *testing.T, cfgPath string, jsonMode bool, appOverrides ...*Ap
 		if o.Profile != "" {
 			app.Profile = o.Profile
 		}
-		app.JSON = o.JSON || jsonMode
+		app.JSON = true
 		app.ReadOnly = o.ReadOnly
 		app.DryRun = o.DryRun
 		app.Confirm = o.Confirm
@@ -154,7 +154,7 @@ func TestAlbumsListJSON(t *testing.T) {
 		PrimaryID:   "photo-1",
 	}
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := albumsListCmd.RunE(cmd, nil)
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -199,7 +199,7 @@ func TestAlbumsListAuthRequired(t *testing.T) {
 	fake, _ := setupFakeCLI(t)
 	cfg := setupUnauthedCLI(t, fake.Server.URL)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := albumsListCmd.RunE(cmd, nil)
 
 	// Failure should return a CommandError
@@ -228,7 +228,7 @@ func TestAlbumsShowJSON(t *testing.T) {
 		PhotoCount:  10,
 	}
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := albumsShowCmd.RunE(cmd, []string{"album-42"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -258,7 +258,7 @@ func TestAlbumsShowJSON(t *testing.T) {
 func TestAlbumsShowNotFound(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := albumsShowCmd.RunE(cmd, []string{"nonexistent"})
 	if err == nil {
 		t.Fatal("expected error for nonexistent album")
@@ -276,7 +276,7 @@ func TestAlbumsShowNotFound(t *testing.T) {
 func TestAlbumsCreateDryRun(t *testing.T) {
 	fake, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	if err := cmd.Flags().Set("title", "New Album"); err != nil {
 		t.Fatal(err)
 	}
@@ -304,7 +304,7 @@ func TestAlbumsCreateDryRun(t *testing.T) {
 func TestAlbumsDeleteRequiresConfirm(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := albumsDeleteCmd.RunE(cmd, []string{"album-1"})
 	if err == nil {
 		t.Fatal("expected error without --confirm")
@@ -322,7 +322,7 @@ func TestAlbumsDeleteRequiresConfirm(t *testing.T) {
 func TestAlbumsDeleteReadOnly(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{ReadOnly: true, Confirm: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{ReadOnly: true, Confirm: true})
 	err := albumsDeleteCmd.RunE(cmd, []string{"album-1"})
 	if err == nil {
 		t.Fatal("expected error with --read-only")
@@ -344,7 +344,7 @@ func TestPhotosListJSON(t *testing.T) {
 	fake.Photos["p1"] = testutil.FakePhoto{ID: "p1", Title: "Sunset", Owner: "test-user-123"}
 	fake.Photos["p2"] = testutil.FakePhoto{ID: "p2", Title: "Mountains", Owner: "test-user-123"}
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := photosListCmd.RunE(cmd, nil)
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -376,7 +376,7 @@ func TestPhotosSearchJSON(t *testing.T) {
 	fake, cfg := setupFakeCLI(t)
 	fake.Photos["p1"] = testutil.FakePhoto{ID: "p1", Title: "Sunset", Owner: "user1", Tags: "nature"}
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	if err := cmd.Flags().Set("text", "sunset"); err != nil {
 		t.Fatal(err)
 	}
@@ -419,7 +419,7 @@ func TestPhotosShowJSON(t *testing.T) {
 		Owner: "test-user-123",
 	}
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := photosShowCmd.RunE(cmd, []string{"photo-99"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -445,7 +445,7 @@ func TestPhotosShowJSON(t *testing.T) {
 func TestPhotosShowNotFound(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := photosShowCmd.RunE(cmd, []string{"nonexistent"})
 	if err == nil {
 		t.Fatal("expected error for nonexistent photo")
@@ -465,7 +465,7 @@ func TestPhotosShowNotFound(t *testing.T) {
 func TestAPICallJSON(t *testing.T) {
 	fake, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := apiCallCmd.RunE(cmd, []string{"flickr.test.echo"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -487,7 +487,7 @@ func TestAPICallJSON(t *testing.T) {
 func TestAPICallRawMode(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	_ = cmd.Flags().Set("raw", "true")
 	err := apiCallCmd.RunE(cmd, []string{"flickr.test.echo"})
 	if err != nil {
@@ -507,7 +507,7 @@ func TestAPICallRawMode(t *testing.T) {
 func TestAPIMethodsJSON(t *testing.T) {
 	fake, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := apiMethodsCmd.RunE(cmd, nil)
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -568,7 +568,7 @@ func TestErrorEnvelopeHasAllFields(t *testing.T) {
 	fake, _ := setupFakeCLI(t)
 	cfg := setupUnauthedCLI(t, fake.Server.URL)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	_ = albumsListCmd.RunE(cmd, nil)
 
 	env := parseEnvelope(t, buf)
@@ -615,7 +615,7 @@ func TestImplementedCommandsSucceed(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cmd, buf := cmdContext(t, cfg, true)
+			cmd, buf := cmdContext(t, cfg)
 			_ = tc.cmd.Flags().Set("confirm", "true")
 			_ = tc.cmd.Flags().Set("tag", "test")
 			_ = tc.cmd.Flags().Set("tag-id", "tag-1")
@@ -649,7 +649,7 @@ func TestPhotosUploadDryRun(t *testing.T) {
 		t.Fatalf("creating test file: %v", err)
 	}
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	err := photosUploadCmd.RunE(cmd, []string{testFile})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -705,7 +705,7 @@ func TestFavoritesListJSON(t *testing.T) {
 	fake, cfg := setupFakeCLI(t)
 	fake.Photos["p1"] = testutil.FakePhoto{ID: "p1", Title: "Fav Photo"}
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := favoritesListCmd.RunE(cmd, nil)
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -723,7 +723,7 @@ func TestFavoritesListJSON(t *testing.T) {
 func TestFavoritesAddDryRun(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	err := favoritesAddCmd.RunE(cmd, []string{"p1"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -742,7 +742,7 @@ func TestFavoritesAddDryRun(t *testing.T) {
 func TestFavoritesRemoveDryRun(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	err := favoritesRemoveCmd.RunE(cmd, []string{"p1"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -757,7 +757,7 @@ func TestFavoritesRemoveDryRun(t *testing.T) {
 func TestFavoritesReadOnly(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{ReadOnly: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{ReadOnly: true})
 	err := favoritesAddCmd.RunE(cmd, []string{"p1"})
 	if err == nil {
 		t.Fatal("expected error with --read-only")
@@ -778,7 +778,7 @@ func TestMutationWritesAuditLog(t *testing.T) {
 	fake, cfg := setupFakeCLI(t)
 	fake.Photos["p1"] = testutil.FakePhoto{ID: "p1", Title: "Fav", Owner: "test-user-123"}
 
-	cmd, _ := cmdContext(t, cfg, true)
+	cmd, _ := cmdContext(t, cfg)
 	if err := favoritesAddCmd.RunE(cmd, []string{"p1"}); err != nil {
 		t.Fatalf("RunE returned error: %v", err)
 	}
@@ -804,7 +804,7 @@ func TestMutationWritesAuditLog(t *testing.T) {
 func TestDryRunDoesNotWriteAuditLog(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, _ := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, _ := cmdContext(t, cfg, &AppContext{DryRun: true})
 	if err := favoritesAddCmd.RunE(cmd, []string{"p1"}); err != nil {
 		t.Fatalf("RunE returned error: %v", err)
 	}
@@ -820,7 +820,7 @@ func TestDryRunDoesNotWriteAuditLog(t *testing.T) {
 func TestGalleriesListJSON(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := galleriesListCmd.RunE(cmd, nil)
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -838,7 +838,7 @@ func TestGalleriesListJSON(t *testing.T) {
 func TestGalleriesPhotosJSON(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := galleriesPhotosCmd.RunE(cmd, []string{"gallery-1"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -858,7 +858,7 @@ func TestGalleriesPhotosJSON(t *testing.T) {
 func TestGroupsListJSON(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := groupsListCmd.RunE(cmd, nil)
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -876,7 +876,7 @@ func TestGroupsListJSON(t *testing.T) {
 func TestGroupsSearchJSON(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := groupsSearchCmd.RunE(cmd, []string{"photography"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -896,7 +896,7 @@ func TestGroupsSearchJSON(t *testing.T) {
 func TestCommentsListJSON(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := commentsListCmd.RunE(cmd, []string{"p1"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -914,7 +914,7 @@ func TestCommentsListJSON(t *testing.T) {
 func TestCommentsAddDryRun(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	err := commentsAddCmd.RunE(cmd, []string{"p1", "Nice photo!"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -933,7 +933,7 @@ func TestCommentsAddDryRun(t *testing.T) {
 func TestCommentsDeleteRequiresConfirm(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := commentsDeleteCmd.RunE(cmd, []string{"comment-1"})
 	if err == nil {
 		t.Fatal("expected error without --confirm")
@@ -951,7 +951,7 @@ func TestCommentsDeleteRequiresConfirm(t *testing.T) {
 func TestCommentsDeleteReadOnly(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{ReadOnly: true, Confirm: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{ReadOnly: true, Confirm: true})
 	err := commentsDeleteCmd.RunE(cmd, []string{"comment-1"})
 	if err == nil {
 		t.Fatal("expected error with --read-only")
@@ -971,7 +971,7 @@ func TestCommentsDeleteReadOnly(t *testing.T) {
 func TestContactsListJSON(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := contactsListCmd.RunE(cmd, nil)
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -991,7 +991,7 @@ func TestContactsListJSON(t *testing.T) {
 func TestStatsPopularJSON(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := statsPopularCmd.RunE(cmd, nil)
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -1011,7 +1011,7 @@ func TestStatsPopularJSON(t *testing.T) {
 func TestURLsLookupUserJSON(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	err := urlsLookupUserCmd.RunE(cmd, []string{"https://flickr.com/testuser"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -1031,7 +1031,7 @@ func TestURLsLookupUserJSON(t *testing.T) {
 func TestPhotosDownloadDryRun(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	err := photosDownloadCmd.RunE(cmd, []string{"p1"})
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
@@ -1053,7 +1053,7 @@ func TestRequireAuthWritesErrorCode(t *testing.T) {
 	fake, _ := setupFakeCLI(t)
 	cfg := setupUnauthedCLI(t, fake.Server.URL)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	_ = photosListCmd.RunE(cmd, nil)
 
 	env := parseEnvelope(t, buf)
@@ -1114,7 +1114,7 @@ func TestPhotosDownloadBackupDryRun(t *testing.T) {
 	fake.Photos["p2"] = testutil.FakePhoto{ID: "p2", Title: "Beach", Owner: "test-user-123"}
 	fake.AlbumPhotos["album-1"] = []string{"p1", "p2"}
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	cmd.Flags().Bool("all", false, "")
 	_ = cmd.Flags().Set("all", "true")
 	cmd.Flags().String("dest", "", "")
@@ -1225,7 +1225,7 @@ func TestResolveCredentialsFromFlags(t *testing.T) {
 func TestChecksumsReadOnly(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{ReadOnly: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{ReadOnly: true})
 	err := checksumsAddCmd.RunE(cmd, nil)
 	if err == nil {
 		t.Fatal("expected error with --read-only")
@@ -1245,7 +1245,7 @@ func TestChecksumsReadOnly(t *testing.T) {
 func TestPhotosDownloadNoArgs(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true)
+	cmd, buf := cmdContext(t, cfg)
 	// Ensure download-specific flags are registered with defaults (no --all, etc.)
 	cmd.Flags().Bool("all", false, "")
 	cmd.Flags().String("dest", "", "")
@@ -1277,7 +1277,7 @@ func TestPhotosDownloadNoArgs(t *testing.T) {
 func TestPhotosDownloadByIDsWithMetadata(t *testing.T) {
 	_, cfg := setupFakeCLI(t)
 
-	cmd, buf := cmdContext(t, cfg, true, &AppContext{DryRun: true})
+	cmd, buf := cmdContext(t, cfg, &AppContext{DryRun: true})
 	cmd.Flags().String("dest", "", "")
 	cmd.Flags().String("size", "original", "")
 	cmd.Flags().Int("size-max", 0, "")

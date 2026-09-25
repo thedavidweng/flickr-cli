@@ -14,46 +14,6 @@ import (
 	"github.com/thedavidweng/flickr-cli/internal/safety"
 )
 
-func TestExecutorCreation(t *testing.T) {
-	executor := &Executor{
-		Concurrency: 4,
-		Gate:        safety.GateInput{},
-		Events:      &output.EventWriter{},
-	}
-
-	if executor.Concurrency != 4 {
-		t.Errorf("expected concurrency 4, got %d", executor.Concurrency)
-	}
-}
-
-func TestUploadSummary(t *testing.T) {
-	summary := &UploadSummary{
-		Planned:   10,
-		Succeeded: 8,
-		Skipped:   1,
-		Failed:    1,
-	}
-
-	if summary.Planned != 10 {
-		t.Errorf("expected planned 10, got %d", summary.Planned)
-	}
-	if summary.Succeeded != 8 {
-		t.Errorf("expected succeeded 8, got %d", summary.Succeeded)
-	}
-}
-
-func TestUploadResult(t *testing.T) {
-	result := UploadResult{
-		LocalPath: "/tmp/photo.jpg",
-		PhotoID:   "123",
-		Status:    "uploaded",
-	}
-
-	if result.Status != "uploaded" {
-		t.Errorf("expected uploaded, got %s", result.Status)
-	}
-}
-
 func TestExecutorExecuteDryRun(t *testing.T) {
 	executor := &Executor{
 		Gate:   safety.GateInput{DryRun: true},

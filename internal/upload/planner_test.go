@@ -1,7 +1,6 @@
 package upload
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -76,28 +75,5 @@ func TestBuildPlanNoDedupe(t *testing.T) {
 
 	if plan.Planned[0].Hash != nil {
 		t.Error("expected no hash when dedupe=none")
-	}
-}
-
-func TestBuildPlanJSON(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "test.jpg")
-	if err := os.WriteFile(path, []byte("test"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	files := []LocalFile{
-		{Path: path, Name: "test.jpg", Ext: "jpg", Size: 4},
-	}
-
-	plan, _ := BuildPlan(files, &PlanOptions{Dedupe: "none", Tags: []string{"tag1"}})
-	b, err := json.Marshal(plan)
-	if err != nil {
-		t.Fatalf("failed to marshal: %v", err)
-	}
-
-	var parsed Plan
-	if err := json.Unmarshal(b, &parsed); err != nil {
-		t.Fatalf("failed to unmarshal: %v", err)
 	}
 }

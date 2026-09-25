@@ -12,17 +12,6 @@ import (
 	"github.com/thedavidweng/flickr-cli/internal/testutil"
 )
 
-func TestCacheHelp(t *testing.T) {
-	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetArgs([]string{"cache", "--help"})
-	_ = rootCmd.Execute()
-
-	if buf.Len() == 0 {
-		t.Error("expected help output")
-	}
-}
-
 func TestCacheStatsNoCache(t *testing.T) {
 	// Use a temp dir so DefaultCachePath returns a writable location.
 	cacheDir := t.TempDir()

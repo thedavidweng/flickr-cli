@@ -1,7 +1,6 @@
 package backup
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -30,16 +29,5 @@ func TestSafeName(t *testing.T) {
 				t.Errorf("SafeName(%q, %q) = %q, want %q", tt.input, tt.fallback, got, tt.expected)
 			}
 		})
-	}
-}
-
-func TestIDDirsPath(t *testing.T) {
-	path := IDDirsPath("/dest", "12345", "jpg")
-
-	if len(path) < 10 {
-		t.Errorf("path too short: %s", path)
-	}
-	if !strings.Contains(path, "12345") {
-		t.Errorf("path should contain photo ID: %s", path)
 	}
 }

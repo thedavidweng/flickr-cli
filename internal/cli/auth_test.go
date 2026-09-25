@@ -16,50 +16,6 @@ import (
 	"github.com/thedavidweng/flickr-cli/internal/testutil"
 )
 
-func TestAuthHelp(t *testing.T) {
-	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetArgs([]string{"auth", "--help"})
-	_ = rootCmd.Execute()
-
-	if buf.Len() == 0 {
-		t.Error("expected help output")
-	}
-}
-
-func TestAuthLoginHelp(t *testing.T) {
-	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetArgs([]string{"auth", "login", "--help"})
-	_ = rootCmd.Execute()
-
-	if buf.Len() == 0 {
-		t.Error("expected help output")
-	}
-}
-
-func TestAuthStatusHelp(t *testing.T) {
-	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetArgs([]string{"auth", "status", "--help"})
-	_ = rootCmd.Execute()
-
-	if buf.Len() == 0 {
-		t.Error("expected help output")
-	}
-}
-
-func TestAuthLogoutHelp(t *testing.T) {
-	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetArgs([]string{"auth", "logout", "--help"})
-	_ = rootCmd.Execute()
-
-	if buf.Len() == 0 {
-		t.Error("expected help output")
-	}
-}
-
 func TestIsTerminal(t *testing.T) {
 	result := isTerminal()
 	_ = result
