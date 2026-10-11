@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.3](https://github.com/thedavidweng/flickr-cli/compare/v0.3.2...v0.3.3) (2026-10-11)
+
+
+### Documentation
+
+* refactor agent instructions with progressive disclosure ([#34](https://github.com/thedavidweng/flickr-cli/issues/34)) ([bdd30f1](https://github.com/thedavidweng/flickr-cli/commit/bdd30f151ed7c9f2a046d303b50b0e8ecc77650a))
+
 ## [0.3.2](https://github.com/thedavidweng/flickr-cli/compare/v0.3.1...v0.3.2) (2026-09-21)
 
 
