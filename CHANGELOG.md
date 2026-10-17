@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.4](https://github.com/thedavidweng/flickr-cli/compare/v0.3.3...v0.3.4) (2026-10-17)
+
+
+### Bug Fixes
+
+* **release:** sign and notarize macOS executables ([#36](https://github.com/thedavidweng/flickr-cli/issues/36)) ([9c491aa](https://github.com/thedavidweng/flickr-cli/commit/9c491aa1fc4eb2b20194ee990af5f337e3517e41))
+
 ## [0.3.3](https://github.com/thedavidweng/flickr-cli/compare/v0.3.2...v0.3.3) (2026-10-11)
 
 
