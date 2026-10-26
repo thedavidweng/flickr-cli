@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.6](https://github.com/thedavidweng/flickr-cli/compare/v0.3.5...v0.3.6) (2026-10-26)
+
+
+### Bug Fixes
+
+* **release:** generate valid Homebrew completions from the cask ([#46](https://github.com/thedavidweng/flickr-cli/issues/46)) ([fbf65c7](https://github.com/thedavidweng/flickr-cli/commit/fbf65c75317020245a440759af0178b54f04a84a))
+
 ## [0.3.5](https://github.com/thedavidweng/flickr-cli/compare/v0.3.4...v0.3.5) (2026-10-26)
 
 
