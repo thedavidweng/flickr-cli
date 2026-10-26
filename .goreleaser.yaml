@@ -67,11 +67,6 @@ homebrew_casks:
       executable: "flickr"
       args:
         - completion
-      shell_parameter_format: cobra
-      shells:
-        - bash
-        - zsh
-        - fish
     repository:
       owner: thedavidweng
       name: homebrew-tap
