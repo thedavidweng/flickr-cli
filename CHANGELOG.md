@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.5](https://github.com/thedavidweng/flickr-cli/compare/v0.3.4...v0.3.5) (2026-10-26)
+
+
+### Bug Fixes
+
+* **ci:** select the exact source-built linter binary ([#43](https://github.com/thedavidweng/flickr-cli/issues/43)) ([1a7c827](https://github.com/thedavidweng/flickr-cli/commit/1a7c82755e447b0e9cbb737719e5045fae7375be))
+
 ## [0.3.4](https://github.com/thedavidweng/flickr-cli/compare/v0.3.3...v0.3.4) (2026-10-17)
 
 
