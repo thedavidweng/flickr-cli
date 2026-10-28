@@ -70,10 +70,7 @@ func (d *Downloader) Download(ctx context.Context, items []DownloadItem, opts Do
 		Total: len(items),
 	}
 
-	workers := d.Concurrency
-	if workers < 1 {
-		workers = 1
-	}
+	workers := max(d.Concurrency, 1)
 
 	ch := make(chan *DownloadItem, len(items))
 	for i := range items {
@@ -85,9 +82,7 @@ func (d *Downloader) Download(ctx context.Context, items []DownloadItem, opts Do
 	var wg sync.WaitGroup
 
 	for i := 0; i < workers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for item := range ch {
 				result, err := d.downloadItem(ctx, item, opts)
 				if err != nil {
@@ -109,7 +104,7 @@ func (d *Downloader) Download(ctx context.Context, items []DownloadItem, opts Do
 				}
 				mu.Unlock()
 			}
-		}()
+		})
 	}
 
 	wg.Wait()

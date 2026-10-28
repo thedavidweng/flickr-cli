@@ -114,7 +114,7 @@ func collectTags(ctx *CmdContext) []string {
 	tagSlice, _ := ctx.Cmd.Flags().GetStringSlice("tag")
 	csvTags, _ := ctx.Cmd.Flags().GetString("tags")
 	if csvTags != "" {
-		for _, t := range strings.Split(csvTags, ",") {
+		for t := range strings.SplitSeq(csvTags, ",") {
 			if t = strings.TrimSpace(t); t != "" {
 				tagSlice = append(tagSlice, t)
 			}

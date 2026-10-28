@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -70,24 +71,24 @@ var photosSearchCmd = &cobra.Command{
 			params["text"] = text
 		}
 		if tags, _ := ctx.Cmd.Flags().GetStringSlice("tag"); len(tags) > 0 {
-			tagsStr := ""
+			var tagsStr strings.Builder
 			for i, t := range tags {
 				if i > 0 {
-					tagsStr += ","
+					tagsStr.WriteString(",")
 				}
-				tagsStr += t
+				tagsStr.WriteString(t)
 			}
-			params["tags"] = tagsStr
+			params["tags"] = tagsStr.String()
 		}
 		if machineTags, _ := ctx.Cmd.Flags().GetStringSlice("machine-tag"); len(machineTags) > 0 {
-			mtStr := ""
+			var mtStr strings.Builder
 			for i, mt := range machineTags {
 				if i > 0 {
-					mtStr += ","
+					mtStr.WriteString(",")
 				}
-				mtStr += mt
+				mtStr.WriteString(mt)
 			}
-			params["machine_tags"] = mtStr
+			params["machine_tags"] = mtStr.String()
 		}
 		if minUpload, _ := ctx.Cmd.Flags().GetString("min-upload-date"); minUpload != "" {
 			params["min_upload_date"] = minUpload

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"maps"
 
 	"github.com/spf13/cobra"
 
@@ -32,9 +33,7 @@ var photosSetPrivacyCmd = &cobra.Command{
 			}
 
 			params := map[string]string{"photo_id": photoID}
-			for k, v := range level.PermsParams() {
-				params[k] = v
-			}
+			maps.Copy(params, level.PermsParams())
 			switch hidden {
 			case "hidden":
 				params["hidden"] = "2"

@@ -166,20 +166,20 @@ func TestDownloadSkipExisting(t *testing.T) {
 
 func TestDownloadConcurrency(t *testing.T) {
 	// Track max concurrent downloads
-	var concurrent int32
-	var maxConcurrent int32
+	var concurrent atomic.Int32
+	var maxConcurrent atomic.Int32
 
 	photoServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cur := atomic.AddInt32(&concurrent, 1)
+		cur := concurrent.Add(1)
 		// Update max
 		for {
-			old := atomic.LoadInt32(&maxConcurrent)
-			if cur <= old || atomic.CompareAndSwapInt32(&maxConcurrent, old, cur) {
+			old := maxConcurrent.Load()
+			if cur <= old || maxConcurrent.CompareAndSwap(old, cur) {
 				break
 			}
 		}
 		time.Sleep(50 * time.Millisecond)
-		atomic.AddInt32(&concurrent, -1)
+		concurrent.Add(-1)
 		_, _ = w.Write([]byte("fake-photo-data"))
 	}))
 	defer photoServer.Close()
@@ -199,8 +199,8 @@ func TestDownloadConcurrency(t *testing.T) {
 
 	// Download 4 photos with concurrency 4
 	var mu sync.Mutex
-	var paths []string
-	for i := 0; i < 4; i++ {
+	paths := make([]string, 0, 4)
+	for i := range 4 {
 		p := filepath.Join(tmpDir, "photo"+string(rune('A'+i))+".jpg")
 		mu.Lock()
 		paths = append(paths, p)
@@ -227,7 +227,7 @@ func TestDownloadConcurrency(t *testing.T) {
 		t.Errorf("expected 4 completed, got %d", summary.Completed)
 	}
 
-	peak := atomic.LoadInt32(&maxConcurrent)
+	peak := maxConcurrent.Load()
 	if peak < 2 {
 		t.Errorf("expected concurrent downloads (peak=%d), but downloads ran sequentially", peak)
 	}

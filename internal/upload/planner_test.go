@@ -3,6 +3,7 @@ package upload
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -41,13 +42,7 @@ func TestBuildPlanChecksum(t *testing.T) {
 		t.Errorf("expected 32 char hash, got %d", len(pu.Hash.Value))
 	}
 	// Should include checksum tag
-	found := false
-	for _, tag := range pu.Tags {
-		if tag == "checksum:md5="+pu.Hash.Value {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(pu.Tags, "checksum:md5="+pu.Hash.Value)
 	if !found {
 		t.Error("expected checksum tag")
 	}

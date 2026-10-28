@@ -169,9 +169,9 @@ func TestTestEcho(t *testing.T) {
 }
 
 func TestRetryHTTP503(t *testing.T) {
-	var attempts int32
+	var attempts atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		n := atomic.AddInt32(&attempts, 1)
+		n := attempts.Add(1)
 		if n <= 2 {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			_, _ = w.Write([]byte("Service Unavailable"))
@@ -195,8 +195,8 @@ func TestRetryHTTP503(t *testing.T) {
 		t.Fatalf("expected call to succeed after retries, got error: %v", err)
 	}
 
-	if atomic.LoadInt32(&attempts) != 3 {
-		t.Errorf("expected 3 attempts, got %d", atomic.LoadInt32(&attempts))
+	if attempts.Load() != 3 {
+		t.Errorf("expected 3 attempts, got %d", attempts.Load())
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -111,9 +112,9 @@ func (f *FakeFlickr) CountMethod(method string) int {
 func (f *FakeFlickr) LastCall(method string) (Call, bool) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	for i := len(f.Calls) - 1; i >= 0; i-- {
-		if f.Calls[i].Method == method {
-			return f.Calls[i], true
+	for _, v := range slices.Backward(f.Calls) {
+		if v.Method == method {
+			return v, true
 		}
 	}
 	return Call{}, false
@@ -374,7 +375,7 @@ func (f *FakeFlickr) handleGetPhotoInfo(w http.ResponseWriter, r *http.Request) 
 	// Parse tags from the FakePhoto into the expected format.
 	var tags []map[string]any
 	if photo.Tags != "" {
-		for _, raw := range strings.Split(photo.Tags, ",") {
+		for raw := range strings.SplitSeq(photo.Tags, ",") {
 			raw = strings.TrimSpace(raw)
 			if raw == "" {
 				continue

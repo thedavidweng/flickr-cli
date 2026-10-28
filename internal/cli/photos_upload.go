@@ -37,7 +37,7 @@ var photosUploadCmd = &cobra.Command{
 		var allTags []string
 		allTags = append(allTags, tagSlice...)
 		if tagsCSV != "" {
-			for _, t := range strings.Split(tagsCSV, ",") {
+			for t := range strings.SplitSeq(tagsCSV, ",") {
 				t = strings.TrimSpace(t)
 				if t != "" {
 					allTags = append(allTags, t)
@@ -101,8 +101,7 @@ var photosUploadCmd = &cobra.Command{
 
 		summary, err := executor.Execute(ctx.Cmd.Context(), *plan, &planOpts)
 		if err != nil {
-			var cmdErr *model.CommandError
-			if errors.As(err, &cmdErr) {
+			if cmdErr, ok := errors.AsType[*model.CommandError](err); ok {
 				return ctx.R.Failure(ctx.Meta, output.Errorf(cmdErr.Code, "%s", cmdErr.Message))
 			}
 			return ctx.R.Failure(ctx.Meta, output.Errorf(model.ErrFlickrAPI, "%v", err))

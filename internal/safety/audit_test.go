@@ -62,7 +62,7 @@ func TestAppendMultiple(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "audit.jsonl")
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		if err := Append(path, &AuditEvent{Command: "test"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

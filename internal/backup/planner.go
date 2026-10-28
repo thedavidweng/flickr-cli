@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/thedavidweng/flickr-cli/internal/flickr"
@@ -99,11 +100,8 @@ func buildAlbumPlan(ctx context.Context, client flickr.FlickrAPI, opts *BackupPl
 				continue
 			}
 
-			for _, id := range opts.AlbumIDs {
-				if ps.ID == id {
-					albums = append(albums, matchedAlbum{id: ps.ID, title: ps.Title.Content})
-					break
-				}
+			if slices.Contains(opts.AlbumIDs, ps.ID) {
+				albums = append(albums, matchedAlbum{id: ps.ID, title: ps.Title.Content})
 			}
 
 			for _, title := range opts.AlbumTitles {

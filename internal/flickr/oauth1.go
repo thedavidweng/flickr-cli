@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
+	"maps"
 	"math/rand"
 	"sort"
 	"strings"
@@ -132,9 +133,7 @@ func (s *OAuthSigner) Sign(method, baseURL string, params map[string][]string) (
 
 	// Merge OAuth params into signature params
 	sigParams := make(map[string][]string)
-	for k, vs := range params {
-		sigParams[k] = vs
-	}
+	maps.Copy(sigParams, params)
 	for k, v := range oauthParams {
 		if k == "oauth_signature" {
 			continue

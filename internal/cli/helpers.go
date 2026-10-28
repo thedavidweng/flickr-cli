@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"maps"
 
 	"github.com/spf13/cobra"
 
@@ -98,17 +99,13 @@ func (ctx *CmdContext) runMutation(spec mutationSpec, run func() (any, error)) e
 			ctx.R.Human("%s", spec.PlanMsg)
 		}
 		data := map[string]any{"planned": true}
-		for k, v := range spec.PlanData {
-			data[k] = v
-		}
+		maps.Copy(data, spec.PlanData)
 		if spec.PlanFunc != nil {
 			extra, err := spec.PlanFunc()
 			if err != nil {
 				return err
 			}
-			for k, v := range extra {
-				data[k] = v
-			}
+			maps.Copy(data, extra)
 		}
 		return ctx.R.Success(ctx.Meta, data, nil)
 	}
