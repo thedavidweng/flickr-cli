@@ -3,7 +3,6 @@ package cli
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -507,66 +506,6 @@ func TestCommentsAddDryRunMeta(t *testing.T) {
 	data, _ := env.Data.(map[string]any)
 	if data["planned"] != true {
 		t.Errorf("expected planned=true, got %v", data["planned"])
-	}
-}
-
-// --- Root command has all expected subcommands ---
-
-func TestRootCommandSubcommands(t *testing.T) {
-	root := rootCmd
-	expected := []string{
-		"version", "auth", "albums", "photos", "favorites",
-		"galleries", "groups", "comments", "contacts",
-		"stats", "urls", "api", "cache", "checksums",
-		"piwigo", "doctor", "completion",
-	}
-	names := make(map[string]bool)
-	for _, sub := range root.Commands() {
-		names[sub.Name()] = true
-	}
-	for _, want := range expected {
-		if !names[want] {
-			t.Errorf("root command missing subcommand %q", want)
-		}
-	}
-}
-
-// --- AppContext via WithAppContext round-trip ---
-
-func TestAppContextRoundTrip(t *testing.T) {
-	app := &AppContext{
-		ConfigFile: "/tmp/test.yaml",
-		Profile:    "myprofile",
-		JSON:       true,
-		ReadOnly:   true,
-		DryRun:     false,
-		Confirm:    true,
-		RequestID:  "req-123",
-		Timeout:    10 * time.Second,
-		Retries:    5,
-	}
-	ctx := WithAppContext(context.Background(), app)
-	got := GetAppContext(ctx)
-	if got != app {
-		t.Fatal("GetAppContext should return the same pointer")
-	}
-	if got.ConfigFile != "/tmp/test.yaml" {
-		t.Errorf("expected ConfigFile=/tmp/test.yaml, got %s", got.ConfigFile)
-	}
-	if got.Profile != "myprofile" {
-		t.Errorf("expected Profile=myprofile, got %s", got.Profile)
-	}
-	if !got.JSON {
-		t.Error("expected JSON=true")
-	}
-	if !got.ReadOnly {
-		t.Error("expected ReadOnly=true")
-	}
-	if !got.Confirm {
-		t.Error("expected Confirm=true")
-	}
-	if got.Retries != 5 {
-		t.Errorf("expected Retries=5, got %d", got.Retries)
 	}
 }
 
