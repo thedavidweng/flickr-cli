@@ -1,2 +1,2 @@
-// Package testutil provides a FakeFlickr server and golden-file helpers for tests.
+// Package testutil provides FakeFlickr and FakePiwigo servers for tests.
 package testutil

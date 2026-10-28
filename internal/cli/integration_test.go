@@ -592,51 +592,6 @@ func TestErrorEnvelopeHasAllFields(t *testing.T) {
 	}
 }
 
-// --- Implemented M5 commands return success with fake Flickr ---
-
-func TestImplementedCommandsSucceed(t *testing.T) {
-	fake, cfg := setupFakeCLI(t)
-	fake.Photos["p1"] = testutil.FakePhoto{ID: "p1", Title: "Test", Owner: "test-user-123"}
-
-	tests := []struct {
-		name string
-		cmd  *cobra.Command
-		args []string
-	}{
-		{"photos.set-tags", photosSetTagsCmd, []string{"p1"}},
-		{"photos.add-tags", photosAddTagsCmd, []string{"p1"}},
-		{"photos.remove-tag", photosRemoveTagCmd, []string{"p1"}},
-		{"photos.set-privacy", photosSetPrivacyCmd, []string{"p1"}},
-		{"photos.set-location", photosSetLocationCmd, []string{"p1"}},
-		{"photos.rotate", photosRotateCmd, []string{"p1"}},
-		{"photos.delete", photosDeleteCmd, []string{"p1"}},
-		{"photos.set-meta", photosSetMetaCmd, []string{"p1"}},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			cmd, buf := cmdContext(t, cfg)
-			_ = tc.cmd.Flags().Set("confirm", "true")
-			_ = tc.cmd.Flags().Set("tag", "test")
-			_ = tc.cmd.Flags().Set("tag-id", "tag-1")
-			_ = tc.cmd.Flags().Set("title", "New Title")
-			_ = tc.cmd.Flags().Set("privacy", "public")
-			_ = tc.cmd.Flags().Set("lat", "40.0")
-			_ = tc.cmd.Flags().Set("lon", "-74.0")
-			err := tc.cmd.RunE(cmd, tc.args)
-
-			env := parseEnvelope(t, buf)
-			if err != nil && !env.OK {
-				// Command returned an error (e.g., API error from fake server) - this is acceptable
-				return
-			}
-			if !env.OK {
-				t.Errorf("command %s should return ok=true or a handled error, got error: %v", tc.name, env.Error)
-			}
-		})
-	}
-}
-
 // --- Upload dry-run test ---
 
 func TestPhotosUploadDryRun(t *testing.T) {

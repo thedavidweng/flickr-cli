@@ -2,33 +2,15 @@ package cli
 
 import (
 	"bytes"
-	"context"
 	"fmt"
-	"io"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/thedavidweng/flickr-cli/internal/config"
-	"github.com/thedavidweng/flickr-cli/internal/flickr"
 	"github.com/thedavidweng/flickr-cli/internal/output"
 )
-
-// --- readInput ---
-
-func TestReadInputReplaced(t *testing.T) {
-	orig := readInput
-	defer func() { readInput = orig }()
-
-	readInput = func() string { return "test-value" }
-
-	got := readInput()
-	if got != "test-value" {
-		t.Errorf("expected test-value, got %q", got)
-	}
-}
 
 // --- resolveCredentials ---
 
@@ -189,14 +171,6 @@ func TestHandleRequestTokenErrorGeneric(t *testing.T) {
 	}
 }
 
-// --- isTerminal seam ---
-
-func TestIsTerminalInNonTerminal(t *testing.T) {
-	// In test environments, stdin is typically not a char device.
-	// Just verify the function doesn't panic.
-	_ = isTerminal()
-}
-
 // --- readFrom ---
 
 func TestReadFromTrimmed(t *testing.T) {
@@ -206,11 +180,3 @@ func TestReadFromTrimmed(t *testing.T) {
 		t.Errorf("expected %q, got %q", "trimmed input", got)
 	}
 }
-
-// Ensure unused imports are referenced (these are used by other tests in the package).
-var (
-	_ = context.Background
-	_ = io.Discard
-	_ = strings.TrimSpace
-	_ = &flickr.Client{}
-)

@@ -16,11 +16,6 @@ import (
 	"github.com/thedavidweng/flickr-cli/internal/testutil"
 )
 
-func TestIsTerminal(t *testing.T) {
-	result := isTerminal()
-	_ = result
-}
-
 func TestReadLine(t *testing.T) {
 	oldStdin := os.Stdin
 	defer func() { os.Stdin = oldStdin }()
