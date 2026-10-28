@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -26,7 +27,7 @@ func (c *Client) CallRaw(ctx context.Context, method string, params map[string]s
 	maxAttempts := 1 + c.Retries
 
 	var lastErr error
-	for attempt := 0; attempt < maxAttempts; attempt++ {
+	for attempt := range maxAttempts {
 		if attempt > 0 {
 			backoff := time.Duration(1<<uint(attempt-1)) * 100 * time.Millisecond
 			select {
@@ -73,9 +74,7 @@ func (c *Client) callRawOnce(ctx context.Context, method string, params map[stri
 	if c.IsAuthenticated() {
 		// Authenticated call: POST with OAuth signature
 		sigParams := make(map[string][]string)
-		for k, vs := range form {
-			sigParams[k] = vs
-		}
+		maps.Copy(sigParams, form)
 
 		signer := c.Signer()
 		oauthParams, signErr := signer.Sign("POST", c.Endpoints.REST, sigParams)
@@ -122,10 +121,7 @@ func (c *Client) callRawOnce(ctx context.Context, method string, params map[stri
 		if resp.StatusCode == 429 {
 			if ra := resp.Header.Get("Retry-After"); ra != "" {
 				if secs, err := strconv.Atoi(ra); err == nil {
-					wait := time.Duration(secs) * time.Second
-					if wait > 60*time.Second {
-						wait = 60 * time.Second
-					}
+					wait := min(time.Duration(secs)*time.Second, 60*time.Second)
 					flickrErr.RetryAfter = wait
 					select {
 					case <-ctx.Done():

@@ -3,6 +3,7 @@ package output
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/thedavidweng/flickr-cli/internal/model"
 )
@@ -62,12 +63,7 @@ func argIsRetryable(v any) bool {
 // argsContainRetryable returns true if any element of args satisfies
 // retryableError (directly or via errors.As).
 func argsContainRetryable(args []any) bool {
-	for _, a := range args {
-		if argIsRetryable(a) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(args, argIsRetryable)
 }
 
 // Errorf creates an ErrorBody with the given code and formatted message.

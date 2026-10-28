@@ -79,10 +79,7 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts *PlanOptions) (*
 		}
 	}
 
-	workers := e.Concurrency
-	if workers < 1 {
-		workers = 1
-	}
+	workers := max(e.Concurrency, 1)
 
 	type indexedItem struct {
 		index int
@@ -99,9 +96,7 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts *PlanOptions) (*
 	var wg sync.WaitGroup
 
 	for i := 0; i < workers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for item := range ch {
 				result, err := e.uploadSingle(ctx, item.plan)
 				summary.Results[item.index] = result
@@ -123,7 +118,7 @@ func (e *Executor) Execute(ctx context.Context, plan Plan, opts *PlanOptions) (*
 				}
 				mu.Unlock()
 			}
-		}()
+		})
 	}
 
 	wg.Wait()

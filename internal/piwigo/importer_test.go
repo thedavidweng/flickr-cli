@@ -164,7 +164,7 @@ func (ts *testServer) handleAPI(w http.ResponseWriter, r *http.Request) {
 	case "pwg.images.exist":
 		md5List := r.FormValue("md5sum_list")
 		results := make(map[string]bool)
-		for _, md5 := range strings.Split(md5List, ",") {
+		for md5 := range strings.SplitSeq(md5List, ",") {
 			md5 = strings.TrimSpace(md5)
 			if md5 != "" {
 				results[md5] = ts.existingMD5[md5]

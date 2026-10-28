@@ -219,8 +219,7 @@ func TestOOBRequestToken(t *testing.T) {
 // --- waitForCallback ---
 
 func TestWaitForCallback(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

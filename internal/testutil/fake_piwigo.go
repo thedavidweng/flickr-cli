@@ -94,7 +94,7 @@ func (f *FakePiwigo) imageList(categoryID string) []map[string]any {
 
 func (f *FakePiwigo) existResult(list string) map[string]bool {
 	out := make(map[string]bool)
-	for _, md5 := range strings.Split(list, ",") {
+	for md5 := range strings.SplitSeq(list, ",") {
 		if md5 = strings.TrimSpace(md5); md5 != "" {
 			out[md5] = f.ExistingMD5[md5]
 		}

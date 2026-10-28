@@ -1,5 +1,7 @@
 package safety
 
+import "slices"
+
 // HighRiskCommands lists commands that require --confirm.
 var HighRiskCommands = []string{
 	"photos.delete",
@@ -41,15 +43,11 @@ type Mutation struct {
 
 // ClassifyRisk returns the risk level for a command.
 func ClassifyRisk(command string) Risk {
-	for _, c := range HighRiskCommands {
-		if c == command {
-			return RiskHighWrite
-		}
+	if slices.Contains(HighRiskCommands, command) {
+		return RiskHighWrite
 	}
-	for _, c := range RemoteMutations {
-		if c == command {
-			return RiskMediumWrite
-		}
+	if slices.Contains(RemoteMutations, command) {
+		return RiskMediumWrite
 	}
 	return RiskRead
 }

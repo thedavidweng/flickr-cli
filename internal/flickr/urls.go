@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -149,9 +150,9 @@ func SelectSize(sizes []Size, wanted string) (Size, error) {
 		return sizes[len(sizes)-1], nil
 
 	case "large":
-		for i := len(sizes) - 1; i >= 0; i-- {
-			if sizes[i].Label != "Original" {
-				return sizes[i], nil
+		for _, size := range slices.Backward(sizes) {
+			if size.Label != "Original" {
+				return size, nil
 			}
 		}
 		return sizes[len(sizes)-1], nil
@@ -162,9 +163,9 @@ func SelectSize(sizes []Size, wanted string) (Size, error) {
 				return s, nil
 			}
 		}
-		for i := len(sizes) - 1; i >= 0; i-- {
-			if sizes[i].Width <= 1024 {
-				return sizes[i], nil
+		for _, size := range slices.Backward(sizes) {
+			if size.Width <= 1024 {
+				return size, nil
 			}
 		}
 		return sizes[0], nil
@@ -175,9 +176,9 @@ func SelectSize(sizes []Size, wanted string) (Size, error) {
 				return s, nil
 			}
 		}
-		for i := len(sizes) - 1; i >= 0; i-- {
-			if sizes[i].Width <= 640 {
-				return sizes[i], nil
+		for _, size := range slices.Backward(sizes) {
+			if size.Width <= 640 {
+				return size, nil
 			}
 		}
 		return sizes[0], nil
