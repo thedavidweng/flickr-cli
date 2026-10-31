@@ -59,20 +59,5 @@ sboms:
     documents:
       - "${artifact}.sbom.json"
 
-homebrew_casks:
-  - name: flickr
-    binaries:
-      - flickr
-    generate_completions_from_executable:
-      executable: "flickr"
-      args:
-        - completion
-    repository:
-      owner: thedavidweng
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    homepage: "https://github.com/thedavidweng/flickr-cli"
-    description: "Agent-friendly CLI for Flickr photo management, backup, upload, and API access"
-
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
