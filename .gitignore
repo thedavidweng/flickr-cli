@@ -58,6 +58,7 @@ $RECYCLE.BIN/
 .nfs*
 
 # === Editors / IDEs ===
+.claude/
 *.swp
 *.swo
 *.swn
