@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.7](https://github.com/thedavidweng/flickr-cli/compare/v0.3.6...v0.3.7) (2026-11-10)
+
+
+### Bug Fixes
+
+* **ci:** verify Codecov uploader before execution ([#55](https://github.com/thedavidweng/flickr-cli/issues/55)) ([db86c69](https://github.com/thedavidweng/flickr-cli/commit/db86c69ee2bc58bfb0e89161ccbf488fe9e3b46d))
+
 ## [0.3.6](https://github.com/thedavidweng/flickr-cli/compare/v0.3.5...v0.3.6) (2026-10-28)
 
 
